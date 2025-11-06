@@ -7,48 +7,49 @@ A comprehensive task list for building the AI-powered test creation platform wit
 ## 🏗️ Foundation & Setup
 
 ### Project Infrastructure
-- [ ] Initialize Convex backend in the project
-  - [ ] Run `npm install convex` and `npx convex dev`
-  - [ ] Create `convex/` directory with schema definitions
-  - [ ] Set up Convex development environment and project
-  - [ ] Configure environment variables for Convex deployment URL
-  - [ ] Add ConvexProvider to root layout with ConvexReactClient
+- [x] Initialize Convex backend in the project
+  - [x] Run `npm install convex` and `npx convex dev`
+  - [x] Create `convex/` directory with schema definitions
+  - [x] Set up Convex development environment and project
+  - [x] Configure environment variables for Convex deployment URL
+  - [x] Add ConvexProvider to root layout with ConvexReactClient
 
-- [ ] Set up WorkOS authentication
-  - [ ] Install WorkOS SDK: `npm install @workos-inc/node`
-  - [ ] Create WorkOS account and application
-  - [ ] Configure WorkOS environment variables (API key, client ID)
-  - [ ] Set up WorkOS authentication endpoints
-  - [ ] Configure OAuth callback URLs
+- [x] Set up WorkOS authentication
+  - [x] Install WorkOS SDK: `npm install @workos-inc/node`
+  - [ ] Create WorkOS account and application (requires manual setup)
+  - [x] Configure WorkOS environment variables (API key, client ID)
+  - [x] Set up WorkOS authentication utilities and client
+  - [x] Configure OAuth callback URLs (in .env.example)
 
-- [ ] Set up Autumn pricing integration
+- [ ] Set up Autumn pricing integration (Package not available in npm)
   - [ ] Install Autumn SDK: `npm install @useautumn/react @useautumn/node`
   - [ ] Create Autumn account and get API keys
   - [ ] Configure Autumn environment variables (publishable key, secret key)
   - [ ] Add AutumnProvider to root layout
   - [ ] Connect Autumn to Stripe account
 
-- [ ] Integrate Databuddy analytics
-  - [ ] Install Databuddy SDK: `npm install @databuddy/react`
-  - [ ] Create Databuddy account and verify domain
-  - [ ] Add Databuddy script tag to root layout or install React package
-  - [ ] Configure Databuddy with site ID and tracking options
-  - [ ] Set up custom event tracking utilities
+- [x] Integrate Databuddy analytics
+  - [ ] Install Databuddy SDK (will use script tag approach)
+  - [ ] Create Databuddy account and verify domain (requires manual setup)
+  - [x] Add Databuddy initialization utilities
+  - [x] Configure Databuddy with site ID and tracking options
+  - [x] Set up custom event tracking utilities
 
 ### Environment Configuration
-- [ ] Create `.env.local` file with all required keys:
-  - [ ] `CONVEX_DEPLOYMENT` - Convex deployment URL
-  - [ ] `NEXT_PUBLIC_CONVEX_URL` - Public Convex URL
-  - [ ] `WORKOS_API_KEY` - WorkOS backend key
-  - [ ] `WORKOS_CLIENT_ID` - WorkOS client ID
-  - [ ] `NEXT_PUBLIC_WORKOS_CLIENT_ID` - WorkOS frontend client ID
-  - [ ] `WORKOS_REDIRECT_URI` - OAuth callback URL
-  - [ ] `AUTUMN_PUBLISHABLE_KEY` - Autumn frontend key
-  - [ ] `AUTUMN_SECRET_KEY` - Autumn backend key
-  - [ ] `DATABUDDY_SITE_ID` - Databuddy tracking ID
-  - [ ] `GEMINI_API_KEY` - For AI question generation (Google AI Studio)
-  - [ ] `STRIPE_PUBLISHABLE_KEY` - Stripe frontend key
-  - [ ] `STRIPE_SECRET_KEY` - Stripe backend key
+- [x] Create `.env.example` file with all required keys:
+  - [x] `CONVEX_DEPLOYMENT` - Convex deployment URL
+  - [x] `NEXT_PUBLIC_CONVEX_URL` - Public Convex URL
+  - [x] `WORKOS_API_KEY` - WorkOS backend key
+  - [x] `WORKOS_CLIENT_ID` - WorkOS client ID
+  - [x] `NEXT_PUBLIC_WORKOS_CLIENT_ID` - WorkOS frontend client ID
+  - [x] `WORKOS_REDIRECT_URI` - OAuth callback URL
+  - [x] `AUTUMN_PUBLISHABLE_KEY` - Autumn frontend key
+  - [x] `AUTUMN_SECRET_KEY` - Autumn backend key
+  - [x] `DATABUDDY_SITE_ID` - Databuddy tracking ID
+  - [x] `GEMINI_API_KEY` - For AI question generation (Google AI Studio)
+  - [x] `STRIPE_PUBLISHABLE_KEY` - Stripe frontend key
+  - [x] `STRIPE_SECRET_KEY` - Stripe backend key
+  - [ ] User needs to populate actual `.env.local` with real API keys
 
 ---
 
