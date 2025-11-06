@@ -6,13 +6,15 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ## 🏗️ Foundation & Setup
 
-### Project Infrastructure
+### Project Infrastructure ✅ COMPLETE
 - [x] Initialize Convex backend in the project
   - [x] Run `npm install convex` and `npx convex dev`
   - [x] Create `convex/` directory with schema definitions
   - [x] Set up Convex development environment and project
   - [x] Configure environment variables for Convex deployment URL
   - [x] Add ConvexProvider to root layout with ConvexReactClient
+  - [x] Create utility functions in `convex/lib/utils.ts`
+  - [x] Create initial user operations in `convex/users.ts`
 
 - [x] Set up WorkOS authentication
   - [x] Install WorkOS SDK: `npm install @workos-inc/node`
@@ -20,22 +22,28 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [x] Configure WorkOS environment variables (API key, client ID)
   - [x] Set up WorkOS authentication utilities and client
   - [x] Configure OAuth callback URLs (in .env.example)
+  - [x] Create authentication API routes (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/auth/me`)
+  - [x] Create AuthProvider and useAuth hook for client-side auth state
+  - [x] Add middleware for route protection
+  - [x] Create login page with WorkOS integration
 
-- [ ] Set up Autumn pricing integration (Package not available in npm)
-  - [ ] Install Autumn SDK: `npm install @useautumn/react @useautumn/node`
-  - [ ] Create Autumn account and get API keys
-  - [ ] Configure Autumn environment variables (publishable key, secret key)
-  - [ ] Add AutumnProvider to root layout
-  - [ ] Connect Autumn to Stripe account
+- [ ] Set up Polar billing integration (Merchant of Record)
+  - [ ] Create Polar account at https://polar.sh
+  - [ ] Create organization in Polar dashboard
+  - [ ] Get access token from Settings > API tokens
+  - [ ] Configure Polar environment variables
+  - [ ] Set up webhook endpoint
+  - **NOTE:** Using Polar as merchant of record (handles tax, compliance, invoicing)
 
 - [x] Integrate Databuddy analytics
-  - [ ] Install Databuddy SDK (will use script tag approach)
+  - [x] Create analytics tracking utilities in `lib/analytics/track.ts`
   - [ ] Create Databuddy account and verify domain (requires manual setup)
-  - [x] Add Databuddy initialization utilities
+  - [x] Add Databuddy initialization component (AnalyticsProvider)
   - [x] Configure Databuddy with site ID and tracking options
-  - [x] Set up custom event tracking utilities
+  - [x] Set up custom event tracking utilities for all major actions
+  - [x] Integrate AnalyticsProvider in root layout
 
-### Environment Configuration
+### Environment Configuration ✅ COMPLETE
 - [x] Create `.env.example` file with all required keys:
   - [x] `CONVEX_DEPLOYMENT` - Convex deployment URL
   - [x] `NEXT_PUBLIC_CONVEX_URL` - Public Convex URL
@@ -43,13 +51,19 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [x] `WORKOS_CLIENT_ID` - WorkOS client ID
   - [x] `NEXT_PUBLIC_WORKOS_CLIENT_ID` - WorkOS frontend client ID
   - [x] `WORKOS_REDIRECT_URI` - OAuth callback URL
-  - [x] `AUTUMN_PUBLISHABLE_KEY` - Autumn frontend key
-  - [x] `AUTUMN_SECRET_KEY` - Autumn backend key
+  - [x] `POLAR_ACCESS_TOKEN` - Polar server-side access token
+  - [x] `NEXT_PUBLIC_POLAR_ORGANIZATION_ID` - Polar organization ID
+  - [x] `POLAR_WEBHOOK_SECRET` - Polar webhook secret
   - [x] `DATABUDDY_SITE_ID` - Databuddy tracking ID
   - [x] `GEMINI_API_KEY` - For AI question generation (Google AI Studio)
-  - [x] `STRIPE_PUBLISHABLE_KEY` - Stripe frontend key
-  - [x] `STRIPE_SECRET_KEY` - Stripe backend key
-  - [ ] User needs to populate actual `.env.local` with real API keys
+
+  - [x] `NEXT_PUBLIC_APP_URL` - Application base URL
+  - [ ] **ACTION REQUIRED:** User needs to populate actual `.env.local` with real API keys
+
+### Documentation Created ✅
+- [x] `SETUP.md` - Comprehensive setup guide with prerequisites and instructions
+- [x] `docs/FOUNDATION_SETUP_COMPLETE.md` - Completion summary and next steps
+- [x] `.env.example` - Environment variables template with documentation
 
 ---
 
@@ -341,10 +355,12 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ---
 
-## 💳 Pricing & Billing (Autumn)
+## 💳 Pricing & Billing (Polar)
 
-### Autumn Pricing Configuration
-- [ ] Define pricing plans in Autumn dashboard:
+### Polar Pricing Configuration
+- [ ] Create Polar account at https://polar.sh
+- [ ] Set up organization in Polar dashboard
+- [ ] Define pricing plans (products) in Polar:
   - [ ] **Free Plan**:
     - [ ] 500 starting credits
     - [ ] Max 3 active projects
@@ -379,7 +395,7 @@ A comprehensive task list for building the AI-powered test creation platform wit
     - [ ] Advanced audit logs
 
 ### Credit System Configuration
-- [ ] Define credit add-on products in Autumn:
+- [ ] Define credit add-on products in Polar:
   - [ ] 500 credits - $10
   - [ ] 1,000 credits - $18
   - [ ] 2,500 credits - $40
@@ -392,8 +408,8 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] AI grading (long answer/essay): 10 credits per answer
   - [ ] AI grading with feedback: +2 credits
 
-### Autumn Features Configuration
-- [ ] Set up feature gates in Autumn:
+### Polar Benefits Configuration
+- [ ] Set up product benefits in Polar dashboard:
   - [ ] `ai_generation` - AI question/distractor generation
   - [ ] `ai_grading` - AI-assisted grading
   - [ ] `advanced_analytics` - Detailed analytics and exports
@@ -402,11 +418,11 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] `priority_support` - Priority email/chat support
   - [ ] `api_access` - API access for integrations
 
-### Convex Functions for Autumn Integration
-- [ ] Create `convex/billing.ts` with Autumn operations:
-  - [ ] `createCustomer` mutation - Create Autumn customer when user signs up
-  - [ ] `getCustomerBilling` query - Get customer's current plan, credits, subscription
-  - [ ] `createCheckoutSession` action - Generate Autumn checkout for plan upgrade
+### Convex Functions for Polar Integration
+- [ ] Create `convex/billing.ts` with Polar operations:
+  - [ ] `createCustomer` mutation - Create Polar customer when user signs up
+  - [ ] `getSubscription` query - Get customer's current subscription and benefits
+  - [ ] `createCheckoutSession` action - Generate Polar checkout for plan upgrade
   - [ ] `handleSubscriptionChange` mutation - Update user when subscription changes
   - [ ] `deductCredits` mutation - Deduct credits when AI features are used
   - [ ] `addCredits` mutation - Add credits when purchased or granted
@@ -414,19 +430,26 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] `getBillingHistory` query - Get payment and credit history
   - [ ] `cancelSubscription` mutation - Cancel user subscription
 
+### Polar Client Library Setup
+- [ ] Install Polar SDK: `npm install @polar-sh/sdk`
+- [ ] Create Polar client utility in `lib/polar/client.ts`:
+  - [ ] Initialize Polar client with access token
+  - [ ] Helper functions for checkout, subscriptions, webhooks
+  - [ ] Type-safe wrappers for Polar API calls
+
 ### Billing Portal Pages
 - [ ] Create billing page at `/app/billing`
   - [ ] Display current plan and renewal date
   - [ ] Show credit balance with usage history
-  - [ ] Display payment method
-  - [ ] Button to open Stripe customer portal
-  - [ ] Upgrade/downgrade plan options
+  - [ ] Show active subscriptions from Polar
+  - [ ] Upgrade/downgrade plan options with Polar checkout
   - [ ] Purchase additional credits
+  - [ ] Link to Polar customer portal
 - [ ] Create pricing page at `/pricing` (marketing site)
   - [ ] Display all plans in cards
   - [ ] Feature comparison table
   - [ ] FAQ section about billing
-  - [ ] Call-to-action buttons linked to Autumn checkout
+  - [ ] Call-to-action buttons linked to Polar checkout
 - [ ] Create checkout success page at `/app/billing/success`
   - [ ] Thank you message
   - [ ] Display what was purchased
@@ -438,12 +461,18 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] Option to try again
   - [ ] Support contact information
 
-### Autumn Webhook Handling
-- [ ] Create webhook endpoint at `/api/webhooks/autumn`
-  - [ ] Verify Autumn webhook signature
-  - [ ] Handle `subscription.created` event
-  - [ ] Handle `subscription.updated` event
-  - [ ] Handle `subscription.deleted` event
+### Polar Webhook Handling
+- [ ] Create webhook endpoint at `/api/webhooks/polar`
+  - [ ] Verify Polar webhook signature using webhook secret
+  - [ ] Handle `subscription.created` event - Grant access, add credits
+  - [ ] Handle `subscription.updated` event - Update tier, adjust credits
+  - [ ] Handle `subscription.canceled` event - Revoke access
+  - [ ] Handle `order.created` event - Process credit purchases
+  - [ ] Handle `checkout.created` event - Track checkout sessions
+  - [ ] Handle `checkout.updated` event - Update checkout status
+  - [ ] Handle `benefit.granted` event - Grant feature access
+  - [ ] Handle `benefit.revoked` event - Revoke feature access
+  - [ ] Log all webhook events to `billingTransactions` table
   - [ ] Handle `subscription.payment_succeeded` event
   - [ ] Handle `subscription.payment_failed` event
   - [ ] Handle `credits.added` event

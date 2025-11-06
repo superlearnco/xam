@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/toaster";
 import { ConvexProvider } from "@/components/providers/convex-provider";
+import { AuthProvider } from "@/lib/auth/auth-context";
+import { AnalyticsProvider } from "@/components/providers/analytics-provider";
 import "./globals.css";
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -25,9 +27,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <ConvexProvider>
-          {children}
-          <Toaster />
-          <Analytics />
+          <AuthProvider>
+            <AnalyticsProvider>
+              {children}
+              <Toaster />
+              <Analytics />
+            </AnalyticsProvider>
+          </AuthProvider>
         </ConvexProvider>
       </body>
     </html>

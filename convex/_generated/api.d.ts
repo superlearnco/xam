@@ -9,6 +9,7 @@
  */
 
 import type * as lib_utils from "../lib/utils.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +27,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   "lib/utils": typeof lib_utils;
+  users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
