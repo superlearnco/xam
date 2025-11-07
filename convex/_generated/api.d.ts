@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as billing from "../billing.js";
 import type * as lib_utils from "../lib/utils.js";
 import type * as users from "../users.js";
 
@@ -26,6 +27,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  billing: typeof billing;
   "lib/utils": typeof lib_utils;
   users: typeof users;
 }>;

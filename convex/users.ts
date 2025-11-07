@@ -52,6 +52,21 @@ export const getUserByEmail = query({
   },
 });
 
+// Query: Get user by Polar customer ID
+export const getUserByPolarCustomerId = query({
+  args: { polarCustomerId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_polarCustomerId", (q) =>
+        q.eq("polarCustomerId", args.polarCustomerId),
+      )
+      .first();
+
+    return user;
+  },
+});
+
 // Mutation: Create or update user from WorkOS authentication
 export const syncUserFromWorkOS = mutation({
   args: {
@@ -177,7 +192,7 @@ export const updateSubscriptionTier = mutation({
       v.literal("enterprise"),
     ),
     subscriptionStatus: v.optional(v.string()),
-    stripeCustomerId: v.optional(v.string()),
+    polarCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUserOrThrow(ctx);
@@ -188,7 +203,7 @@ export const updateSubscriptionTier = mutation({
     await ctx.db.patch(user._id, {
       subscriptionTier: args.tier,
       subscriptionStatus: args.subscriptionStatus,
-      stripeCustomerId: args.stripeCustomerId,
+      polarCustomerId: args.polarCustomerId,
       credits: user.credits + tierCredits,
       updatedAt: Date.now(),
     });

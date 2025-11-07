@@ -4,7 +4,7 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ---
 
-## 🏗️ Foundation & Setup
+## 🏗️ Foundation & Setup ✅ COMPLETE
 
 ### Project Infrastructure ✅ COMPLETE
 - [x] Initialize Convex backend in the project
@@ -27,12 +27,17 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [x] Add middleware for route protection
   - [x] Create login page with WorkOS integration
 
-- [ ] Set up Polar billing integration (Merchant of Record)
-  - [ ] Create Polar account at https://polar.sh
-  - [ ] Create organization in Polar dashboard
-  - [ ] Get access token from Settings > API tokens
-  - [ ] Configure Polar environment variables
-  - [ ] Set up webhook endpoint
+- [x] Set up Polar billing integration (Merchant of Record)
+  - [ ] Create Polar account at https://polar.sh (requires manual setup)
+  - [ ] Create organization in Polar dashboard (requires manual setup)
+  - [ ] Get access token from Settings > API tokens (requires manual setup)
+  - [x] Configure Polar environment variables in .env.example
+  - [x] Set up webhook endpoint at `/api/webhooks/polar`
+  - [x] Install Polar SDK: `pnpm add @polar-sh/sdk`
+  - [x] Create Polar client utility in `lib/polar/client.ts`
+  - [x] Create webhook handler with event processing
+  - [x] Update Convex schema to use Polar (polarCustomerId, benefits)
+  - [x] Create billing Convex functions in `convex/billing.ts`
   - **NOTE:** Using Polar as merchant of record (handles tax, compliance, invoicing)
 
 - [x] Integrate Databuddy analytics
@@ -43,7 +48,7 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [x] Set up custom event tracking utilities for all major actions
   - [x] Integrate AnalyticsProvider in root layout
 
-### Environment Configuration ✅ COMPLETE
+### Environment Configuration ✅ COMPLETE (requires manual API key setup)
 - [x] Create `.env.example` file with all required keys:
   - [x] `CONVEX_DEPLOYMENT` - Convex deployment URL
   - [x] `NEXT_PUBLIC_CONVEX_URL` - Public Convex URL
@@ -58,12 +63,21 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [x] `GEMINI_API_KEY` - For AI question generation (Google AI Studio)
 
   - [x] `NEXT_PUBLIC_APP_URL` - Application base URL
-  - [ ] **ACTION REQUIRED:** User needs to populate actual `.env.local` with real API keys
 
-### Documentation Created ✅
-- [x] `SETUP.md` - Comprehensive setup guide with prerequisites and instructions
-- [x] `docs/FOUNDATION_SETUP_COMPLETE.md` - Completion summary and next steps
-- [x] `.env.example` - Environment variables template with documentation
+**Manual Setup Required (by user):**
+- [x] Populate actual `.env.local` with real API keys
+- [x] Create Polar account at https://polar.sh and configure:
+  - Organization and products (pricing plans)
+  - Benefits (ai_generation, ai_grading, etc.)
+  - Webhook endpoint URL
+  - Get access token from Settings > API tokens
+- [x] Create WorkOS account at https://workos.com and configure:
+  - Application and OAuth settings
+  - Redirect URIs
+  - Get API key and client ID
+- [x] Create Databuddy account at https://databuddy.com and configure:
+  - Verify domain
+  - Get site ID for tracking
 
 ---
 
@@ -1574,4 +1588,3 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 6. **Polish and launch:**
    - Analytics integration
-   

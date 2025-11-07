@@ -9,28 +9,40 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     workosId: v.string(), // WorkOS user ID
     organizationId: v.optional(v.id("organizations")),
-    role: v.union(v.literal("teacher"), v.literal("admin"), v.literal("student")),
+    role: v.union(
+      v.literal("teacher"),
+      v.literal("admin"),
+      v.literal("student"),
+    ),
     credits: v.number(), // Available AI generation credits
     subscriptionTier: v.union(
       v.literal("free"),
       v.literal("basic"),
       v.literal("pro"),
-      v.literal("enterprise")
+      v.literal("enterprise"),
     ),
     subscriptionStatus: v.optional(v.string()), // active, canceled, past_due, etc.
-    stripeCustomerId: v.optional(v.string()),
+    polarCustomerId: v.optional(v.string()), // Polar customer ID
+    polarSubscriptionId: v.optional(v.string()), // Current Polar subscription ID
+    benefits: v.optional(v.array(v.string())), // Array of granted benefit IDs
     onboardingCompleted: v.boolean(),
-    preferences: v.optional(v.object({
-      emailNotifications: v.boolean(),
-      theme: v.union(v.literal("light"), v.literal("dark"), v.literal("system")),
-    })),
+    preferences: v.optional(
+      v.object({
+        emailNotifications: v.boolean(),
+        theme: v.union(
+          v.literal("light"),
+          v.literal("dark"),
+          v.literal("system"),
+        ),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_email", ["email"])
     .index("by_workosId", ["workosId"])
     .index("by_organizationId", ["organizationId"])
-    .index("by_stripeCustomerId", ["stripeCustomerId"]),
+    .index("by_polarCustomerId", ["polarCustomerId"]),
 
   // Organizations table (for multi-teacher accounts)
   organizations: defineTable({
@@ -39,14 +51,18 @@ export default defineSchema({
     ownerId: v.id("users"),
     plan: v.union(v.literal("pro"), v.literal("enterprise")),
     credits: v.number(), // Shared credits pool
-    settings: v.optional(v.object({
-      branding: v.optional(v.object({
-        logo: v.optional(v.string()),
-        primaryColor: v.optional(v.string()),
-        customDomain: v.optional(v.string()),
-      })),
-      allowMemberCreation: v.boolean(),
-    })),
+    settings: v.optional(
+      v.object({
+        branding: v.optional(
+          v.object({
+            logo: v.optional(v.string()),
+            primaryColor: v.optional(v.string()),
+            customDomain: v.optional(v.string()),
+          }),
+        ),
+        allowMemberCreation: v.boolean(),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -63,7 +79,7 @@ export default defineSchema({
     status: v.union(
       v.literal("draft"),
       v.literal("published"),
-      v.literal("archived")
+      v.literal("archived"),
     ),
     settings: v.object({
       timeLimit: v.optional(v.number()), // in minutes
@@ -102,7 +118,7 @@ export default defineSchema({
       v.literal("true_false"),
       v.literal("short_answer"),
       v.literal("essay"),
-      v.literal("fill_blank")
+      v.literal("fill_blank"),
     ),
     questionText: v.string(),
     questionHtml: v.optional(v.string()), // Rich text content
@@ -111,11 +127,15 @@ export default defineSchema({
     required: v.boolean(),
 
     // For multiple choice / true-false
-    options: v.optional(v.array(v.object({
-      id: v.string(),
-      text: v.string(),
-      isCorrect: v.boolean(),
-    }))),
+    options: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+          isCorrect: v.boolean(),
+        }),
+      ),
+    ),
 
     // For short answer / essay
     expectedAnswer: v.optional(v.string()),
@@ -130,11 +150,9 @@ export default defineSchema({
     // Question bank / reusability
     fromQuestionBank: v.optional(v.id("questionBank")),
     tags: v.optional(v.array(v.string())),
-    difficulty: v.optional(v.union(
-      v.literal("easy"),
-      v.literal("medium"),
-      v.literal("hard")
-    )),
+    difficulty: v.optional(
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard")),
+    ),
 
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -153,7 +171,7 @@ export default defineSchema({
     status: v.union(
       v.literal("in_progress"),
       v.literal("submitted"),
-      v.literal("graded")
+      v.literal("graded"),
     ),
 
     attemptNumber: v.number(), // For multiple attempts
@@ -230,7 +248,7 @@ export default defineSchema({
       v.literal("distractor_generation"),
       v.literal("explanation_generation"),
       v.literal("grading"),
-      v.literal("improvement_suggestion")
+      v.literal("improvement_suggestion"),
     ),
     projectId: v.optional(v.id("projects")),
     questionId: v.optional(v.id("questions")),
@@ -265,17 +283,21 @@ export default defineSchema({
       v.literal("true_false"),
       v.literal("short_answer"),
       v.literal("essay"),
-      v.literal("fill_blank")
+      v.literal("fill_blank"),
     ),
 
     questionText: v.string(),
     questionHtml: v.optional(v.string()),
 
-    options: v.optional(v.array(v.object({
-      id: v.string(),
-      text: v.string(),
-      isCorrect: v.boolean(),
-    }))),
+    options: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+          isCorrect: v.boolean(),
+        }),
+      ),
+    ),
 
     expectedAnswer: v.optional(v.string()),
     explanation: v.optional(v.string()),
@@ -283,11 +305,9 @@ export default defineSchema({
     subject: v.optional(v.string()),
     topic: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
-    difficulty: v.optional(v.union(
-      v.literal("easy"),
-      v.literal("medium"),
-      v.literal("hard")
-    )),
+    difficulty: v.optional(
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard")),
+    ),
 
     timesUsed: v.number(),
 
@@ -363,7 +383,7 @@ export default defineSchema({
       v.literal("credit_low"),
       v.literal("subscription_expiring"),
       v.literal("collaboration_invite"),
-      v.literal("system")
+      v.literal("system"),
     ),
 
     title: v.string(),
@@ -390,20 +410,20 @@ export default defineSchema({
     type: v.union(
       v.literal("subscription"),
       v.literal("credit_purchase"),
-      v.literal("refund")
+      v.literal("refund"),
     ),
 
     amount: v.number(), // in cents
     currency: v.string(),
 
-    stripePaymentIntentId: v.optional(v.string()),
-    stripeInvoiceId: v.optional(v.string()),
+    provider: v.string(), // "polar" or other payment providers
+    providerTransactionId: v.optional(v.string()), // Polar subscription/order ID
 
     status: v.union(
       v.literal("pending"),
       v.literal("succeeded"),
       v.literal("failed"),
-      v.literal("refunded")
+      v.literal("refunded"),
     ),
 
     description: v.string(),
@@ -417,5 +437,5 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_organizationId", ["organizationId"])
     .index("by_status", ["status"])
-    .index("by_stripePaymentIntentId", ["stripePaymentIntentId"]),
+    .index("by_providerTransactionId", ["providerTransactionId"]),
 });
