@@ -13,8 +13,8 @@ User accounts with authentication and subscription management.
 - `avatar` (optional string) - Profile picture URL
 - `role` (enum: "teacher" | "student" | "admin") - User role
 - `credits` (number) - Available AI generation credits (default: 500)
-- `workosUserId` (string, indexed) - WorkOS authentication ID
-- `workosOrganizationId` (optional string, indexed) - WorkOS organization for SSO
+- `clerkUserId` (string, indexed) - Clerk authentication ID
+- `clerkOrganizationId` (optional string, indexed) - Clerk organization for SSO
 - `stripeCustomerId` (optional string) - Stripe customer ID (if used)
 - `polarCustomerId` (optional string, indexed) - Polar customer ID
 - `polarSubscriptionId` (optional string) - Active Polar subscription ID
@@ -25,7 +25,7 @@ User accounts with authentication and subscription management.
 - `preferences` (object) - User preferences (emailNotifications, theme, language, timezone)
 - `createdAt`, `updatedAt`, `lastLoginAt` (timestamps)
 
-**Indexes:** by_email, by_workosUserId, by_workosOrganizationId, by_polarCustomerId, by_role
+**Indexes:** by_email, by_clerkUserId, by_clerkOrganizationId, by_polarCustomerId, by_role
 
 ---
 

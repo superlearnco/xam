@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ConvexProvider } from "@/components/providers/convex-provider";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AnalyticsProvider } from "@/components/providers/analytics-provider";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -24,18 +25,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`font-sans antialiased`}>
-        <ConvexProvider>
-          <AuthProvider>
-            <AnalyticsProvider>
-              {children}
-              <Toaster />
-              <Analytics />
-            </AnalyticsProvider>
-          </AuthProvider>
-        </ConvexProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`font-sans antialiased`}>
+          <ConvexProvider>
+            <AuthProvider>
+              <AnalyticsProvider>
+                {children}
+                <Toaster />
+                <Analytics />
+              </AnalyticsProvider>
+            </AuthProvider>
+          </ConvexProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

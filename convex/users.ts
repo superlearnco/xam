@@ -26,15 +26,13 @@ export const getUserById = query({
   },
 });
 
-// Query: Get user by WorkOS ID
-export const getUserByWorkosId = query({
-  args: { workosUserId: v.string() },
+// Query: Get user by Clerk ID
+export const getUserByClerkId = query({
+  args: { clerkUserId: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_workosUserId", (q) =>
-        q.eq("workosUserId", args.workosUserId),
-      )
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", args.clerkUserId))
       .first();
 
     return user;
@@ -69,21 +67,20 @@ export const getUserByPolarCustomerId = query({
   },
 });
 
-// Mutation: Create or update user from WorkOS authentication
-export const syncUserFromWorkOS = mutation({
+// Mutation: Create or update user from Clerk authentication
+export const syncUserFromClerk = mutation({
   args: {
-    workosUserId: v.string(),
+    clerkUserId: v.string(),
     email: v.string(),
     name: v.string(),
     avatar: v.optional(v.string()),
+    emailVerified: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_workosUserId", (q) =>
-        q.eq("workosUserId", args.workosUserId),
-      )
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", args.clerkUserId))
       .first();
 
     if (existingUser) {
@@ -92,6 +89,7 @@ export const syncUserFromWorkOS = mutation({
         email: args.email,
         name: args.name,
         avatar: args.avatar,
+        emailVerified: args.emailVerified ?? existingUser.emailVerified,
         lastLoginAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -100,7 +98,7 @@ export const syncUserFromWorkOS = mutation({
 
     // Create new user with free tier defaults
     const userId = await ctx.db.insert("users", {
-      workosUserId: args.workosUserId,
+      clerkUserId: args.clerkUserId,
       email: args.email,
       name: args.name,
       avatar: args.avatar,
@@ -108,7 +106,7 @@ export const syncUserFromWorkOS = mutation({
       credits: getTierCredits("free"),
       subscriptionTier: "free",
       subscriptionStatus: "active",
-      emailVerified: false,
+      emailVerified: args.emailVerified ?? false,
       preferences: {
         emailNotifications: true,
         theme: "system",

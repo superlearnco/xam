@@ -12,11 +12,11 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
     return null;
   }
 
-  // Look up user by workosUserId
+  // Look up user by clerkUserId
   const user = await ctx.db
     .query("users")
-    .withIndex("by_workosUserId", (q) =>
-      q.eq("workosUserId", identity.subject as string),
+    .withIndex("by_clerkUserId", (q) =>
+      q.eq("clerkUserId", identity.subject as string),
     )
     .first();
 

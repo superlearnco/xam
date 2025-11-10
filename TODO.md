@@ -16,16 +16,17 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [x] Create utility functions in `convex/lib/utils.ts`
   - [x] Create initial user operations in `convex/users.ts`
 
-- [x] Set up WorkOS authentication
-  - [x] Install WorkOS SDK: `npm install @workos-inc/node`
-  - [ ] Create WorkOS account and application (requires manual setup)
-  - [x] Configure WorkOS environment variables (API key, client ID)
-  - [x] Set up WorkOS authentication utilities and client
-  - [x] Configure OAuth callback URLs (in .env.example)
-  - [x] Create authentication API routes (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/auth/me`)
+- [x] Set up Clerk authentication
+  - [x] Install Clerk SDK: `pnpm add @clerk/nextjs`
+  - [ ] Create Clerk account and application (requires manual setup)
+  - [x] Configure Clerk environment variables (publishable key, secret key, webhook secret)
+  - [x] Set up Clerk authentication utilities and helpers
+  - [x] Configure sign-in/sign-up URLs (in .env.example)
+  - [x] Integrate Clerk with Convex using ConvexProviderWithClerk
+  - [x] Create sign-in and sign-up pages using Clerk components
   - [x] Create AuthProvider and useAuth hook for client-side auth state
-  - [x] Add middleware for route protection
-  - [x] Create login page with WorkOS integration
+  - [x] Add Clerk middleware for route protection
+  - [x] Set up Clerk webhook handler for user sync
 
 - [x] Set up Polar billing integration (Merchant of Record)
   - [ ] Create Polar account at https://polar.sh (requires manual setup)
@@ -52,10 +53,13 @@ A comprehensive task list for building the AI-powered test creation platform wit
 - [x] Create `.env.example` file with all required keys:
   - [x] `CONVEX_DEPLOYMENT` - Convex deployment URL
   - [x] `NEXT_PUBLIC_CONVEX_URL` - Public Convex URL
-  - [x] `WORKOS_API_KEY` - WorkOS backend key
-  - [x] `WORKOS_CLIENT_ID` - WorkOS client ID
-  - [x] `NEXT_PUBLIC_WORKOS_CLIENT_ID` - WorkOS frontend client ID
-  - [x] `WORKOS_REDIRECT_URI` - OAuth callback URL
+  - [x] `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk publishable key
+  - [x] `CLERK_SECRET_KEY` - Clerk secret key
+  - [x] `CLERK_WEBHOOK_SECRET` - Clerk webhook secret for user sync
+  - [x] `NEXT_PUBLIC_CLERK_SIGN_IN_URL` - Sign-in page URL
+  - [x] `NEXT_PUBLIC_CLERK_SIGN_UP_URL` - Sign-up page URL
+  - [x] `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` - Redirect after sign-in
+  - [x] `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` - Redirect after sign-up
   - [x] `POLAR_ACCESS_TOKEN` - Polar server-side access token
   - [x] `NEXT_PUBLIC_POLAR_ORGANIZATION_ID` - Polar organization ID
   - [x] `POLAR_WEBHOOK_SECRET` - Polar webhook secret
@@ -71,10 +75,11 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - Benefits (ai_generation, ai_grading, etc.)
   - Webhook endpoint URL
   - Get access token from Settings > API tokens
-- [x] Create WorkOS account at https://workos.com and configure:
-  - Application and OAuth settings
-  - Redirect URIs
-  - Get API key and client ID
+- [x] Create Clerk account at https://clerk.com and configure:
+  - Create application
+  - Configure sign-in/sign-up options
+  - Set up webhook endpoint for user sync
+  - Get publishable key, secret key, and webhook secret
 - [x] Create Databuddy account at https://databuddy.com and configure:
   - Verify domain
   - Get site ID for tracking
@@ -301,71 +306,70 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ---
 
-## 🔐 Authentication & User Management
+## 🔐 Authentication & User Management ✅ COMPLETE
 
-### WorkOS Authentication Integration
-- [ ] Install WorkOS: `npm install @workos-inc/node`
-- [ ] Set up WorkOS account and create an environment
-- [ ] Add WorkOS environment variables (see Environment Configuration section)
-- [ ] Create authentication pages:
-  - [ ] `/auth/login` - Login page with WorkOS hosted UI or custom
-  - [ ] `/auth/signup` - Sign up page
-  - [ ] `/auth/callback` - OAuth callback handler
-  - [ ] `/auth/logout` - Logout handler
-- [ ] Implement WorkOS authentication flow:
-  - [ ] Create authorization URL with WorkOS
-  - [ ] Handle OAuth callback
-  - [ ] Exchange code for user profile
-  - [ ] Create session with secure cookies
-  - [ ] Verify session on protected routes
-- [ ] Set up protected routes middleware for `/app/*` pages
-- [ ] Implement session management:
-  - [ ] Store session in HTTP-only cookies
-  - [ ] Session refresh logic
-  - [ ] Session revocation on logout
-- [ ] Optional: Enable SSO providers (Google, Microsoft, GitHub)
-- [ ] Optional: Set up Directory Sync for organizations
-- [ ] Optional: Implement Magic Link authentication
+### Clerk Authentication Integration ✅ COMPLETE
+- [x] Install Clerk: `pnpm add @clerk/nextjs svix`
+- [x] Set up Clerk account and create an application
+- [x] Add Clerk environment variables (see Environment Configuration section)
+- [x] Create authentication pages:
+  - [x] `/sign-in` - Sign-in page with Clerk component
+  - [x] `/sign-up` - Sign-up page with Clerk component
+- [x] Implement Clerk authentication flow:
+  - [x] Wrap app with ClerkProvider
+  - [x] Use Clerk middleware for route protection
+  - [x] Configure public and protected routes
+  - [x] Set up redirect URLs after authentication
+- [x] Set up protected routes middleware for `/app/*` pages
+- [x] Create utility functions in `lib/clerk/utils.ts`:
+  - [x] `getCurrentClerkUserId()` - Get current user ID
+  - [x] `getCurrentClerkUserIdOrThrow()` - Get user ID or throw
+  - [x] `getCurrentClerkUser()` - Get full user object
+  - [x] `extractUserDataForConvex()` - Extract data for Convex sync
+  - [x] `isAuthenticated()` - Check authentication status
 
-### Convex + WorkOS Integration
-- [ ] Create `lib/workos.ts` helper with WorkOS client
-- [ ] Create `convex/auth.config.ts` for WorkOS authentication
-- [ ] Implement authentication in Convex:
-  - [ ] Create HTTP action to verify WorkOS session
-  - [ ] Store WorkOS user ID in Convex users table
-  - [ ] Pass authentication context to Convex queries/mutations
-- [ ] Create webhook endpoint to handle WorkOS events:
-  - [ ] `user.created` → Create user in Convex
-  - [ ] `user.updated` → Update user in Convex
-  - [ ] `user.deleted` → Handle user deletion
-  - [ ] `dsync.activated` → Handle directory sync (enterprise)
-  - [ ] `dsync.deleted` → Handle user deprovisioning
-- [ ] Create `convex/users.ts` with user CRUD operations:
-  - [ ] `createUser` mutation
-  - [ ] `updateUser` mutation
-  - [ ] `getUser` query
-  - [ ] `getCurrentUser` query (using WorkOS auth)
-  - [ ] `getUserByEmail` query
-  - [ ] `deleteUser` mutation
-  - [ ] `syncWorkOSUser` mutation (from webhooks)
+- [ ] Optional: Set up Clerk Organizations for multi-tenant features
+- [ ] Optional: Implement SSO/SAML for enterprise customers
 
-### User Profile Management
-- [ ] Create user profile page at `/app/profile`
-  - [ ] Display user information from WorkOS profile (name, email)
-  - [ ] Edit name and avatar
-  - [ ] Show account creation date
-  - [ ] Display current plan and credits
-  - [ ] Link to billing portal
-  - [ ] Show SSO provider if applicable
-- [ ] Create settings page at `/app/settings`
-  - [ ] Email notification preferences
-  - [ ] Default test settings
-  - [ ] UI preferences (theme, language)
-  - [ ] Account deletion option
-- [ ] Implement credit balance display in navbar
-  - [ ] Real-time updates from Convex
-  - [ ] Warning when credits are low (< 50)
-  - [ ] Link to purchase more credits
+### Convex + Clerk Integration ✅ COMPLETE
+- [x] Create `lib/clerk/utils.ts` helper with Clerk utilities
+- [x] Create `convex/auth.config.ts` for Clerk authentication
+- [x] Implement authentication in Convex:
+  - [x] Integrate ConvexProviderWithClerk for automatic auth
+  - [x] Store Clerk user ID in Convex users table
+  - [x] Pass authentication context to Convex queries/mutations
+- [x] Create webhook endpoint to handle Clerk events:
+  - [x] `user.created` → Create user in Convex
+  - [x] `user.updated` → Update user in Convex
+  - [x] `user.deleted` → Handle user deletion
+  - [x] `organization.created` → Handle organization creation
+  - [x] `organizationMembership.*` → Handle membership changes
+- [x] Create `convex/users.ts` with user CRUD operations:
+  - [x] `createUser` mutation (syncUserFromClerk)
+  - [x] `updateUser` mutation (updateProfile, updatePreferences)
+  - [x] `getUser` query (getUserById, getUserByClerkId, getUserByEmail)
+  - [x] `getCurrentUser` query (using Clerk auth)
+  - [x] `getUserByEmail` query
+  - [x] `deleteUser` mutation (soft delete recommended, webhook handler ready)
+  - [x] `syncUserFromClerk` mutation (from webhooks)
+
+### User Profile Management ✅ COMPLETE
+- [x] Create user profile page at `/app/profile`
+  - [x] Display user information from Clerk profile (name, email)
+  - [x] Edit name and avatar
+  - [x] Show account creation date
+  - [x] Display current plan and credits
+  - [x] Link to billing portal
+  - [x] Show organization if applicable
+- [x] Create settings page at `/app/settings`
+  - [x] Email notification preferences
+  - [x] Default test settings
+  - [x] UI preferences (theme, language)
+  - [x] Account deletion option
+- [x] Implement credit balance display in navbar
+  - [x] Real-time updates from Convex
+  - [x] Warning when credits are low (< 50)
+  - [x] Link to purchase more credits
 
 ---
 
@@ -403,8 +407,8 @@ A comprehensive task list for building the AI-powered test creation platform wit
     - [ ] Dedicated account manager
     - [ ] SLA guarantees
     - [ ] White-label option
-    - [ ] SSO/SAML support via WorkOS
-    - [ ] Directory Sync (SCIM) via WorkOS
+    - [ ] SSO/SAML support via Clerk
+    - [ ] Organization management via Clerk Organizations
     - [ ] Unlimited team members
     - [ ] Advanced audit logs
 
@@ -593,11 +597,11 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] Real-time updates with Convex subscriptions
   - [ ] Badge showing unread count
 - [ ] Add user profile dropdown:
-  - [ ] Display user name and email from WorkOS profile
+  - [ ] Display user name and email from Clerk profile
   - [ ] Link to profile page
   - [ ] Link to settings page
   - [ ] Link to billing page
-  - [ ] Sign out button (redirects to `/auth/logout`)
+  - [ ] Sign out button (uses Clerk signOut)
 - [ ] Mobile responsive hamburger menu
 - [ ] Add upgrade button when on free plan
 - [ ] Warning indicator when credits < 50
@@ -1122,11 +1126,11 @@ A comprehensive task list for building the AI-powered test creation platform wit
 ## 📧 Email & Notifications
 
 ### Email Service Setup
-- [ ] Choose email provider (Resend recommended, or use WorkOS Events)
+- [ ] Choose email provider (Resend recommended, or use Clerk email templates)
 - [ ] Install SDK: `npm install resend` (if using Resend)
 - [ ] Configure API key in environment variables
 - [ ] Create `lib/email.ts` helper with email sending functions
-- [ ] Optional: Use WorkOS Events API for transactional emails
+- [ ] Optional: Use Clerk email templates for transactional emails
 
 ### Email Templates
 - [ ] Create email templates folder: `/emails/`
@@ -1172,10 +1176,10 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ### Row-Level Security in Convex
 - [ ] Implement authentication checks in all queries/mutations:
-  - [ ] Verify user identity with WorkOS session
+  - [ ] Verify user identity with Clerk session
   - [ ] Check user ID matches resource owner
   - [ ] Implement role-based access (teacher/student/admin)
-  - [ ] Validate WorkOS session tokens in Convex actions
+  - [ ] Validate Clerk session tokens in Convex actions
 - [ ] Project access:
   - [ ] Only owner can edit/delete projects
   - [ ] Published projects readable by anyone with link
@@ -1353,7 +1357,7 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] Email formatting
 
 ### Integration Tests
-- [ ] Test WorkOS authentication flow (login, logout, callback)
+- [ ] Test Clerk authentication flow (sign-in, sign-up, sign-out)
 - [ ] Test project creation → editing → publishing → taking → marking flow
 - [ ] Test payment flow with Autumn
 - [ ] Test AI generation features

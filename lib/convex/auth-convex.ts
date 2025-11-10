@@ -1,26 +1,24 @@
 /**
  * Authenticated Convex client utilities
- * Provides helpers for using Convex with WorkOS authentication
+ * Provides helpers for using Convex with Clerk authentication
  */
 
 import { ConvexReactClient } from "convex/react";
 import { FunctionReference, getFunctionName } from "convex/server";
 
 /**
- * Get the Convex auth token from WorkOS session
+ * Get the Convex auth token from Clerk session
  * This should be called server-side to generate a Convex auth token
  */
-export async function getConvexAuthToken(
-  workosUserId: string,
-): Promise<string> {
+export async function getConvexAuthToken(clerkUserId: string): Promise<string> {
   // In a production setup, you would:
-  // 1. Verify the WorkOS session
+  // 1. Verify the Clerk session
   // 2. Generate a Convex auth token with the user's identity
   // 3. Return the token
 
-  // For now, return the workosUserId as the token
+  // For now, return the clerkUserId as the token
   // This will be used in Convex functions to identify the user
-  return workosUserId;
+  return clerkUserId;
 }
 
 /**

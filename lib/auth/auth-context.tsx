@@ -1,74 +1,58 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-
-interface User {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  profilePictureUrl?: string;
-}
+import React, { createContext, useContext } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 interface AuthContextType {
-  user: User | null;
+  user: {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    profilePictureUrl?: string;
+  } | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => void;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchUser = async () => {
-    try {
-      const response = await fetch("/api/auth/me");
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
+  const { user, isLoaded } = useUser();
+  const { signOut, openSignIn } = useClerk();
 
   const login = () => {
-    window.location.href = "/api/auth/login";
+    openSignIn({
+      redirectUrl: "/app",
+    });
   };
 
   const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setUser(null);
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
+    await signOut({
+      redirectUrl: "/",
+    });
   };
 
-  const refreshUser = async () => {
-    setIsLoading(true);
-    await fetchUser();
+  const refreshUser = () => {
+    // Clerk automatically handles user data refresh
+    // No manual refresh needed
   };
 
   const value: AuthContextType = {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
+    user: user
+      ? {
+          id: user.id,
+          email: user.emailAddresses[0]?.emailAddress || "",
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profilePictureUrl: user.imageUrl,
+        }
+      : null,
+    isLoading: !isLoaded,
+    isAuthenticated: !!user && isLoaded,
     login,
     logout,
     refreshUser,

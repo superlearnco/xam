@@ -14,9 +14,9 @@ export default defineSchema({
     ),
     credits: v.number(), // AI generation credits (default 500)
 
-    // WorkOS integration
-    workosUserId: v.string(),
-    workosOrganizationId: v.optional(v.string()),
+    // Clerk integration
+    clerkUserId: v.string(),
+    clerkOrganizationId: v.optional(v.string()),
 
     // Billing integration
     stripeCustomerId: v.optional(v.string()),
@@ -51,8 +51,8 @@ export default defineSchema({
     emailVerified: v.boolean(),
   })
     .index("by_email", ["email"])
-    .index("by_workosUserId", ["workosUserId"])
-    .index("by_workosOrganizationId", ["workosOrganizationId"])
+    .index("by_clerkUserId", ["clerkUserId"])
+    .index("by_clerkOrganizationId", ["clerkOrganizationId"])
     .index("by_polarCustomerId", ["polarCustomerId"])
     .index("by_role", ["role"]),
 
