@@ -28,11 +28,13 @@ export const getUserById = query({
 
 // Query: Get user by WorkOS ID
 export const getUserByWorkosId = query({
-  args: { workosId: v.string() },
+  args: { workosUserId: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", args.workosId))
+      .withIndex("by_workosUserId", (q) =>
+        q.eq("workosUserId", args.workosUserId),
+      )
       .first();
 
     return user;
@@ -70,16 +72,18 @@ export const getUserByPolarCustomerId = query({
 // Mutation: Create or update user from WorkOS authentication
 export const syncUserFromWorkOS = mutation({
   args: {
-    workosId: v.string(),
+    workosUserId: v.string(),
     email: v.string(),
-    name: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
+    name: v.string(),
+    avatar: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", args.workosId))
+      .withIndex("by_workosUserId", (q) =>
+        q.eq("workosUserId", args.workosUserId),
+      )
       .first();
 
     if (existingUser) {
@@ -87,7 +91,8 @@ export const syncUserFromWorkOS = mutation({
       await ctx.db.patch(existingUser._id, {
         email: args.email,
         name: args.name,
-        avatarUrl: args.avatarUrl,
+        avatar: args.avatar,
+        lastLoginAt: Date.now(),
         updatedAt: Date.now(),
       });
       return existingUser._id;
@@ -95,20 +100,22 @@ export const syncUserFromWorkOS = mutation({
 
     // Create new user with free tier defaults
     const userId = await ctx.db.insert("users", {
-      workosId: args.workosId,
+      workosUserId: args.workosUserId,
       email: args.email,
       name: args.name,
-      avatarUrl: args.avatarUrl,
+      avatar: args.avatar,
       role: "teacher",
       credits: getTierCredits("free"),
       subscriptionTier: "free",
-      onboardingCompleted: false,
+      subscriptionStatus: "active",
+      emailVerified: false,
       preferences: {
         emailNotifications: true,
         theme: "system",
       },
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      lastLoginAt: Date.now(),
     });
 
     return userId;
@@ -119,14 +126,14 @@ export const syncUserFromWorkOS = mutation({
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
+    avatar: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUserOrThrow(ctx);
 
     await ctx.db.patch(user._id, {
       name: args.name,
-      avatarUrl: args.avatarUrl,
+      avatar: args.avatar,
       updatedAt: Date.now(),
     });
 
@@ -168,26 +175,13 @@ export const updatePreferences = mutation({
 });
 
 // Mutation: Complete onboarding
-export const completeOnboarding = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const user = await getCurrentUserOrThrow(ctx);
-
-    await ctx.db.patch(user._id, {
-      onboardingCompleted: true,
-      updatedAt: Date.now(),
-    });
-
-    return user._id;
-  },
-});
 
 // Mutation: Update subscription tier
 export const updateSubscriptionTier = mutation({
   args: {
     tier: v.union(
       v.literal("free"),
-      v.literal("basic"),
+      v.literal("starter"),
       v.literal("pro"),
       v.literal("enterprise"),
     ),
@@ -224,18 +218,24 @@ export const getCreditBalance = query({
     let totalCredits = user.credits;
 
     // Add organization credits if user belongs to one
-    if (user.organizationId) {
-      const organization = await ctx.db.get(user.organizationId);
+    const membership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
+
+    let organizationCredits = 0;
+    if (membership) {
+      const organization = await ctx.db.get(membership.organizationId);
       if (organization) {
-        totalCredits += organization.credits;
+        organizationCredits = organization.credits;
+        totalCredits += organizationCredits;
       }
     }
 
     return {
       personalCredits: user.credits,
-      organizationCredits: user.organizationId
-        ? totalCredits - user.credits
-        : 0,
+      organizationCredits,
       totalCredits,
     };
   },
@@ -307,17 +307,20 @@ export const getUserStats = query({
     // Count projects
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
     const publishedProjects = projects.filter((p) => p.status === "published");
     const draftProjects = projects.filter((p) => p.status === "draft");
 
-    // Count total questions
-    let totalQuestions = 0;
-    for (const project of projects) {
-      totalQuestions += project.totalQuestions;
-    }
+    // Count total questions across all projects
+    const allQuestions = await ctx.db
+      .query("questions")
+      .filter((q) => {
+        const projectIds = projects.map((p) => p._id);
+        return projectIds.some((id) => q.eq(q.field("projectId"), id));
+      })
+      .collect();
 
     // Count submissions across all projects
     const submissions = await ctx.db
@@ -328,13 +331,13 @@ export const getUserStats = query({
       })
       .collect();
 
-    const gradedSubmissions = submissions.filter((s) => s.status === "graded");
+    const gradedSubmissions = submissions.filter((s) => s.status === "marked");
 
     return {
       totalProjects: projects.length,
       publishedProjects: publishedProjects.length,
       draftProjects: draftProjects.length,
-      totalQuestions,
+      totalQuestions: allQuestions.length,
       totalSubmissions: submissions.length,
       gradedSubmissions: gradedSubmissions.length,
       credits: user.credits,

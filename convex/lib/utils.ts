@@ -12,11 +12,11 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
     return null;
   }
 
-  // Look up user by workosId
+  // Look up user by workosUserId
   const user = await ctx.db
     .query("users")
-    .withIndex("by_workosId", (q) =>
-      q.eq("workosId", identity.subject as string),
+    .withIndex("by_workosUserId", (q) =>
+      q.eq("workosUserId", identity.subject as string),
     )
     .first();
 
@@ -44,7 +44,7 @@ export async function checkProjectOwnership(
   }
 
   // Check if user is owner
-  if (project.ownerId === userId) {
+  if (project.userId === userId) {
     return true;
   }
 
@@ -55,8 +55,12 @@ export async function checkProjectOwnership(
 
   // Check if user is in the same organization
   if (project.organizationId) {
-    const user = await ctx.db.get(userId);
-    if (user?.organizationId === project.organizationId) {
+    const membership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("organizationId"), project.organizationId))
+      .first();
+    if (membership && membership.status === "active") {
       return true;
     }
   }
@@ -140,11 +144,11 @@ export function didPass(percentage: number, passingScore?: number): boolean {
 
 // Get subscription tier credits allocation
 export function getTierCredits(
-  tier: "free" | "basic" | "pro" | "enterprise",
+  tier: "free" | "starter" | "pro" | "enterprise",
 ): number {
   const credits = {
     free: 10,
-    basic: 100,
+    starter: 100,
     pro: 500,
     enterprise: 2000,
   };
@@ -153,12 +157,12 @@ export function getTierCredits(
 
 // Check if user has access to a feature based on tier
 export function hasFeatureAccess(
-  userTier: "free" | "basic" | "pro" | "enterprise",
-  requiredTier: "free" | "basic" | "pro" | "enterprise",
+  userTier: "free" | "starter" | "pro" | "enterprise",
+  requiredTier: "free" | "starter" | "pro" | "enterprise",
 ): boolean {
   const tierHierarchy = {
     free: 0,
-    basic: 1,
+    starter: 1,
     pro: 2,
     enterprise: 3,
   };
@@ -182,16 +186,15 @@ export async function createNotification(
   params: {
     userId: Id<"users">;
     type:
-      | "submission_received"
-      | "grading_complete"
+      | "submission"
+      | "marking_complete"
+      | "grade_released"
+      | "deadline_reminder"
       | "credit_low"
-      | "subscription_expiring"
-      | "collaboration_invite"
-      | "system";
+      | "plan_upgrade";
     title: string;
     message: string;
-    actionUrl?: string;
-    metadata?: any;
+    link?: string;
   },
 ): Promise<Id<"notifications">> {
   return await ctx.db.insert("notifications", {
@@ -199,9 +202,8 @@ export async function createNotification(
     type: params.type,
     title: params.title,
     message: params.message,
-    actionUrl: params.actionUrl,
+    link: params.link,
     read: false,
-    metadata: params.metadata,
     createdAt: Date.now(),
   });
 }
@@ -212,24 +214,16 @@ export async function trackAnalyticsEvent(
   params: {
     userId?: Id<"users">;
     eventType: string;
-    eventData: any;
+    metadata: any;
     projectId?: Id<"projects">;
-    submissionId?: Id<"submissions">;
-    sessionId?: string;
-    ipAddress?: string;
-    userAgent?: string;
   },
 ): Promise<Id<"analyticsEvents">> {
   return await ctx.db.insert("analyticsEvents", {
     userId: params.userId,
     eventType: params.eventType,
-    eventData: params.eventData,
+    metadata: params.metadata,
     projectId: params.projectId,
-    submissionId: params.submissionId,
-    sessionId: params.sessionId,
-    ipAddress: params.ipAddress,
-    userAgent: params.userAgent,
-    createdAt: Date.now(),
+    timestamp: Date.now(),
   });
 }
 
@@ -246,8 +240,14 @@ export async function getTotalAvailableCredits(
   let totalCredits = user.credits;
 
   // Add organization credits if user belongs to one
-  if (user.organizationId) {
-    const organization = await ctx.db.get(user.organizationId);
+  const membership = await ctx.db
+    .query("organizationMembers")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("status"), "active"))
+    .first();
+
+  if (membership) {
+    const organization = await ctx.db.get(membership.organizationId);
     if (organization) {
       totalCredits += organization.credits;
     }

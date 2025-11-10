@@ -81,223 +81,223 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ---
 
-## 📊 Database Schema (Convex)
+## 📊 Database Schema (Convex) ✅ COMPLETE
 
-### User & Authentication Schema
-- [ ] Create `convex/schema.ts` with Convex schema builder
-- [ ] Define `users` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `email` - string, unique, indexed
-  - [ ] `name` - string
-  - [ ] `avatar` - optional string (URL)
-  - [ ] `role` - enum: "teacher", "student", "admin"
-  - [ ] `credits` - number (default 500)
-  - [ ] `workosUserId` - string (WorkOS user ID)
-  - [ ] `workosOrganizationId` - optional string (for SSO users)
-  - [ ] `stripeCustomerId` - optional string
-  - [ ] `autumnCustomerId` - optional string
-  - [ ] `createdAt` - number (timestamp)
-  - [ ] `updatedAt` - number (timestamp)
-  - [ ] `lastLoginAt` - number (timestamp)
-  - [ ] `preferences` - object with UI preferences
-  - [ ] `emailVerified` - boolean
+### User & Authentication Schema ✅ COMPLETE
+- [x] Create `convex/schema.ts` with Convex schema builder
+- [x] Define `users` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `email` - string, unique, indexed
+  - [x] `name` - string
+  - [x] `avatar` - optional string (URL)
+  - [x] `role` - enum: "teacher", "student", "admin"
+  - [x] `credits` - number (default 500)
+  - [x] `workosUserId` - string (WorkOS user ID)
+  - [x] `workosOrganizationId` - optional string (for SSO users)
+  - [x] `stripeCustomerId` - optional string
+  - [x] `autumnCustomerId` - optional string
+  - [x] `createdAt` - number (timestamp)
+  - [x] `updatedAt` - number (timestamp)
+  - [x] `lastLoginAt` - number (timestamp)
+  - [x] `preferences` - object with UI preferences
+  - [x] `emailVerified` - boolean
 
-### Projects Schema
-- [ ] Define `projects` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `userId` - reference to users table, indexed
-  - [ ] `name` - string
-  - [ ] `description` - optional string
-  - [ ] `type` - enum: "test", "essay", "survey"
-  - [ ] `status` - enum: "draft", "published", "archived"
-  - [ ] `thumbnail` - optional string (URL)
-  - [ ] `createdAt` - number (timestamp)
-  - [ ] `updatedAt` - number (timestamp)
-  - [ ] `publishedAt` - optional number (timestamp)
-  - [ ] `archivedAt` - optional number (timestamp)
-  - [ ] `settings` - object containing:
-    - [ ] `duration` - optional number (minutes)
-    - [ ] `maxAttempts` - number (default 1)
-    - [ ] `passingGrade` - number (percentage, default 60)
-    - [ ] `requireAuth` - boolean
-    - [ ] `requireEmailVerification` - boolean
-    - [ ] `passwordProtected` - boolean
-    - [ ] `password` - optional string (hashed)
-    - [ ] `disableCopyPaste` - boolean
-    - [ ] `fullScreenRequired` - boolean
-    - [ ] `blockTabSwitching` - boolean
-    - [ ] `autoGrade` - boolean (default true)
-    - [ ] `enableAIMarking` - boolean
-    - [ ] `instantFeedback` - boolean
-    - [ ] `showAnswerKey` - boolean
-    - [ ] `showExplanations` - boolean
-    - [ ] `notifyTeacherOnSubmission` - boolean
-    - [ ] `notifyTeacherDailySummary` - boolean
-    - [ ] `notifyTeacherWhenMarked` - boolean
-    - [ ] `notifyStudentOnSubmission` - boolean
-    - [ ] `notifyStudentOnGradeRelease` - boolean
-    - [ ] `notifyStudentDeadlineReminders` - boolean
-  - [ ] `totalMarks` - number
-  - [ ] `submissionCount` - number (default 0)
-  - [ ] `averageGrade` - optional number
-  - [ ] `viewCount` - number (default 0)
+### Projects Schema ✅ COMPLETE
+- [x] Define `projects` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `userId` - reference to users table, indexed
+  - [x] `name` - string
+  - [x] `description` - optional string
+  - [x] `type` - enum: "test", "essay", "survey"
+  - [x] `status` - enum: "draft", "published", "archived"
+  - [x] `thumbnail` - optional string (URL)
+  - [x] `createdAt` - number (timestamp)
+  - [x] `updatedAt` - number (timestamp)
+  - [x] `publishedAt` - optional number (timestamp)
+  - [x] `archivedAt` - optional number (timestamp)
+  - [x] `settings` - object containing:
+    - [x] `duration` - optional number (minutes)
+    - [x] `maxAttempts` - number (default 1)
+    - [x] `passingGrade` - number (percentage, default 60)
+    - [x] `requireAuth` - boolean
+    - [x] `requireEmailVerification` - boolean
+    - [x] `passwordProtected` - boolean
+    - [x] `password` - optional string (hashed)
+    - [x] `disableCopyPaste` - boolean
+    - [x] `fullScreenRequired` - boolean
+    - [x] `blockTabSwitching` - boolean
+    - [x] `autoGrade` - boolean (default true)
+    - [x] `enableAIMarking` - boolean
+    - [x] `instantFeedback` - boolean
+    - [x] `showAnswerKey` - boolean
+    - [x] `showExplanations` - boolean
+    - [x] `notifyTeacherOnSubmission` - boolean
+    - [x] `notifyTeacherDailySummary` - boolean
+    - [x] `notifyTeacherWhenMarked` - boolean
+    - [x] `notifyStudentOnSubmission` - boolean
+    - [x] `notifyStudentOnGradeRelease` - boolean
+    - [x] `notifyStudentDeadlineReminders` - boolean
+  - [x] `totalMarks` - number
+  - [x] `submissionCount` - number (default 0)
+  - [x] `averageGrade` - optional number
+  - [x] `viewCount` - number (default 0)
 
-### Questions Schema
-- [ ] Define `questions` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `projectId` - reference to projects table, indexed
-  - [ ] `order` - number (for sorting)
-  - [ ] `type` - enum: "multiple-choice", "multiple-select", "short-text", "long-text", "rich-text", "dropdown", "image-choice", "file-upload", "image-upload", "rating-scale", "linear-scale", "matrix", "section-header", "page-break", "info-block"
-  - [ ] `questionText` - string
-  - [ ] `description` - optional string (additional instructions)
-  - [ ] `imageUrl` - optional string
-  - [ ] `videoUrl` - optional string
-  - [ ] `points` - number
-  - [ ] `required` - boolean (default true)
-  - [ ] `options` - optional array of objects:
-    - [ ] `text` - string
-    - [ ] `imageUrl` - optional string
-    - [ ] `isCorrect` - boolean (for graded questions)
-  - [ ] `correctAnswers` - optional array (for multiple-select, checkboxes)
-  - [ ] `correctAnswer` - optional string/number (for single answer)
-  - [ ] `modelAnswer` - optional string (for AI grading reference)
-  - [ ] `rubric` - optional array of objects (grading criteria):
-    - [ ] `criterion` - string
-    - [ ] `points` - number
-    - [ ] `description` - string
-  - [ ] `explanation` - optional string (shown after submission)
-  - [ ] `randomizeOptions` - boolean
-  - [ ] `allowOther` - boolean (for choice questions)
-  - [ ] `minLength` - optional number (for text responses)
-  - [ ] `maxLength` - optional number (for text responses)
-  - [ ] `fileTypes` - optional array of strings (for file uploads)
-  - [ ] `maxFileSize` - optional number (MB, for file uploads)
-  - [ ] `scaleMin` - optional number (for rating/linear scale)
-  - [ ] `scaleMax` - optional number (for rating/linear scale)
-  - [ ] `scaleMinLabel` - optional string
-  - [ ] `scaleMaxLabel` - optional string
-  - [ ] `matrixRows` - optional array of strings
-  - [ ] `matrixColumns` - optional array of strings
-  - [ ] `createdAt` - number (timestamp)
-  - [ ] `updatedAt` - number (timestamp)
-  - [ ] `generatedByAI` - boolean (track AI-generated questions)
+### Questions Schema ✅ COMPLETE
+- [x] Define `questions` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `projectId` - reference to projects table, indexed
+  - [x] `order` - number (for sorting)
+  - [x] `type` - enum: "multiple-choice", "multiple-select", "short-text", "long-text", "rich-text", "dropdown", "image-choice", "file-upload", "image-upload", "rating-scale", "linear-scale", "matrix", "section-header", "page-break", "info-block"
+  - [x] `questionText` - string
+  - [x] `description` - optional string (additional instructions)
+  - [x] `imageUrl` - optional string
+  - [x] `videoUrl` - optional string
+  - [x] `points` - number
+  - [x] `required` - boolean (default true)
+  - [x] `options` - optional array of objects:
+    - [x] `text` - string
+    - [x] `imageUrl` - optional string
+    - [x] `isCorrect` - boolean (for graded questions)
+  - [x] `correctAnswers` - optional array (for multiple-select, checkboxes)
+  - [x] `correctAnswer` - optional string/number (for single answer)
+  - [x] `modelAnswer` - optional string (for AI grading reference)
+  - [x] `rubric` - optional array of objects (grading criteria):
+    - [x] `criterion` - string
+    - [x] `points` - number
+    - [x] `description` - string
+  - [x] `explanation` - optional string (shown after submission)
+  - [x] `randomizeOptions` - boolean
+  - [x] `allowOther` - boolean (for choice questions)
+  - [x] `minLength` - optional number (for text responses)
+  - [x] `maxLength` - optional number (for text responses)
+  - [x] `fileTypes` - optional array of strings (for file uploads)
+  - [x] `maxFileSize` - optional number (MB, for file uploads)
+  - [x] `scaleMin` - optional number (for rating/linear scale)
+  - [x] `scaleMax` - optional number (for rating/linear scale)
+  - [x] `scaleMinLabel` - optional string
+  - [x] `scaleMaxLabel` - optional string
+  - [x] `matrixRows` - optional array of strings
+  - [x] `matrixColumns` - optional array of strings
+  - [x] `createdAt` - number (timestamp)
+  - [x] `updatedAt` - number (timestamp)
+  - [x] `generatedByAI` - boolean (track AI-generated questions)
 
-### Submissions Schema
-- [ ] Define `submissions` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `projectId` - reference to projects table, indexed
-  - [ ] `studentId` - optional reference to users table, indexed
-  - [ ] `studentName` - string
-  - [ ] `studentEmail` - string, indexed
-  - [ ] `attemptNumber` - number
-  - [ ] `status` - enum: "in-progress", "submitted", "marked", "returned"
-  - [ ] `submittedAt` - optional number (timestamp)
-  - [ ] `markedAt` - optional number (timestamp)
-  - [ ] `returnedAt` - optional number (timestamp)
-  - [ ] `startedAt` - number (timestamp)
-  - [ ] `timeSpent` - number (seconds)
-  - [ ] `ipAddress` - optional string (anonymized)
-  - [ ] `userAgent` - optional string
-  - [ ] `flagged` - boolean (for suspicious activity)
-  - [ ] `flagReason` - optional string
-  - [ ] `tabSwitches` - number (default 0)
-  - [ ] `copyPasteAttempts` - number (default 0)
-  - [ ] `totalMarks` - number
-  - [ ] `awardedMarks` - number (default 0)
-  - [ ] `percentage` - number (calculated)
-  - [ ] `grade` - optional string (letter grade)
-  - [ ] `feedback` - optional string (teacher's overall feedback)
-  - [ ] `markedBy` - optional reference to users table
-  - [ ] `autoGraded` - boolean
-  - [ ] `aiGraded` - boolean
-  - [ ] `createdAt` - number (timestamp)
-  - [ ] `updatedAt` - number (timestamp)
+### Submissions Schema ✅ COMPLETE
+- [x] Define `submissions` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `projectId` - reference to projects table, indexed
+  - [x] `studentId` - optional reference to users table, indexed
+  - [x] `studentName` - string
+  - [x] `studentEmail` - string, indexed
+  - [x] `attemptNumber` - number
+  - [x] `status` - enum: "in-progress", "submitted", "marked", "returned"
+  - [x] `submittedAt` - optional number (timestamp)
+  - [x] `markedAt` - optional number (timestamp)
+  - [x] `returnedAt` - optional number (timestamp)
+  - [x] `startedAt` - number (timestamp)
+  - [x] `timeSpent` - number (seconds)
+  - [x] `ipAddress` - optional string (anonymized)
+  - [x] `userAgent` - optional string
+  - [x] `flagged` - boolean (for suspicious activity)
+  - [x] `flagReason` - optional string
+  - [x] `tabSwitches` - number (default 0)
+  - [x] `copyPasteAttempts` - number (default 0)
+  - [x] `totalMarks` - number
+  - [x] `awardedMarks` - number (default 0)
+  - [x] `percentage` - number (calculated)
+  - [x] `grade` - optional string (letter grade)
+  - [x] `feedback` - optional string (teacher's overall feedback)
+  - [x] `markedBy` - optional reference to users table
+  - [x] `autoGraded` - boolean
+  - [x] `aiGraded` - boolean
+  - [x] `createdAt` - number (timestamp)
+  - [x] `updatedAt` - number (timestamp)
 
-### Answers Schema
-- [ ] Define `answers` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `submissionId` - reference to submissions table, indexed
-  - [ ] `questionId` - reference to questions table, indexed
-  - [ ] `answerType` - enum matching question types
-  - [ ] `textAnswer` - optional string
-  - [ ] `selectedOption` - optional number/string (single choice)
-  - [ ] `selectedOptions` - optional array (multiple choice)
-  - [ ] `fileUrl` - optional string (for uploads)
-  - [ ] `fileName` - optional string
-  - [ ] `fileSize` - optional number
-  - [ ] `scaleValue` - optional number
-  - [ ] `matrixAnswers` - optional object (row -> column mapping)
-  - [ ] `isCorrect` - optional boolean (auto-graded)
-  - [ ] `pointsAwarded` - number (default 0)
-  - [ ] `pointsPossible` - number
-  - [ ] `feedback` - optional string (per-question feedback)
-  - [ ] `aiEvaluation` - optional object:
-    - [ ] `score` - number
-    - [ ] `reasoning` - string
-    - [ ] `suggestions` - array of strings
-    - [ ] `confidence` - number (0-1)
-  - [ ] `markedAt` - optional number (timestamp)
-  - [ ] `createdAt` - number (timestamp)
-  - [ ] `updatedAt` - number (timestamp)
+### Answers Schema ✅ COMPLETE
+- [x] Define `answers` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `submissionId` - reference to submissions table, indexed
+  - [x] `questionId` - reference to questions table, indexed
+  - [x] `answerType` - enum matching question types
+  - [x] `textAnswer` - optional string
+  - [x] `selectedOption` - optional number/string (single choice)
+  - [x] `selectedOptions` - optional array (multiple choice)
+  - [x] `fileUrl` - optional string (for uploads)
+  - [x] `fileName` - optional string
+  - [x] `fileSize` - optional number
+  - [x] `scaleValue` - optional number
+  - [x] `matrixAnswers` - optional object (row -> column mapping)
+  - [x] `isCorrect` - optional boolean (auto-graded)
+  - [x] `pointsAwarded` - number (default 0)
+  - [x] `pointsPossible` - number
+  - [x] `feedback` - optional string (per-question feedback)
+  - [x] `aiEvaluation` - optional object:
+    - [x] `score` - number
+    - [x] `reasoning` - string
+    - [x] `suggestions` - array of strings
+    - [x] `confidence` - number (0-1)
+  - [x] `markedAt` - optional number (timestamp)
+  - [x] `createdAt` - number (timestamp)
+  - [x] `updatedAt` - number (timestamp)
 
-### Organizations Schema (for multi-teacher accounts)
-- [ ] Define `organizations` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `name` - string
-  - [ ] `slug` - string, unique, indexed
-  - [ ] `ownerId` - reference to users table
-  - [ ] `plan` - enum: "free", "starter", "pro", "enterprise"
-  - [ ] `autumnOrganizationId` - optional string
-  - [ ] `credits` - number (shared pool)
-  - [ ] `settings` - object
-  - [ ] `createdAt` - number (timestamp)
-  - [ ] `updatedAt` - number (timestamp)
+### Organizations Schema (for multi-teacher accounts) ✅ COMPLETE
+- [x] Define `organizations` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `name` - string
+  - [x] `slug` - string, unique, indexed
+  - [x] `ownerId` - reference to users table
+  - [x] `plan` - enum: "free", "starter", "pro", "enterprise"
+  - [x] `autumnOrganizationId` - optional string
+  - [x] `credits` - number (shared pool)
+  - [x] `settings` - object
+  - [x] `createdAt` - number (timestamp)
+  - [x] `updatedAt` - number (timestamp)
 
-- [ ] Define `organizationMembers` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `organizationId` - reference to organizations table, indexed
-  - [ ] `userId` - reference to users table, indexed
-  - [ ] `role` - enum: "owner", "admin", "member"
-  - [ ] `invitedBy` - optional reference to users table
-  - [ ] `invitedAt` - number (timestamp)
-  - [ ] `joinedAt` - optional number (timestamp)
-  - [ ] `status` - enum: "invited", "active", "inactive"
+- [x] Define `organizationMembers` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `organizationId` - reference to organizations table, indexed
+  - [x] `userId` - reference to users table, indexed
+  - [x] `role` - enum: "owner", "admin", "member"
+  - [x] `invitedBy` - optional reference to users table
+  - [x] `invitedAt` - number (timestamp)
+  - [x] `joinedAt` - optional number (timestamp)
+  - [x] `status` - enum: "invited", "active", "inactive"
 
-### AI Generation History Schema
-- [ ] Define `aiGenerations` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `userId` - reference to users table, indexed
-  - [ ] `projectId` - optional reference to projects table
-  - [ ] `type` - enum: "questions", "distractors", "explanations", "grading"
-  - [ ] `prompt` - string
-  - [ ] `result` - string/object
-  - [ ] `model` - string (e.g., "gpt-4", "gpt-3.5-turbo")
-  - [ ] `tokensUsed` - number
-  - [ ] `creditsDeducted` - number
-  - [ ] `success` - boolean
-  - [ ] `error` - optional string
-  - [ ] `createdAt` - number (timestamp)
+### AI Generation History Schema ✅ COMPLETE
+- [x] Define `aiGenerations` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `userId` - reference to users table, indexed
+  - [x] `projectId` - optional reference to projects table
+  - [x] `type` - enum: "questions", "distractors", "explanations", "grading"
+  - [x] `prompt` - string
+  - [x] `result` - string/object
+  - [x] `model` - string (e.g., "gpt-4", "gpt-3.5-turbo")
+  - [x] `tokensUsed` - number
+  - [x] `creditsDeducted` - number
+  - [x] `success` - boolean
+  - [x] `error` - optional string
+  - [x] `createdAt` - number (timestamp)
 
-### Analytics Events Schema
-- [ ] Define `analyticsEvents` table (for internal tracking):
-  - [ ] `_id` - Convex auto ID
-  - [ ] `eventType` - string
-  - [ ] `userId` - optional reference to users table, indexed
-  - [ ] `projectId` - optional reference to projects table, indexed
-  - [ ] `metadata` - object (flexible data)
-  - [ ] `timestamp` - number
+### Analytics Events Schema ✅ COMPLETE
+- [x] Define `analyticsEvents` table (for internal tracking):
+  - [x] `_id` - Convex auto ID
+  - [x] `eventType` - string
+  - [x] `userId` - optional reference to users table, indexed
+  - [x] `projectId` - optional reference to projects table, indexed
+  - [x] `metadata` - object (flexible data)
+  - [x] `timestamp` - number
 
-### Notifications Schema
-- [ ] Define `notifications` table:
-  - [ ] `_id` - Convex auto ID
-  - [ ] `userId` - reference to users table, indexed
-  - [ ] `type` - enum: "submission", "marking_complete", "grade_released", "deadline_reminder", "credit_low", "plan_upgrade"
-  - [ ] `title` - string
-  - [ ] `message` - string
-  - [ ] `link` - optional string
-  - [ ] `read` - boolean (default false)
-  - [ ] `readAt` - optional number (timestamp)
-  - [ ] `createdAt` - number (timestamp)
+### Notifications Schema ✅ COMPLETE
+- [x] Define `notifications` table:
+  - [x] `_id` - Convex auto ID
+  - [x] `userId` - reference to users table, indexed
+  - [x] `type` - enum: "submission", "marking_complete", "grade_released", "deadline_reminder", "credit_low", "plan_upgrade"
+  - [x] `title` - string
+  - [x] `message` - string
+  - [x] `link` - optional string
+  - [x] `read` - boolean (default false)
+  - [x] `readAt` - optional number (timestamp)
+  - [x] `createdAt` - number (timestamp)
 
 ---
 

@@ -68,9 +68,9 @@ export const handleSubscriptionChange = mutation({
     }
 
     // Map plan name to tier
-    let tier: "free" | "basic" | "pro" | "enterprise" = "free";
+    let tier: "free" | "starter" | "pro" | "enterprise" = "free";
     if (args.planName === "starter") {
-      tier = "basic";
+      tier = "starter";
     } else if (args.planName === "pro") {
       tier = "pro";
     } else if (args.planName === "enterprise") {
@@ -218,7 +218,7 @@ export const checkFeatureAccess = query({
     // Check tier-based access
     const tierAccess: Record<string, string[]> = {
       free: [],
-      basic: ["ai_generation"],
+      starter: ["ai_generation"],
       pro: ["ai_generation", "ai_grading", "advanced_analytics"],
       enterprise: [
         "ai_generation",
@@ -321,13 +321,13 @@ export const getCreditUsageStats = query({
 
     // Get all AI generation history for this user
     const aiHistory = await ctx.db
-      .query("aiGenerationHistory")
+      .query("aiGenerations")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .collect();
 
     const totalCreditsUsed = aiHistory.reduce(
-      (sum, item) => sum + item.creditsUsed,
-      0
+      (sum, item) => sum + item.creditsDeducted,
+      0,
     );
 
     // Get credit transactions
@@ -347,10 +347,10 @@ export const getCreditUsageStats = query({
       totalPurchased: totalCreditsPurchased,
       usageByType: aiHistory.reduce(
         (acc, item) => {
-          acc[item.type] = (acc[item.type] || 0) + item.creditsUsed;
+          acc[item.type] = (acc[item.type] || 0) + item.creditsDeducted;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       ),
     };
   },
