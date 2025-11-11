@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ConvexProvider } from "@/components/providers/convex-provider";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AnalyticsProvider } from "@/components/providers/analytics-provider";
@@ -33,6 +34,7 @@ export default function RootLayout({
               <AnalyticsProvider>
                 {children}
                 <Toaster />
+                <Sonner />
                 <Analytics />
               </AnalyticsProvider>
             </AuthProvider>

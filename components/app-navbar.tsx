@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Coins, User, Settings, LogOut, CreditCard } from "lucide-react";
+import { Coins, User, Settings, LogOut, CreditCard } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "convex/react";
@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
 export function AppNavbar() {
   const router = useRouter();
@@ -107,10 +108,7 @@ export function AppNavbar() {
             </div>
           </Link>
 
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-          </Button>
+          {currentUser && <NotificationsDropdown userId={currentUser._id} />}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

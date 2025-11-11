@@ -248,11 +248,10 @@ export const grantWelcomeBonus = mutation({
       success: true,
       creditsGranted: 0,
       newBalance: user.credits,
-      message: "Welcome! Purchase credits to unlock AI features."
+      message: "Welcome! Purchase credits to unlock AI features.",
     };
   },
 });
-</parameter>
 
 /**
  * Get credit balance for current user
