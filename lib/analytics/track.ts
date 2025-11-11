@@ -7,25 +7,67 @@
 
 // Event types for tracking
 export type AnalyticsEvent =
+  // Page views
   | "page_view"
+  | "landing_page_view"
+  | "pricing_page_view"
+  | "dashboard_view"
+
+  // Landing page interactions
+  | "get_started_clicked"
+  | "watch_demo_clicked"
+  | "feature_card_clicked"
+
+  // Authentication events
+  | "signup_started"
+  | "signup_completed"
+  | "signin_completed"
+  | "signout"
+
+  // Project lifecycle
   | "project_created"
+  | "project_opened"
   | "project_published"
+  | "project_archived"
   | "project_deleted"
+  | "share_link_copied"
+  | "qr_code_generated"
+
+  // Question events
   | "question_created"
   | "question_edited"
   | "question_deleted"
+
+  // AI features
   | "ai_generation_requested"
   | "ai_generation_completed"
+  | "ai_grading_used"
+
+  // Test taking
   | "test_started"
+  | "test_question_answered"
+  | "test_question_flagged"
   | "test_submitted"
-  | "test_graded"
-  | "submission_viewed"
-  | "user_signed_up"
-  | "user_signed_in"
-  | "subscription_upgraded"
+  | "test_navigation"
+
+  // Marking events
+  | "marking_page_opened"
+  | "submission_marked"
+  | "feedback_sent"
+  | "grades_exported"
+
+  // Billing events
+  | "plan_card_clicked"
+  | "checkout_initiated"
+  | "payment_completed"
+  | "payment_failed"
+  | "subscription_cancelled"
   | "credits_purchased"
+
+  // Other
   | "template_used"
-  | "question_bank_item_added";
+  | "question_bank_item_added"
+  | "submission_viewed";
 
 export interface AnalyticsEventData {
   [key: string]: string | number | boolean | undefined;
@@ -34,7 +76,7 @@ export interface AnalyticsEventData {
 // Track event with Databuddy
 export function trackEvent(
   eventName: AnalyticsEvent,
-  eventData?: AnalyticsEventData
+  eventData?: AnalyticsEventData,
 ) {
   try {
     // Track with Databuddy if available
@@ -136,7 +178,7 @@ export const aiAnalytics = {
   generationRequested: (
     operationType: string,
     credits: number,
-    params?: Record<string, any>
+    params?: Record<string, any>,
   ) => {
     trackEvent("ai_generation_requested", {
       operationType,
@@ -148,7 +190,7 @@ export const aiAnalytics = {
   generationCompleted: (
     operationType: string,
     success: boolean,
-    tokensUsed?: number
+    tokensUsed?: number,
   ) => {
     trackEvent("ai_generation_completed", {
       operationType,
@@ -171,7 +213,7 @@ export const testAnalytics = {
     submissionId: string,
     projectId: string,
     timeSpent: number,
-    score?: number
+    score?: number,
   ) => {
     trackEvent("test_submitted", {
       submissionId,
@@ -248,6 +290,159 @@ export const libraryAnalytics = {
     });
   },
 };
+
+// Landing page analytics
+export const landingPageAnalytics = {
+  getStartedClicked: (location: string) => {
+    trackEvent("get_started_clicked", { location });
+  },
+
+  watchDemoClicked: () => {
+    trackEvent("watch_demo_clicked", {});
+  },
+
+  featureCardClicked: (featureName: string) => {
+    trackEvent("feature_card_clicked", { featureName });
+  },
+};
+
+// Authentication analytics
+export const authAnalytics = {
+  signupStarted: (method: string) => {
+    trackEvent("signup_started", { method });
+  },
+
+  signupCompleted: (userId: string, method: string) => {
+    trackEvent("signup_completed", { userId, method });
+    identifyUser(userId, { signupMethod: method });
+  },
+
+  signinCompleted: (userId: string, method: string) => {
+    trackEvent("signin_completed", { userId, method });
+  },
+
+  signout: (userId: string) => {
+    trackEvent("signout", { userId });
+  },
+};
+
+// Enhanced project analytics
+export const enhancedProjectAnalytics = {
+  opened: (projectId: string, projectType: string) => {
+    trackEvent("project_opened", { projectId, projectType });
+  },
+
+  archived: (projectId: string) => {
+    trackEvent("project_archived", { projectId });
+  },
+
+  shareLinkCopied: (projectId: string) => {
+    trackEvent("share_link_copied", { projectId });
+  },
+
+  qrCodeGenerated: (projectId: string) => {
+    trackEvent("qr_code_generated", { projectId });
+  },
+};
+
+// Test taking analytics
+export const testTakingAnalytics = {
+  questionAnswered: (
+    submissionId: string,
+    questionId: string,
+    timeSpent: number,
+  ) => {
+    trackEvent("test_question_answered", {
+      submissionId,
+      questionId,
+      timeSpent,
+    });
+  },
+
+  questionFlagged: (submissionId: string, questionId: string) => {
+    trackEvent("test_question_flagged", { submissionId, questionId });
+  },
+
+  navigation: (
+    submissionId: string,
+    fromQuestion: number,
+    toQuestion: number,
+  ) => {
+    trackEvent("test_navigation", {
+      submissionId,
+      fromQuestion,
+      toQuestion,
+    });
+  },
+};
+
+// Marking analytics
+export const markingAnalytics = {
+  pageOpened: (projectId: string, submissionCount: number) => {
+    trackEvent("marking_page_opened", { projectId, submissionCount });
+  },
+
+  submissionMarked: (
+    submissionId: string,
+    projectId: string,
+    timeSpent: number,
+  ) => {
+    trackEvent("submission_marked", { submissionId, projectId, timeSpent });
+  },
+
+  aiGradingUsed: (submissionId: string, questionCount: number) => {
+    trackEvent("ai_grading_used", { submissionId, questionCount });
+  },
+
+  feedbackSent: (submissionId: string) => {
+    trackEvent("feedback_sent", { submissionId });
+  },
+
+  gradesExported: (projectId: string, format: string, count: number) => {
+    trackEvent("grades_exported", { projectId, format, count });
+  },
+};
+
+// Enhanced billing analytics
+export const enhancedBillingAnalytics = {
+  pricingPageViewed: () => {
+    trackEvent("pricing_page_view", {});
+  },
+
+  planCardClicked: (planName: string, price: number) => {
+    trackEvent("plan_card_clicked", { planName, price });
+  },
+
+  checkoutInitiated: (productId: string, amount: number) => {
+    trackEvent("checkout_initiated", { productId, amount });
+  },
+
+  paymentCompleted: (userId: string, amount: number, credits: number) => {
+    trackEvent("payment_completed", { userId, amount, credits });
+  },
+
+  paymentFailed: (userId: string, amount: number, reason?: string) => {
+    trackEvent("payment_failed", { userId, amount, reason });
+  },
+
+  subscriptionCancelled: (userId: string, planName: string) => {
+    trackEvent("subscription_cancelled", { userId, planName });
+  },
+};
+
+// Track time spent on a page/activity
+export function trackTimeSpent(
+  activityName: string,
+  startTime: number,
+  metadata?: Record<string, any>,
+) {
+  const timeSpent = Date.now() - startTime;
+  trackEvent("page_view", {
+    activity: activityName,
+    timeSpent,
+    ...metadata,
+  });
+}
 
 // Initialize Databuddy on client-side
 export function initializeDatabuddy() {

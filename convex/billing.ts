@@ -230,6 +230,7 @@ export const getCreditUsageStats = query({
 
 /**
  * Grant welcome bonus credits to new user
+ * NOTE: Free plan users do not receive AI credits. They must purchase credits to use AI features.
  */
 export const grantWelcomeBonus = mutation({
   args: {
@@ -241,42 +242,17 @@ export const grantWelcomeBonus = mutation({
       throw new Error("User not found");
     }
 
-    // Check if user already received welcome bonus
-    const existingBonus = await ctx.db
-      .query("billingTransactions")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("description"), "Welcome bonus"))
-      .first();
-
-    if (existingBonus) {
-      return { success: false, reason: "Welcome bonus already granted" };
-    }
-
-    const welcomeBonus = 50; // $5 worth of credits
-    const newBalance = user.credits + welcomeBonus;
-
-    await ctx.db.patch(args.userId, {
-      credits: newBalance,
-      updatedAt: Date.now(),
-    });
-
-    // Record transaction
-    await ctx.db.insert("billingTransactions", {
-      userId: args.userId,
-      type: "credit_purchase",
-      amount: 0,
-      currency: "USD",
-      provider: "polar",
-      status: "succeeded",
-      description: "Welcome bonus",
-      creditsAdded: welcomeBonus,
-      metadata: { type: "welcome_bonus" },
-      createdAt: Date.now(),
-    });
-
-    return { success: true, creditsGranted: welcomeBonus, newBalance };
+    // Free plan users do not receive AI credits
+    // They start with 0 credits and must purchase to use AI features
+    return {
+      success: true,
+      creditsGranted: 0,
+      newBalance: user.credits,
+      message: "Welcome! Purchase credits to unlock AI features."
+    };
   },
 });
+</parameter>
 
 /**
  * Get credit balance for current user
