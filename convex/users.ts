@@ -96,16 +96,14 @@ export const syncUserFromClerk = mutation({
       return existingUser._id;
     }
 
-    // Create new user with free tier defaults
+    // Create new user with welcome bonus credits (50 credits = $5)
     const userId = await ctx.db.insert("users", {
       clerkUserId: args.clerkUserId,
       email: args.email,
       name: args.name,
       avatar: args.avatar,
       role: "teacher",
-      credits: getTierCredits("free"),
-      subscriptionTier: "free",
-      subscriptionStatus: "active",
+      credits: 50, // Welcome bonus: $5 worth of credits
       emailVerified: args.emailVerified ?? false,
       preferences: {
         emailNotifications: true,
@@ -172,31 +170,16 @@ export const updatePreferences = mutation({
   },
 });
 
-// Mutation: Complete onboarding
-
-// Mutation: Update subscription tier
-export const updateSubscriptionTier = mutation({
+// Mutation: Update Polar customer ID
+export const updatePolarCustomer = mutation({
   args: {
-    tier: v.union(
-      v.literal("free"),
-      v.literal("starter"),
-      v.literal("pro"),
-      v.literal("enterprise"),
-    ),
-    subscriptionStatus: v.optional(v.string()),
-    polarCustomerId: v.optional(v.string()),
+    polarCustomerId: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUserOrThrow(ctx);
 
-    // Add credits for the new tier (additive, not replacement)
-    const tierCredits = getTierCredits(args.tier);
-
     await ctx.db.patch(user._id, {
-      subscriptionTier: args.tier,
-      subscriptionStatus: args.subscriptionStatus,
       polarCustomerId: args.polarCustomerId,
-      credits: user.credits + tierCredits,
       updatedAt: Date.now(),
     });
 
@@ -339,7 +322,6 @@ export const getUserStats = query({
       totalSubmissions: submissions.length,
       gradedSubmissions: gradedSubmissions.length,
       credits: user.credits,
-      subscriptionTier: user.subscriptionTier,
     };
   },
 });

@@ -373,61 +373,35 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ---
 
-## 💳 Pricing & Billing (Polar)
+## 💳 Pricing & Billing (Polar) ✅ COMPLETE
 
-### Polar Pricing Configuration
-- [ ] Create Polar account at https://polar.sh
-- [ ] Set up organization in Polar dashboard
-- [ ] Define pricing plans (products) in Polar:
-  - [ ] **Free Plan**:
-    - [ ] 500 starting credits
-    - [ ] Max 3 active projects
-    - [ ] Max 50 submissions per project
-    - [ ] Basic analytics
-    - [ ] No AI features
-  - [ ] **Starter Plan** ($19/month):
-    - [ ] 2,000 credits/month
-    - [ ] Unlimited projects
-    - [ ] Unlimited submissions
-    - [ ] AI question generation (5 credits per question)
-    - [ ] AI distractor generation (3 credits per set)
-    - [ ] Basic AI grading
-    - [ ] Email support
-  - [ ] **Pro Plan** ($49/month):
-    - [ ] 5,000 credits/month
-    - [ ] Everything in Starter
-    - [ ] Advanced AI grading with explanations
-    - [ ] Custom branding
-    - [ ] Priority support
-    - [ ] Analytics export
-    - [ ] Team collaboration (up to 5 members)
-  - [ ] **Enterprise Plan** (Custom pricing):
-    - [ ] Custom credit allocation
-    - [ ] Everything in Pro
-    - [ ] Dedicated account manager
-    - [ ] SLA guarantees
-    - [ ] White-label option
-    - [ ] SSO/SAML support via Clerk
-    - [ ] Organization management via Clerk Organizations
-    - [ ] Unlimited team members
-    - [ ] Advanced audit logs
+### Polar Pricing Configuration ✅ COMPLETE
+- [x] Create Polar account at https://polar.sh
+- [x] Set up organization in Polar dashboard
+- [x] Define pricing plans (products) in Polar:
+  - [x] **Free Plan**: All normal features, unlimited projects
+  - [x] **AI (Credit Based)**: $5 = 50 Credits, token-based pricing
+  - [x] **Pro/Enterprise Plans**: Planned for future (not in current MVP)
 
-### Credit System Configuration
-- [ ] Define credit add-on products in Polar:
-  - [ ] 500 credits - $10
-  - [ ] 1,000 credits - $18
-  - [ ] 2,500 credits - $40
-  - [ ] 5,000 credits - $75
-- [ ] Configure credit usage rates:
-  - [ ] AI question generation: 5 credits per question
-  - [ ] AI distractor generation: 3 credits per option set
-  - [ ] AI explanation generation: 2 credits per explanation
-  - [ ] AI grading (short answer): 5 credits per answer
-  - [ ] AI grading (long answer/essay): 10 credits per answer
-  - [ ] AI grading with feedback: +2 credits
+### Credit System Configuration ✅ COMPLETE
+- [x] Credit packages configured (6 tiers with bonus scaling):
+  - [x] 50 credits - $5 (Starter Pack)
+  - [x] 100 credits - $10 (Small Pack)
+  - [x] 250 credits - $25 (Medium Pack, +10% bonus)
+  - [x] 500 credits - $50 (Large Pack, +15% bonus)
+  - [x] 1,000 credits - $100 (Pro Pack, +20% bonus)
+  - [x] 2,500 credits - $250 (Business Pack, +25% bonus)
+- [x] Configure credit usage rates (based on token pricing):
+  - [x] AI question generation: ~0.06 credits (2000 input, 500 output tokens)
+  - [x] AI distractor generation: ~0.03 credits (1000 input, 300 output tokens)
+  - [x] AI explanation generation: ~0.036 credits (800 input, 400 output tokens)
+  - [x] AI grading: ~0.0405 credits per answer (1500 input, 300 output tokens)
+  - [x] AI feedback generation: ~0.078 credits (2000 input, 800 output tokens)
+  - [x] AI rubric generation: ~0.057 credits (1000 input, 700 output tokens)
+  - [x] AI question improvement: ~0.054 credits (1200 input, 600 output tokens)
 
-### Polar Benefits Configuration
-- [ ] Set up product benefits in Polar dashboard:
+### Polar Benefits Configuration ⏳ FUTURE (Not needed for MVP)
+- [ ] Set up product benefits in Polar dashboard (future subscription plans - not in current MVP):
   - [ ] `ai_generation` - AI question/distractor generation
   - [ ] `ai_grading` - AI-assisted grading
   - [ ] `advanced_analytics` - Detailed analytics and exports
@@ -436,68 +410,89 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] `priority_support` - Priority email/chat support
   - [ ] `api_access` - API access for integrations
 
-### Convex Functions for Polar Integration
-- [ ] Create `convex/billing.ts` with Polar operations:
-  - [ ] `createCustomer` mutation - Create Polar customer when user signs up
-  - [ ] `getSubscription` query - Get customer's current subscription and benefits
-  - [ ] `createCheckoutSession` action - Generate Polar checkout for plan upgrade
-  - [ ] `handleSubscriptionChange` mutation - Update user when subscription changes
-  - [ ] `deductCredits` mutation - Deduct credits when AI features are used
-  - [ ] `addCredits` mutation - Add credits when purchased or granted
-  - [ ] `checkFeatureAccess` query - Check if user has access to feature
-  - [ ] `getBillingHistory` query - Get payment and credit history
-  - [ ] `cancelSubscription` mutation - Cancel user subscription
+### Convex Functions for Polar Integration ✅ COMPLETE
+- [x] Create `convex/billing.ts` with Polar operations:
+  - [x] `createCustomer` mutation - Create Polar customer when user signs up
+  - [x] `getCreditBalance` query - Get customer's credit balance
+  - [x] `addCredits` mutation - Add credits when purchased
+  - [x] `deductCredits` mutation - Deduct credits when AI features used
+  - [x] `hasSufficientCredits` query - Check credit availability
+  - [x] `getBillingHistory` query - Get payment and credit transaction history
+  - [x] `getCreditUsageStats` query - Get detailed credit usage statistics
+  - [x] `grantWelcomeBonus` mutation - Grant welcome bonus (50 credits) to new users
+  - [x] `getMyCredits` query - Get current user's credit balance
 
-### Polar Client Library Setup
-- [ ] Install Polar SDK: `npm install @polar-sh/sdk`
-- [ ] Create Polar client utility in `lib/polar/client.ts`:
-  - [ ] Initialize Polar client with access token
-  - [ ] Helper functions for checkout, subscriptions, webhooks
-  - [ ] Type-safe wrappers for Polar API calls
+### Polar Client Library Setup ✅ COMPLETE
+- [x] Install Polar SDK: `npm install @polar-sh/sdk`
+- [x] Create Polar client utility in `lib/polar/client.ts`:
+  - [x] Initialize Polar client with access token
+  - [x] Helper functions for checkout, subscriptions, webhooks
+  - [x] Customer management (create, fetch, list)
+  - [x] Subscription management functions
+  - [x] Webhook signature verification
+  - [x] Product and benefit retrieval
+- [x] Create credit configuration in `lib/polar/config/pricing.ts`:
+  - [x] Token pricing constants (15 credits per million input, 60 per million output)
+  - [x] Credit package definitions with bonus tiers
+  - [x] Utility functions for credit/price conversions
+  - [x] Estimated credit costs for AI operations
+- [x] Create credit utilities in `lib/polar/credits.ts`:
+  - [x] Operation cost calculations
+  - [x] Credit availability checks
+  - [x] Cost estimation for bulk operations
+  - [x] Credit status display helpers
 
-### Billing Portal Pages
-- [ ] Create billing page at `/app/billing`
-  - [ ] Display current plan and renewal date
-  - [ ] Show credit balance with usage history
-  - [ ] Show active subscriptions from Polar
-  - [ ] Upgrade/downgrade plan options with Polar checkout
-  - [ ] Purchase additional credits
-  - [ ] Link to Polar customer portal
-- [ ] Create pricing page at `/pricing` (marketing site)
-  - [ ] Display all plans in cards
-  - [ ] Feature comparison table
-  - [ ] FAQ section about billing
-  - [ ] Call-to-action buttons linked to Polar checkout
-- [ ] Create checkout success page at `/app/billing/success`
-  - [ ] Thank you message
-  - [ ] Display what was purchased
-  - [ ] Confirmation number
-  - [ ] Next steps
-  - [ ] Link back to dashboard
-- [ ] Create checkout cancel page at `/app/billing/cancel`
-  - [ ] Explanation message
-  - [ ] Option to try again
-  - [ ] Support contact information
+### Billing Portal Pages ✅ COMPLETE
+- [x] Create billing page at `/app/billing`
+  - [x] Display current credit balance with gradient card
+  - [x] Show credit usage history with breakdown by operation type
+  - [x] Display available credit packages for purchase with bonus highlighting
+  - [x] Purchase flow integrated with Polar checkout
+  - [x] Transaction history view with status indicators
+  - [x] Usage breakdown by operation type with progress bars
+  - [x] Credit statistics (total purchased, used, current balance)
+  - [x] Pricing transparency section with token costs
+- [x] Create pricing page at `/pricing` (marketing site)
+  - [x] Display all credit packages with pricing and bonuses
+  - [x] Token pricing transparency information
+  - [x] FAQ section about billing model
+  - [x] CTA buttons for purchasing credits
+  - [x] Example usage calculations
+  - [x] Comparison of package sizes
+- [x] Create checkout success page at `/app/billing/success`
+  - [x] Confirmation and thank you message
+  - [x] Display purchased credits and new balance
+  - [x] Order ID display
+  - [x] Return to dashboard button
+  - [x] View billing history button
+- [x] Create checkout cancel page at `/app/billing/cancel`
+  - [x] Cancellation explanation
+  - [x] Retry purchase option
+  - [x] Support contact information
+  - [x] Common reasons for cancellation
+- [x] Create checkout API endpoint at `/api/checkout/create`
+  - [x] Clerk authentication integration
+  - [x] Polar customer creation/retrieval
+  - [x] Checkout session creation with success/cancel URLs
 
-### Polar Webhook Handling
-- [ ] Create webhook endpoint at `/api/webhooks/polar`
-  - [ ] Verify Polar webhook signature using webhook secret
-  - [ ] Handle `subscription.created` event - Grant access, add credits
-  - [ ] Handle `subscription.updated` event - Update tier, adjust credits
-  - [ ] Handle `subscription.canceled` event - Revoke access
-  - [ ] Handle `order.created` event - Process credit purchases
-  - [ ] Handle `checkout.created` event - Track checkout sessions
-  - [ ] Handle `checkout.updated` event - Update checkout status
-  - [ ] Handle `benefit.granted` event - Grant feature access
-  - [ ] Handle `benefit.revoked` event - Revoke feature access
-  - [ ] Log all webhook events to `billingTransactions` table
+### Polar Webhook Handling ✅ COMPLETE
+- [x] Create webhook endpoint at `/api/webhooks/polar`
+  - [x] Verify Polar webhook signature using HMAC-SHA256
+  - [x] Handle `order.created` event - Process credit purchases and add credits
+  - [x] Handle `checkout.created` event - Track checkout sessions
+  - [x] Handle `checkout.updated` event - Update checkout status
+  - [x] Integration with Convex billing mutations
+  - [x] Logging to `billingTransactions` table for audit trail
+  - [x] Error handling and logging
+- [ ] Additional webhook events (future - for subscription plans, not needed for MVP):
+  - [ ] Handle `subscription.created` event
+  - [ ] Handle `subscription.updated` event
+  - [ ] Handle `subscription.canceled` event
+  - [ ] Handle `benefit.granted` event
+  - [ ] Handle `benefit.revoked` event
   - [ ] Handle `subscription.payment_succeeded` event
   - [ ] Handle `subscription.payment_failed` event
-  - [ ] Handle `credits.added` event
-  - [ ] Handle `credits.depleted` event
-  - [ ] Update Convex database accordingly
-  - [ ] Send notifications to users
-  - [ ] Log all webhook events for debugging
+  - [ ] Send user notifications on payment events
 
 ---
 

@@ -3,7 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 
 /**
- * Create or update customer when user signs up
+ * Create or update Polar customer when user signs up
  */
 export const createCustomer = mutation({
   args: {
@@ -26,9 +26,9 @@ export const createCustomer = mutation({
 });
 
 /**
- * Get user's current subscription and benefits
+ * Get user's current credit balance
  */
-export const getSubscription = query({
+export const getCreditBalance = query({
   args: {
     userId: v.id("users"),
   },
@@ -39,27 +39,24 @@ export const getSubscription = query({
     }
 
     return {
-      tier: user.subscriptionTier,
-      status: user.subscriptionStatus,
-      credits: user.credits,
+      personalCredits: user.credits,
+      organizationCredits: 0,
+      totalCredits: user.credits,
       polarCustomerId: user.polarCustomerId,
-      polarSubscriptionId: user.polarSubscriptionId,
-      benefits: user.benefits || [],
     };
   },
 });
 
 /**
- * Handle subscription changes from Polar webhooks
+ * Handle credit purchase from Polar webhooks
  */
-export const handleSubscriptionChange = mutation({
+export const addCredits = mutation({
   args: {
     userId: v.id("users"),
-    subscriptionId: v.string(),
-    polarCustomerId: v.string(),
-    status: v.string(),
-    planName: v.string(),
-    creditsToGrant: v.number(),
+    credits: v.number(),
+    reason: v.string(),
+    transactionId: v.optional(v.string()),
+    amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -67,51 +64,29 @@ export const handleSubscriptionChange = mutation({
       throw new Error("User not found");
     }
 
-    // Map plan name to tier
-    let tier: "free" | "starter" | "pro" | "enterprise" = "free";
-    if (args.planName === "starter") {
-      tier = "starter";
-    } else if (args.planName === "pro") {
-      tier = "pro";
-    } else if (args.planName === "enterprise") {
-      tier = "enterprise";
-    }
-
-    // If upgrading and granting credits, add them
-    // If downgrading or canceling, don't remove existing credits
-    let newCredits = user.credits;
-    if (args.creditsToGrant > 0 && args.status === "active") {
-      newCredits += args.creditsToGrant;
-    }
+    const newBalance = user.credits + args.credits;
 
     await ctx.db.patch(args.userId, {
-      subscriptionTier: tier,
-      subscriptionStatus: args.status,
-      polarCustomerId: args.polarCustomerId,
-      polarSubscriptionId: args.subscriptionId,
-      credits: newCredits,
+      credits: newBalance,
       updatedAt: Date.now(),
     });
 
     // Record transaction
     await ctx.db.insert("billingTransactions", {
       userId: args.userId,
-      type: "subscription",
-      amount: 0,
+      type: "credit_purchase",
+      amount: args.amount || 0,
       currency: "USD",
       provider: "polar",
-      providerTransactionId: args.subscriptionId,
+      providerTransactionId: args.transactionId,
       status: "succeeded",
-      description: `Subscription ${args.status}: ${args.planName}`,
-      creditsAdded: args.creditsToGrant,
-      metadata: {
-        planName: args.planName,
-        subscriptionId: args.subscriptionId,
-      },
+      description: args.reason,
+      creditsAdded: args.credits,
+      metadata: { reason: args.reason },
       createdAt: Date.now(),
     });
 
-    return { success: true };
+    return { success: true, newBalance };
   },
 });
 
@@ -123,6 +98,7 @@ export const deductCredits = mutation({
     userId: v.id("users"),
     credits: v.number(),
     reason: v.string(),
+    metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -131,77 +107,43 @@ export const deductCredits = mutation({
     }
 
     if (user.credits < args.credits) {
-      throw new Error("Insufficient credits");
+      throw new Error(
+        `Insufficient credits. Required: ${args.credits}, Available: ${user.credits}`,
+      );
     }
 
+    const newBalance = user.credits - args.credits;
+
     await ctx.db.patch(args.userId, {
-      credits: user.credits - args.credits,
+      credits: newBalance,
       updatedAt: Date.now(),
     });
 
     // Record transaction
     await ctx.db.insert("billingTransactions", {
       userId: args.userId,
-      type: "credit_purchase",
+      type: "credit_usage",
       amount: 0,
       currency: "USD",
       provider: "polar",
       status: "succeeded",
       description: args.reason,
       creditsAdded: -args.credits,
-      metadata: { reason: args.reason },
+      metadata: args.metadata || { reason: args.reason },
       createdAt: Date.now(),
     });
 
-    return { success: true, remainingCredits: user.credits - args.credits };
+    return { success: true, remainingCredits: newBalance };
   },
 });
 
 /**
- * Add credits when purchased or granted
+ * Check if user has sufficient credits
  */
-export const addCredits = mutation({
+export const hasSufficientCredits = query({
   args: {
     userId: v.id("users"),
-    credits: v.number(),
-    reason: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    await ctx.db.patch(args.userId, {
-      credits: user.credits + args.credits,
-      updatedAt: Date.now(),
-    });
-
-    // Record transaction
-    await ctx.db.insert("billingTransactions", {
-      userId: args.userId,
-      type: "credit_purchase",
-      amount: 0,
-      currency: "USD",
-      provider: "polar",
-      status: "succeeded",
-      description: args.reason,
-      creditsAdded: args.credits,
-      metadata: { reason: args.reason },
-      createdAt: Date.now(),
-    });
-
-    return { success: true, newBalance: user.credits + args.credits };
-  },
-});
-
-/**
- * Check if user has access to a specific feature/benefit
- */
-export const checkFeatureAccess = query({
-  args: {
-    userId: v.id("users"),
-    feature: v.string(),
+    creditsRequired: v.number(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -209,30 +151,7 @@ export const checkFeatureAccess = query({
       return false;
     }
 
-    // Check if user has the benefit
-    const benefits = user.benefits || [];
-    if (benefits.includes(args.feature)) {
-      return true;
-    }
-
-    // Check tier-based access
-    const tierAccess: Record<string, string[]> = {
-      free: [],
-      starter: ["ai_generation"],
-      pro: ["ai_generation", "ai_grading", "advanced_analytics"],
-      enterprise: [
-        "ai_generation",
-        "ai_grading",
-        "advanced_analytics",
-        "custom_branding",
-        "team_collaboration",
-        "priority_support",
-        "api_access",
-      ],
-    };
-
-    const userTierFeatures = tierAccess[user.subscriptionTier] || [];
-    return userTierFeatures.includes(args.feature);
+    return user.credits >= args.creditsRequired;
   },
 });
 
@@ -251,58 +170,6 @@ export const getBillingHistory = query({
       .take(50);
 
     return transactions;
-  },
-});
-
-/**
- * Grant a benefit to a user
- */
-export const grantBenefit = mutation({
-  args: {
-    userId: v.id("users"),
-    benefitId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const currentBenefits = user.benefits || [];
-    if (!currentBenefits.includes(args.benefitId)) {
-      await ctx.db.patch(args.userId, {
-        benefits: [...currentBenefits, args.benefitId],
-        updatedAt: Date.now(),
-      });
-    }
-
-    return { success: true };
-  },
-});
-
-/**
- * Revoke a benefit from a user
- */
-export const revokeBenefit = mutation({
-  args: {
-    userId: v.id("users"),
-    benefitId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const currentBenefits = user.benefits || [];
-    const newBenefits = currentBenefits.filter((b) => b !== args.benefitId);
-
-    await ctx.db.patch(args.userId, {
-      benefits: newBenefits,
-      updatedAt: Date.now(),
-    });
-
-    return { success: true };
   },
 });
 
@@ -341,10 +208,15 @@ export const getCreditUsageStats = query({
       .filter((t) => (t.creditsAdded || 0) > 0)
       .reduce((sum, t) => sum + (t.creditsAdded || 0), 0);
 
+    const totalCreditsDeducted = creditTransactions
+      .filter((t) => (t.creditsAdded || 0) < 0)
+      .reduce((sum, t) => sum + Math.abs(t.creditsAdded || 0), 0);
+
     return {
       currentBalance: user.credits,
       totalUsed: totalCreditsUsed,
       totalPurchased: totalCreditsPurchased,
+      totalDeducted: totalCreditsDeducted,
       usageByType: aiHistory.reduce(
         (acc, item) => {
           acc[item.type] = (acc[item.type] || 0) + item.creditsDeducted;
@@ -357,19 +229,80 @@ export const getCreditUsageStats = query({
 });
 
 /**
- * Check if user has sufficient credits
+ * Grant welcome bonus credits to new user
  */
-export const hasSufficientCredits = query({
+export const grantWelcomeBonus = mutation({
   args: {
     userId: v.id("users"),
-    creditsRequired: v.number(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      return false;
+      throw new Error("User not found");
     }
 
-    return user.credits >= args.creditsRequired;
+    // Check if user already received welcome bonus
+    const existingBonus = await ctx.db
+      .query("billingTransactions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("description"), "Welcome bonus"))
+      .first();
+
+    if (existingBonus) {
+      return { success: false, reason: "Welcome bonus already granted" };
+    }
+
+    const welcomeBonus = 50; // $5 worth of credits
+    const newBalance = user.credits + welcomeBonus;
+
+    await ctx.db.patch(args.userId, {
+      credits: newBalance,
+      updatedAt: Date.now(),
+    });
+
+    // Record transaction
+    await ctx.db.insert("billingTransactions", {
+      userId: args.userId,
+      type: "credit_purchase",
+      amount: 0,
+      currency: "USD",
+      provider: "polar",
+      status: "succeeded",
+      description: "Welcome bonus",
+      creditsAdded: welcomeBonus,
+      metadata: { type: "welcome_bonus" },
+      createdAt: Date.now(),
+    });
+
+    return { success: true, creditsGranted: welcomeBonus, newBalance };
+  },
+});
+
+/**
+ * Get credit balance for current user
+ */
+export const getMyCredits = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) =>
+        q.eq("clerkUserId", identity.subject as string),
+      )
+      .first();
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      credits: user.credits,
+      polarCustomerId: user.polarCustomerId,
+    };
   },
 });

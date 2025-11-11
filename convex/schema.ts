@@ -12,24 +12,14 @@ export default defineSchema({
       v.literal("student"),
       v.literal("admin"),
     ),
-    credits: v.number(), // AI generation credits (default 500)
+    credits: v.number(), // AI generation credits (token-based, $1 = 10 credits)
 
     // Clerk integration
     clerkUserId: v.string(),
     clerkOrganizationId: v.optional(v.string()),
 
-    // Billing integration
-    stripeCustomerId: v.optional(v.string()),
+    // Billing integration (Polar)
     polarCustomerId: v.optional(v.string()),
-    polarSubscriptionId: v.optional(v.string()),
-    subscriptionTier: v.union(
-      v.literal("free"),
-      v.literal("starter"),
-      v.literal("pro"),
-      v.literal("enterprise"),
-    ),
-    subscriptionStatus: v.optional(v.string()),
-    benefits: v.optional(v.array(v.string())),
 
     // Timestamps
     createdAt: v.number(),
@@ -578,6 +568,7 @@ export default defineSchema({
     type: v.union(
       v.literal("subscription"),
       v.literal("credit_purchase"),
+      v.literal("credit_usage"),
       v.literal("refund"),
     ),
 
