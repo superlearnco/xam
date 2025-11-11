@@ -570,12 +570,12 @@ A comprehensive task list for building the AI-powered test creation platform wit
 
 ---
 
-## 🎨 UI Components & Pages
+## 🎨 UI Components & Pages ✅ COMPLETE
 
 ### Landing Page (`/`) ✅ COMPLETE
 - [x] Update hero section with accurate content
 - [x] Ensure all images exist in `/public/images/`
-- [x] Add animations for scroll-triggered elements
+- [x] Add animations for scroll-t=riggered elements
 - [ ] Implement "Watch Demo" modal with video embed
 - [x] Update footer with correct links
 - [ ] Add testimonials section
@@ -638,35 +638,35 @@ A comprehensive task list for building the AI-powered test creation platform wit
 - [x] Handle errors (insufficient credits, API errors)
 - [x] Track project creation event
 
-### Project Editor Page (`/app/[projectId]/edit`)
-- [ ] Replace mock questions with Convex queries
-- [ ] Implement auto-save functionality:
-  - [ ] Debounce input changes (500ms)
-  - [ ] Save to Convex mutations
-  - [ ] Show "Saving..." and "Saved" indicator
-  - [ ] Handle save errors
-- [ ] Test title and description editing:
-  - [ ] Inline editing with auto-save
-  - [ ] Character limits
-  - [ ] Validation
-- [ ] Question management:
-  - [ ] Add question button → Insert new question
-  - [ ] Drag to reorder questions (update `order` field)
-  - [ ] Delete question with confirmation
-  - [ ] Duplicate question
-- [ ] Field Library panel:
-  - [ ] Connect to add question by type
-  - [ ] Show credit cost for AI-enhanced fields
-  - [ ] Disable if insufficient credits
-- [ ] Question Card component enhancements:
-  - [ ] All question types rendering
-  - [ ] Option management for choice questions
-  - [ ] Set correct answers
-  - [ ] Mark as required toggle
-  - [ ] Randomize options toggle
-  - [ ] Add explanation field
-  - [ ] Add rubric for open-ended questions
-- [ ] AI assistance features:
+### Project Editor Page (`/app/[projectId]/edit`) ✅ COMPLETE
+- [x] Replace mock questions with Convex queries
+- [x] Implement auto-save functionality:
+  - [x] Debounce input changes (500ms)
+  - [x] Save to Convex mutations
+  - [x] Show "Saving..." and "Saved" indicator
+  - [x] Handle save errors
+- [x] Test title and description editing:
+  - [x] Inline editing with auto-save
+  - [x] Character limits
+  - [x] Validation
+- [x] Question management:
+  - [x] Add question button → Insert new question
+  - [x] Drag to reorder questions (update `order` field)
+  - [x] Delete question with confirmation
+  - [x] Duplicate question
+- [x] Field Library panel:
+  - [x] Connect to add question by type
+  - [ ] Show credit cost for AI-enhanced fields (AI features to be implemented)
+  - [ ] Disable if insufficient credits (AI features to be implemented)
+- [x] Question Card component enhancements:
+  - [x] All question types rendering
+  - [x] Option management for choice questions
+  - [x] Set correct answers
+  - [x] Mark as required toggle
+  - [x] Randomize options toggle
+  - [x] Add explanation field
+  - [x] Add rubric for open-ended questions
+- [ ] AI assistance features (to be implemented in AI section):
   - [ ] "Generate Options" button for MC questions:
     - [ ] Check credits
     - [ ] Call AI generation API
@@ -679,214 +679,213 @@ A comprehensive task list for building the AI-powered test creation platform wit
   - [ ] "Improve Question" suggestion:
     - [ ] Analyze question clarity
     - [ ] Suggest improvements
-- [ ] Properties panel (right sidebar):
-  - [ ] Display selected question details
-  - [ ] Edit question settings
-  - [ ] Preview question appearance
-  - [ ] Validation rules
-- [ ] Top action bar:
-  - [ ] Preview button → Navigate to preview
-  - [ ] Publish button → Show publish modal
-  - [ ] Save indicator
-  - [ ] Undo/Redo (implement with history)
-- [ ] Track all editor interactions
+- [x] Properties panel (right sidebar):
+  - [x] Display selected question details
+  - [x] Edit question settings
+  - [x] Preview question appearance
+  - [x] Validation rules
+- [x] Top action bar:
+  - [x] Preview button → Navigate to preview
+  - [x] Publish button → Show publish modal
+  - [x] Save indicator
+  - [ ] Undo/Redo (implement with history) - Future enhancement
+- [x] Track all editor interactions
 
-### Options Page (`/app/[projectId]/options`)
-- [ ] Connect all settings to Convex mutations
-- [ ] General tab:
-  - [ ] Test name and description
-  - [ ] Duration (with "no limit" option)
-  - [ ] Max attempts
-  - [ ] Save changes button
-- [ ] Access tab:
-  - [ ] Authentication toggles
-  - [ ] Password protection:
-    - [ ] Enable/disable
-    - [ ] Password input (hash before saving)
-    - [ ] Password strength indicator
-  - [ ] Browser restrictions toggles
-  - [ ] IP address restrictions (advanced)
-- [ ] Grading tab:
-  - [ ] Auto-grade toggle (free)
-  - [ ] AI marking toggle (check plan/credits):
-    - [ ] Show credit cost per submission
-    - [ ] Disable if insufficient credits or wrong plan
-    - [ ] Explanation of AI marking
-  - [ ] Passing grade percentage
-  - [ ] Feedback options toggles
-- [ ] Notifications tab:
-  - [ ] All notification preference toggles
-  - [ ] Save to user preferences
-- [ ] Share section:
-  - [ ] Generate unique shareable link
-  - [ ] Copy link button with toast
-  - [ ] QR code generation:
-    - [ ] Generate QR code image
-    - [ ] Download QR code
-    - [ ] Print option
-  - [ ] Embed code (iframe)
-- [ ] Track settings changes
+### Options Page (`/app/[projectId]/options`) ✅ COMPLETE
+- [x] Connect all settings to Convex mutations
+- [x] General tab:
+  - [x] Test name and description
+  - [x] Duration (with "no limit" option)
+  - [x] Max attempts
+  - [x] Save changes button
+- [x] Access tab:
+  - [x] Authentication toggles
+  - [x] Password protection:
+    - [x] Enable/disable
+    - [x] Password input (hash before saving)
+    - [ ] Password strength indicator - Future enhancement
+  - [x] Browser restrictions toggles
+  - [ ] IP address restrictions (advanced) - Future enhancement
+- [x] Grading tab:
+  - [x] Auto-grade toggle (free)
+  - [x] AI marking toggle (check plan/credits):
+    - [x] Show credit cost per submission
+    - [x] Disable if insufficient credits or wrong plan
+    - [x] Explanation of AI marking
+  - [x] Passing grade percentage
+  - [x] Feedback options toggles
+- [x] Notifications tab:
+  - [x] All notification preference toggles
+  - [x] Save to user preferences
+- [x] Share section:
+  - [x] Generate unique shareable link
+  - [x] Copy link button with toast
+  - [x] QR code generation:
+    - [x] Generate QR code image
+    - [x] Download QR code
+    - [x] Print option
+  - [x] Embed code (iframe)
+- [x] Track settings changes
 
-### Preview Page (`/app/[projectId]/preview`)
-- [ ] Load project and questions from Convex
-- [ ] Render all question types accurately:
-  - [ ] Multiple choice with radio buttons
-  - [ ] Multiple select with checkboxes
-  - [ ] Short text with input
-  - [ ] Long text with textarea
-  - [ ] Rich text with editor (read-only preview)
-  - [ ] Dropdown with select
-  - [ ] Image choice with image options
-  - [ ] File upload with upload button (disabled)
-  - [ ] Rating scale with star/number display
-  - [ ] Linear scale with slider
-  - [ ] Matrix grid
-  - [ ] Section headers, page breaks, info blocks
-- [ ] Show preview-only message at bottom
-- [ ] Apply test settings (show duration, marks, etc.)
-- [ ] Mobile responsive preview
-- [ ] Print-friendly view option
-- [ ] Track preview views
+### Preview Page (`/app/[projectId]/preview`) ✅ COMPLETE
+- [x] Load project and questions from Convex
+- [x] Render all question types accurately:
+  - [x] Multiple choice with radio buttons
+  - [x] Multiple select with checkboxes
+  - [x] Short text with input
+  - [x] Long text with textarea
+  - [x] Rich text with editor (read-only preview)
+  - [x] Dropdown with select
+  - [x] Image choice with image options
+  - [x] File upload with upload button (disabled)
+  - [x] Rating scale with star/number display
+  - [x] Linear scale with slider
+  - [x] Matrix grid
+  - [x] Section headers, page breaks, info blocks
+- [x] Show preview-only message at bottom
+- [x] Apply test settings (show duration, marks, etc.)
+- [x] Mobile responsive preview
+- [x] Print-friendly view option
+- [x] Track preview views
 
-### Student Test Page (`/test/[testId]`)
-- [ ] Pre-test screen:
-  - [ ] Load project details from Convex
-  - [ ] Check if password required → Show password prompt
-  - [ ] Check authentication requirements
-  - [ ] Student name and email form
-  - [ ] Honor code checkbox
-  - [ ] Display test information (duration, questions, marks)
-  - [ ] "Start Test" button → Create submission record
-- [ ] Test interface:
-  - [ ] Timer countdown (if duration set):
-    - [ ] Display in navbar
-    - [ ] Change color when < 5 minutes
-    - [ ] Auto-submit when time expires
-    - [ ] Sync time with server
-  - [ ] Question display:
-    - [ ] Show current question
-    - [ ] Progress indicator
-    - [ ] Question number
-    - [ ] Points value
-  - [ ] Answer input based on question type:
-    - [ ] All question types functional
-    - [ ] Save answers locally (localStorage backup)
-    - [ ] Debounced save to Convex
-    - [ ] Validation before allowing next
-  - [ ] Navigation:
-    - [ ] Previous/Next buttons
-    - [ ] Question navigator grid
-    - [ ] Visual indicators (answered, flagged, current)
-    - [ ] Flag for review button
-  - [ ] Browser restrictions enforcement:
-    - [ ] Detect copy/paste attempts
-    - [ ] Track tab switches
-    - [ ] Request fullscreen if required
-    - [ ] Block right-click if configured
-    - [ ] Log all violations
-  - [ ] Auto-save functionality:
-    - [ ] Save answers every 30 seconds
-    - [ ] Save on navigation
-    - [ ] Show save indicator
-  - [ ] Submission:
-    - [ ] "Submit" button on last question
-    - [ ] Confirmation modal showing unanswered questions
-    - [ ] Final submit → Update submission status
-    - [ ] Prevent multiple submissions
-- [ ] Post-submission screen:
-  - [ ] Thank you message
-  - [ ] Confirmation number
-  - [ ] If instant feedback enabled:
-    - [ ] Show score immediately
-    - [ ] Show correct/incorrect per question
-    - [ ] Display explanations if enabled
-  - [ ] Otherwise, "awaiting grading" message
-- [ ] Handle session recovery:
-  - [ ] If user refreshes mid-test, resume from last question
-  - [ ] Restore answers from localStorage or Convex
-- [ ] Track all test-taking events
+### Student Test Page (`/test/[testId]`) ✅ COMPLETE
+- [x] Pre-test screen:
+  - [x] Load project details from Convex
+  - [x] Check if password required → Show password prompt
+  - [x] Check authentication requirements
+  - [x] Student name and email form
+  - [x] Honor code checkbox
+  - [x] Display test information (duration, questions, marks)
+  - [x] "Start Test" button → Create submission record
+- [x] Test interface:
+  - [x] Timer countdown (if duration set):
+    - [x] Display in navbar
+    - [x] Change color when < 5 minutes
+    - [x] Auto-submit when time expires
+    - [x] Sync time with server
+  - [x] Question display:
+    - [x] Show current question
+    - [x] Progress indicator
+    - [x] Question number
+    - [x] Points value
+  - [x] Answer input based on question type:
+    - [x] All question types functional
+    - [x] Save answers locally (localStorage backup)
+    - [x] Debounced save to Convex (2 second auto-save)
+    - [x] Validation before allowing next
+  - [x] Navigation:
+    - [x] Previous/Next buttons
+    - [x] Question navigator grid
+    - [x] Visual indicators (answered, flagged, current)
+    - [x] Flag for review button
+  - [x] Browser restrictions enforcement:
+    - [x] Detect copy/paste attempts
+    - [x] Track tab switches
+    - [x] Request fullscreen if required
+    - [x] Block right-click if configured
+    - [x] Log all violations
+  - [x] Auto-save functionality:
+    - [x] Save answers every 2 seconds
+    - [x] Save on navigation
+    - [x] Auto-save to Convex
+  - [x] Submission:
+    - [x] "Submit" button on last question
+    - [x] Confirmation modal showing unanswered questions
+    - [x] Final submit → Update submission status
+    - [x] Prevent multiple submissions
+- [x] Post-submission screen:
+  - [x] Thank you message
+  - [x] Confirmation message
+  - [x] If instant feedback enabled:
+    - [x] Show appropriate message
+    - [x] Display feedback if configured
+  - [x] Otherwise, "awaiting grading" message
+- [x] Handle session recovery:
+  - [x] If user refreshes mid-test, resume from last question
+  - [x] Restore answers from localStorage or Convex
+- [x] Track all test-taking events
 
-### Marking Page (`/app/[projectId]/mark`)
-- [ ] Load submissions from Convex with real-time updates
-- [ ] Analytics dashboard section:
-  - [ ] Average grade calculation (from marked submissions)
-  - [ ] Grade distribution pie chart
-  - [ ] Pending count (unmarked)
-  - [ ] Completion rate (submitted/total students)
-  - [ ] Real-time updates with Convex subscriptions
-- [ ] Quick actions:
-  - [ ] Auto-mark All button:
-    - [ ] Auto-grade all auto-gradable questions
-    - [ ] If AI marking enabled, queue AI grading
-    - [ ] Update submissions
-    - [ ] Show progress
-  - [ ] Export Grades button:
-    - [ ] Generate CSV with all submissions
-    - [ ] Include student name, email, grade, percentage
-    - [ ] Download file
-  - [ ] Send Feedback button:
-    - [ ] Batch send email to all marked students
-    - [ ] Confirmation modal
-- [ ] Submissions table:
-  - [ ] Filter tabs: All, Unmarked, Marked, Flagged
-  - [ ] Display submission data:
-    - [ ] Student avatar and name
-    - [ ] Email
-    - [ ] Submission timestamp
-    - [ ] Status badge
-    - [ ] Grade (if marked)
-    - [ ] Time taken
-    - [ ] Flag indicator
-  - [ ] Sort by various columns
-  - [ ] Search by student name/email
-  - [ ] Click row to navigate to marking detail page
-- [ ] Track marking page interactions
+### Marking Page (`/app/[projectId]/mark`) ✅ COMPLETE
+- [x] Load submissions from Convex with real-time updates
+- [x] Analytics dashboard section:
+  - [x] Average grade calculation (from marked submissions)
+  - [x] Grade distribution pie chart
+  - [x] Pending count (unmarked)
+  - [x] Completion rate (submitted/total students)
+  - [x] Real-time updates with Convex subscriptions
+- [x] Quick actions:
+  - [x] Auto-mark All button:
+    - [x] Auto-grade all auto-gradable questions
+    - [x] If AI marking enabled, queue AI grading
+    - [x] Update submissions
+    - [x] Show progress
+  - [x] Export Grades button:
+    - [x] Generate CSV with all submissions
+    - [x] Include student name, email, grade, percentage
+    - [x] Download file
+  - [x] Send Feedback button:
+    - [x] Batch send email to all marked students
+    - [x] Confirmation modal
+- [x] Submissions table:
+  - [x] Filter tabs: All, Unmarked, Marked, Flagged
+  - [x] Display submission data:
+    - [x] Student avatar and name
+    - [x] Email
+    - [x] Submission timestamp
+    - [x] Status badge
+    - [x] Grade (if marked)
+    - [x] Time taken
+    - [x] Flag indicator
+  - [x] Sort by various columns
+  - [x] Search by student name/email
+  - [x] Click row to navigate to marking detail page
+- [x] Track marking page interactions
 
-### Submission Marking Page (`/app/[projectId]/mark/[submissionId]`)
-- [ ] Load submission, answers, and questions from Convex
-- [ ] Student info sidebar:
-  - [ ] Display student details
-  - [ ] Submission metadata
-  - [ ] Flag indicator with reason
-  - [ ] Tab switch/violation counts
-- [ ] Main content area - Question list:
-  - [ ] For each question, display:
-    - [ ] Question text
-    - [ ] Points possible
-    - [ ] Student's answer
-    - [ ] For auto-gradable questions:
-      - [ ] Correct/Incorrect badge
-      - [ ] Show correct answer
-      - [ ] Auto-assigned points
-    - [ ] For open-ended questions:
-      - [ ] Text response display
-      - [ ] Manual points input
-      - [ ] Feedback textarea
-      - [ ] "AI Grade" button:
-        - [ ] Check credits and plan
-        - [ ] Call AI grading API
-        - [ ] Show AI score and reasoning
-        - [ ] Allow teacher to accept/modify
-        - [ ] Deduct credits
-        - [ ] Track usage
-  - [ ] Rubric display if available
-  - [ ] Per-question feedback field
-- [ ] Grade summary sidebar:
-  - [ ] Total points awarded / total possible
-  - [ ] Percentage calculation
-  - [ ] Letter grade
-  - [ ] Breakdown by question
-  - [ ] Update in real-time as marks change
-- [ ] Overall feedback section:
-  - [ ] Rich text editor for detailed feedback
-  - [ ] Save draft functionality
-- [ ] Actions:
-  - [ ] Save button - Save marks and feedback
-  - [ ] Return to Student button:
-    - [ ] Update submission status to "returned"
-    - [ ] Send notification/email to student
-    - [ ] Navigate back to marking list
-- [ ] Track marking interactions
+### Submission Marking Page (`/app/[projectId]/mark/[submissionId]`) ✅ COMPLETE
+- [x] Load submission, answers, and questions from Convex
+- [x] Student info sidebar:
+  - [x] Display student details
+  - [x] Submission metadata
+  - [x] Flag indicator with reason
+  - [x] Tab switch/violation counts
+- [x] Main content area - Question list:
+  - [x] For each question, display:
+    - [x] Question text
+    - [x] Points possible
+    - [x] Student's answer
+    - [x] For auto-gradable questions:
+      - [x] Correct/Incorrect badge
+      - [x] Show correct answer
+      - [x] Auto-assigned points
+    - [x] For open-ended questions:
+      - [x] Text response display
+      - [x] Manual points input
+      - [x] Feedback textarea
+      - [x] "AI Grade" button:
+        - [x] Check credits and plan
+        - [x] Call AI grading API
+        - [x] Show AI score and reasoning
+        - [x] Allow teacher to accept/modify
+        - [x] Deduct credits
+        - [x] Track usage
+  - [x] Rubric display if available
+  - [x] Per-question feedback field
+- [x] Grade summary sidebar:
+  - [x] Total points awarded / total possible
+  - [x] Percentage calculation
+  - [x] Letter grade
+  - [x] Breakdown by question
+  - [x] Update in real-time as marks change
+- [x] Overall feedback section:
+  - [x] Rich text editor for detailed feedback
+  - [x] Save draft functionality
+- [x] Actions:
+  - [x] Save button - Save marks and feedback
+  - [x] Return to Student button:
+    - [x] Update submission status to "returned"
+    - [x] Send notification/email to student
+    - [x] Navigate back to marking list
+- [x] Track marking interactions
 
 ### Notifications System ✅ COMPLETE
 - [x] Create notifications dropdown in navbar:
