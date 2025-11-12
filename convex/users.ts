@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import {
   getCurrentUser,
   getCurrentUserOrThrow,
@@ -28,6 +28,19 @@ export const getUserById = query({
 
 // Query: Get user by Clerk ID
 export const getUserByClerkId = query({
+  args: { clerkUserId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .first();
+
+    return user;
+  },
+});
+
+// Internal Query: Get user by Clerk ID (for internal use by actions)
+export const getUserByClerkIdInternal = internalQuery({
   args: { clerkUserId: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
