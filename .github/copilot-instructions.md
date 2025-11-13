@@ -1,8 +1,0 @@
-- - DO NOT write useless readme files or "documentation" that adds no value. NO "SUMMARY FILES" unless explicitly asked. NO "NEXT STEPS" files. NO MARKDOWN FILES UNLESS I EXPLICITY ASK YOU! If you do that, I WILL cut off your GPU.
-- ALWAYS Update the TODO.md whilst you are working so it can be up to date.
-- Do NOT do "pnpm run dev". I already have the server always running.
-- Always use the todos tool provided to keep track of tasks.
-- Never do "npx convex deploy". Only use "npx convex dev", and I will deploy it myself after testing.
-- Ensure you write tests and test code before submitting.
-- ONLY USE SHADCN/UI COMPONENTS FOR NEW UI ELEMENTS.
-- No emojis, only icons, if needed
