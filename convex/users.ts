@@ -63,3 +63,84 @@ export const upsertUser = mutation({
     return await ctx.db.get(userId);
   },
 });
+
+// Update user profile
+export const updateProfile = mutation({
+  args: {
+    name: v.optional(v.string()),
+    organizationId: v.optional(v.id("organizations")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const updateData: Partial<{
+      name: string;
+      organizationId: typeof args.organizationId;
+    }> = {};
+
+    if (args.name !== undefined) updateData.name = args.name;
+    if (args.organizationId !== undefined)
+      updateData.organizationId = args.organizationId;
+
+    await ctx.db.patch(user._id, updateData);
+
+    return user._id;
+  },
+});
+
+// Get user's organization
+export const getOrganization = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (!user.organizationId) {
+      return null;
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    return organization;
+  },
+});
+
+// Get current user
+export const getCurrentUser = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    return user;
+  },
+});
