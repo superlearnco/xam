@@ -32,7 +32,7 @@ AI-powered test creation and grading platform for teachers. Create, distribute, 
 - **Convex** - Real-time database and serverless functions
 - **Clerk** - Authentication and user management
 - **Polar.sh** - Subscription billing and payments
-- **xAI (Grok)** - AI test generation and grading
+- **Vercel AI Gateway** - Unified AI API gateway for xAI (Grok) models and OpenAI models
 
 ### Development & Deployment
 - **Vite** - Fast build tool
@@ -276,7 +276,9 @@ This verifies:
 - `VITE_APP_URL` - Your production domain (e.g., https://xam.app)
 
 **Convex Environment Variables (set via `npx convex env set`):**
-- `XAI_API_KEY` - xAI API key for Grok models
+- `AI_GATEWAY_API_KEY` - Vercel AI Gateway API key (recommended, used for all AI models)
+- `XAI_API_KEY` - xAI API key for Grok models (fallback if AI_GATEWAY_API_KEY not set)
+- `AI_GATEWAY_URL` - Vercel AI Gateway URL (optional, defaults to `https://gateway.vercel.ai/v1`)
 - `POLAR_ACCESS_TOKEN` - Polar.sh API access token
 - `POLAR_ORGANIZATION_ID` - Your Polar.sh organization ID
 - `POLAR_WEBHOOK_SECRET` - Polar.sh webhook secret
@@ -330,7 +332,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup instructions.
 - `@clerk/react-router` - Authentication
 - `convex` - Real-time database
 - `@polar-sh/sdk` & `@convex-dev/polar` - Subscription management
-- `@ai-sdk/openai` & `ai` - AI SDK for xAI integration
+- `@ai-sdk/openai` & `ai` - Vercel AI SDK for AI integration via Vercel AI Gateway
 - `@dnd-kit/*` - Drag-and-drop functionality
 - `@vercel/react-router` - Vercel deployment
 - `tailwindcss` v4 - Styling
@@ -394,4 +396,4 @@ For issues or questions:
 
 **xam by superlearn** - AI-powered test creation made simple.
 
-Built with React Router v7, Convex, Clerk, Polar.sh, and xAI (Grok).
+Built with React Router v7, Convex, Clerk, Polar.sh, and Vercel AI Gateway.

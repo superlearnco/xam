@@ -59,7 +59,7 @@ export const generateOptions = action({
         feature: "generate_options",
         metadata: {
           projectId: field.projectId,
-          model: "grok-beta",
+          model: "xai/grok-beta",
           tokensInput: result.tokensInput,
           tokensOutput: result.tokensOutput,
         },
@@ -167,7 +167,7 @@ export const gradeResponse = action({
         metadata: {
           projectId: field.projectId,
           submissionId: response.submissionId,
-          model: "grok-beta",
+          model: "xai/grok-beta",
           tokensInput: result.tokensInput,
           tokensOutput: result.tokensOutput,
         },
@@ -301,7 +301,7 @@ export const bulkGradeSubmission = action({
           metadata: {
             projectId: submission.projectId,
             submissionId: args.submissionId,
-            model: "grok-beta",
+            model: "xai/grok-beta",
             tokensInput: result.tokensInput,
             tokensOutput: result.tokensOutput,
           },
@@ -415,7 +415,7 @@ export const createTest = action({
         feature: "generate_test",
         metadata: {
           projectId: args.projectId,
-          model: "grok-beta",
+          model: "xai/grok-beta",
           tokensInput: result.tokensInput,
           tokensOutput: result.tokensOutput,
         },

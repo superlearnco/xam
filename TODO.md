@@ -44,7 +44,7 @@
 - **Backend:** Convex (database + serverless functions)
 - **Authentication:** Clerk
 - **Payments:** Polar
-- **AI:** Vercel AI SDK + xAI (Grok models)
+- **AI:** Vercel AI SDK + Vercel AI Gateway (xAI Grok models)
 - **Animations:** Framer Motion (motion package)
 - **Charts:** Recharts
 - **Other:** number-flow, @dnd-kit
@@ -63,8 +63,10 @@
 
 ### 1.3 AI Models
 
-- **General AI:** `xai/grok-4-fast-non-reasoning` (dummy options, quick tasks)
-- **Complex AI:** `xai/grok-4-fast-reasoning` (test creation, grading)
+- **AI Gateway:** All AI requests route through Vercel AI Gateway (`https://gateway.vercel.ai/v1`)
+- **General AI:** `xai/grok-beta` (dummy options, quick tasks)
+- **Complex AI:** `xai/grok-beta` (test creation, grading)
+- **Chat:** `openai/gpt-4o` (via Vercel AI Gateway)
 
 ### 1.4 Billing Model
 
@@ -2685,7 +2687,9 @@ All environment variables documented in:
 - `VITE_APP_URL` - Your production domain
 
 **Convex Environment Variables:**
-- `XAI_API_KEY` - xAI API key for Grok models
+- `AI_GATEWAY_API_KEY` - Vercel AI Gateway API key (recommended, used for all AI models)
+- `XAI_API_KEY` - xAI API key for Grok models (fallback if AI_GATEWAY_API_KEY not set)
+- `AI_GATEWAY_URL` - Vercel AI Gateway URL (optional, defaults to `https://gateway.vercel.ai/v1`)
 - `POLAR_ACCESS_TOKEN` - Polar.sh API access token
 - `POLAR_ORGANIZATION_ID` - Your Polar.sh organization ID
 - `POLAR_WEBHOOK_SECRET` - Polar.sh webhook secret

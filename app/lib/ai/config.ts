@@ -1,16 +1,20 @@
 import { createOpenAI } from "@ai-sdk/openai";
 
-// xAI provider configuration
+// Vercel AI Gateway configuration for xAI (Grok) models
+// The gateway handles routing and provides unified access to AI models
+// When using Vercel AI Gateway, set baseURL to the gateway endpoint
+// and use model names in the format: provider/model-name
 export const xai = createOpenAI({
   name: "xai",
-  apiKey: process.env.XAI_API_KEY || "",
-  baseURL: "https://api.x.ai/v1",
+  apiKey: process.env.AI_GATEWAY_API_KEY || process.env.XAI_API_KEY || "",
+  baseURL: process.env.AI_GATEWAY_URL || "https://gateway.vercel.ai/v1",
 });
 
-// Model identifiers
+// Model identifiers - using Vercel AI Gateway format (provider/model-name)
+// The gateway routes requests based on the provider/model-name format
 export const MODELS = {
-  FAST: "grok-beta", // Fast non-reasoning model for quick tasks
-  REASONING: "grok-beta", // Reasoning model for complex tasks (using same for now)
+  FAST: "xai/grok-beta", // Fast non-reasoning model for quick tasks
+  REASONING: "xai/grok-beta", // Reasoning model for complex tasks
 } as const;
 
 // Token costs (in credits per 1000 tokens)
