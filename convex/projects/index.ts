@@ -389,3 +389,69 @@ export const getByPublishedUrl = query({
     return project;
   },
 });
+
+// Get project stats for dashboard
+export const getStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get projects owned by user
+    const userProjects = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    // Get projects from user's organization
+    let orgProjects: Doc<"projects">[] = [];
+    if (user.organizationId) {
+      orgProjects = await ctx.db
+        .query("projects")
+        .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+        .collect();
+    }
+
+    // Combine and deduplicate
+    const allProjects = [...userProjects];
+    for (const proj of orgProjects) {
+      if (!allProjects.find((p) => p._id === proj._id)) {
+        allProjects.push(proj);
+      }
+    }
+
+    // Calculate counts by type
+    const testCount = allProjects.filter((p) => p.type === "test").length;
+    const essayCount = allProjects.filter((p) => p.type === "essay").length;
+    const surveyCount = allProjects.filter((p) => p.type === "survey").length;
+
+    // Calculate submission counts
+    let totalSubmissions = 0;
+    for (const project of allProjects) {
+      const submissions = await ctx.db
+        .query("submissions")
+        .withIndex("by_project", (q) => q.eq("projectId", project._id))
+        .collect();
+      totalSubmissions += submissions.length;
+    }
+
+    return {
+      testCount,
+      essayCount,
+      surveyCount,
+      totalProjects: allProjects.length,
+      totalSubmissions,
+    };
+  },
+});
