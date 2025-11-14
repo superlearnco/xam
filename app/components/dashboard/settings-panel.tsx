@@ -13,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { formatDistanceToNow } from "date-fns";
 import { Progress } from "~/components/ui/progress";
 import SubscriptionStatus from "~/components/subscription-status";
+import { PurchaseCreditsDialog } from "./purchase-credits-dialog";
+import { PlanSelector } from "./plan-selector";
 
 export function SettingsPanel() {
   const { user } = useUser();
@@ -138,11 +140,8 @@ export function SettingsPanel() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-2">
-                <Button className="w-full">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Purchase Credits
-                </Button>
+              <div className="flex flex-col items-center gap-2">
+                <PurchaseCreditsDialog />
                 <p className="text-center text-xs text-muted-foreground">
                   Credits never expire and can be used for all AI features
                 </p>
@@ -202,35 +201,21 @@ export function SettingsPanel() {
         <TabsContent value="billing" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Status</CardTitle>
-              <CardDescription>Manage your subscription via Polar</CardDescription>
+              <CardTitle>Billing Plans</CardTitle>
+              <CardDescription>Choose how you want to pay for AI features</CardDescription>
             </CardHeader>
             <CardContent>
-              <SubscriptionStatus />
+              <PlanSelector />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Pricing Information</CardTitle>
-              <CardDescription>AI feature pricing</CardDescription>
+              <CardTitle>Subscription Status</CardTitle>
+              <CardDescription>Manage your existing subscriptions via Polar</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border p-4">
-                <h4 className="font-medium">Token Pricing</h4>
-                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <li>Input tokens: $0.003 per 1,000 tokens</li>
-                  <li>Output tokens: $0.015 per 1,000 tokens</li>
-                </ul>
-              </div>
-              <div className="rounded-lg border p-4">
-                <h4 className="font-medium">Credit Packages</h4>
-                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <li>$5 = 500 credits (minimum purchase)</li>
-                  <li>Credits never expire</li>
-                  <li>Can be used for all AI features</li>
-                </ul>
-              </div>
+            <CardContent>
+              <SubscriptionStatus />
             </CardContent>
           </Card>
         </TabsContent>

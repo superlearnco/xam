@@ -414,8 +414,25 @@ export const handleWebhookEvent = mutation({
         }
         break;
 
+      case "checkout.created":
+        // Checkout created, waiting for payment
+        break;
+
+      case "checkout.updated":
+        // Checkout updated
+        break;
+
       case "order.created":
-        // Orders are handled through the subscription events
+        // Handle one-time purchases (AI credits)
+        const order = args.body.data;
+        if (order.metadata?.type === "ai_credits") {
+          await ctx.runMutation(api.billing.handleCreditPurchase, {
+            userId: order.metadata.userId,
+            amount: order.amount,
+            transactionId: order.id,
+            metadata: order.metadata,
+          });
+        }
         break;
 
       default:

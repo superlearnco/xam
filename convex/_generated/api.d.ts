@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as ai_actions from "../ai/actions.js";
 import type * as ai_tracking from "../ai/tracking.js";
+import type * as billing from "../billing.js";
 import type * as credits_index from "../credits/index.js";
 import type * as fields_index from "../fields/index.js";
 import type * as http from "../http.js";
@@ -35,7 +37,9 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "ai/actions": typeof ai_actions;
   "ai/tracking": typeof ai_tracking;
+  billing: typeof billing;
   "credits/index": typeof credits_index;
   "fields/index": typeof fields_index;
   http: typeof http;

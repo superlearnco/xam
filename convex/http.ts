@@ -3,6 +3,7 @@ import { paymentWebhook } from "./subscriptions";
 import { httpAction } from "./_generated/server";
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
+import { api } from "./_generated/api";
 
 export const chat = httpAction(async (ctx, req) => {
   // Extract the `messages` from the body of the request
