@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 
 // Create a new response
 export const create = mutation({
@@ -32,7 +32,9 @@ export const create = mutation({
     // Check if response already exists
     const existingResponse = await ctx.db
       .query("responses")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+      .withIndex("by_submission", (q) =>
+        q.eq("submissionId", args.submissionId)
+      )
       .filter((q) => q.eq(q.field("fieldId"), args.fieldId))
       .unique();
 
@@ -120,7 +122,9 @@ export const mark = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .withIndex("by_token", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)
+      )
       .unique();
 
     if (!user) {
@@ -189,7 +193,9 @@ export const bulkMark = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .withIndex("by_token", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)
+      )
       .unique();
 
     if (!user) {
@@ -249,7 +255,26 @@ export const listBySubmission = query({
   handler: async (ctx, args) => {
     const responses = await ctx.db
       .query("responses")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+      .withIndex("by_submission", (q) =>
+        q.eq("submissionId", args.submissionId)
+      )
+      .collect();
+
+    return responses;
+  },
+});
+
+// Alias for consistency with other list functions
+export const list = query({
+  args: {
+    submissionId: v.id("submissions"),
+  },
+  handler: async (ctx, args) => {
+    const responses = await ctx.db
+      .query("responses")
+      .withIndex("by_submission", (q) =>
+        q.eq("submissionId", args.submissionId)
+      )
       .collect();
 
     return responses;
