@@ -77,9 +77,13 @@ export default function ProjectMarking(props: Route.ComponentProps) {
             gradeDistribution={statistics.gradeDistribution}
           />
 
-          {/* AI Marking (Phase 12 - Placeholder) */}
+          {/* AI Marking */}
           {unmarkedCount > 0 && (
-            <AIMarkingButton unmarkedCount={unmarkedCount} />
+            <AIMarkingButton
+              projectId={project._id}
+              submissions={submissions}
+              unmarkedCount={unmarkedCount}
+            />
           )}
 
           {/* Submissions Table */}

@@ -206,6 +206,8 @@ export function FieldItem({
                 {/* Field-specific editors */}
                 {field.type === "multiple_choice" && (
                   <MultipleChoiceEditor
+                    fieldId={field._id as Id<"fields">}
+                    question={field.question}
                     options={field.options || []}
                     correctAnswer={
                       typeof field.correctAnswer === "string"

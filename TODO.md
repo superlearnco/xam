@@ -2174,380 +2174,183 @@ AI integration (AI Suggest, Bulk AI Marking) deferred to Phase 12 as planned.
 
 ---
 
-## PHASE 12: AI Integration
+## PHASE 12: AI Integration ✅ COMPLETE
 
-### 12.1 AI Configuration
+### 12.1 AI Configuration ✅ COMPLETE
 
 **File:** `app/lib/ai/config.ts`
 
-#### 12.1.1 Setup xAI Provider
+#### 12.1.1 Setup xAI Provider ✅
 
-```typescript
-import { createOpenAI } from "@ai-sdk/openai";
+- [x] Created xAI provider configuration using @ai-sdk/openai
+- [x] Configured with xAI API base URL
+- [x] Set up model identifiers (FAST and REASONING)
 
-export const xai = createOpenAI({
-  name: "xai",
-  apiKey: process.env.XAI_API_KEY,
-  baseURL: "https://api.x.ai/v1",
-});
+#### 12.1.2 Cost Calculation ✅
 
-export const MODELS = {
-  FAST: "grok-4-fast-non-reasoning",
-  REASONING: "grok-4-fast-reasoning",
-} as const;
-```
+- [x] Implemented token cost constants
+- [x] Created calculateCost function for AI usage
+- [x] Added estimateCost and estimateTokens helpers
 
-#### 12.1.2 Cost Calculation
-
-```typescript
-export const TOKEN_COSTS = {
-  INPUT_PER_1K: 0.025, // $25/1M = 0.025 credits per 1K tokens
-  OUTPUT_PER_1K: 0.05, // $50/1M = 0.05 credits per 1K tokens
-};
-
-export function calculateCost(inputTokens: number, outputTokens: number) {
-  const inputCost = (inputTokens / 1000) * TOKEN_COSTS.INPUT_PER_1K;
-  const outputCost = (outputTokens / 1000) * TOKEN_COSTS.OUTPUT_PER_1K;
-  return inputCost + outputCost;
-}
-```
-
-### 12.2 Generate Dummy Options
+### 12.2 Generate Dummy Options ✅ COMPLETE
 
 **File:** `app/lib/ai/generate-options.ts`
 
-#### 12.2.1 Function Implementation
+#### 12.2.1 Function Implementation ✅
 
-```typescript
-import { generateText } from "ai";
-import { xai, MODELS } from "./config";
+- [x] Created generateDummyOptions function using generateObject from AI SDK
+- [x] Implemented Zod schema for options validation
+- [x] Added token usage tracking and cost calculation
+- [x] Created estimateGenerateOptionsCost helper
 
-export async function generateDummyOptions(
-  question: string,
-  correctAnswer: string
-): Promise<string[]> {
-  const prompt = `Given this multiple choice question and correct answer, generate 3 plausible but incorrect options.
+#### 12.2.2 Convex Action ✅
 
-Question: ${question}
-Correct Answer: ${correctAnswer}
+**File:** `convex/ai/actions.ts`
 
-Requirements:
-- Generate exactly 3 wrong answers
-- Make them plausible and challenging
-- They should test common misconceptions
-- Keep similar length and style to the correct answer
-- Return as JSON array of strings
+- [x] Implemented generateOptions action with authentication
+- [x] Added project ownership verification
+- [x] Implemented credit checking before generation
+- [x] Track usage and deduct credits after successful generation
+- [x] Update field with generated options
 
-Example output: ["Option 1", "Option 2", "Option 3"]`;
-
-  const { text, usage } = await generateText({
-    model: xai(MODELS.FAST),
-    prompt,
-  });
-
-  // Parse response
-  const options = JSON.parse(text);
-
-  // Track usage
-  // Return options
-  return options;
-}
-```
-
-#### 12.2.2 Convex Action
-
-**File:** `convex/ai-actions.ts`
-
-```typescript
-import { action } from "./_generated/server";
-import { v } from "convex/values";
-import { generateDummyOptions } from "../app/lib/ai/generate-options";
-
-export const generateOptions = action({
-  args: {
-    fieldId: v.id("fields"),
-    question: v.string(),
-    correctAnswer: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Check user has credits
-    // Generate options using AI
-    // Track usage
-    // Deduct credits
-    // Update field with new options
-    // Return options
-  },
-});
-```
-
-### 12.3 AI Test Creation
+### 12.3 AI Test Creation ✅ COMPLETE
 
 **File:** `app/lib/ai/create-test.ts`
 
-#### 12.3.1 Function Implementation
+#### 12.3.1 Function Implementation ✅
 
-```typescript
-import { generateObject } from "ai";
-import { xai, MODELS } from "./config";
-import { z } from "zod";
+- [x] Created createTest function with comprehensive prompting
+- [x] Implemented Zod schemas for question and test validation
+- [x] Support for multiple question types (multiple-choice, short-text, long-text, checkbox)
+- [x] Added difficulty levels (easy, medium, hard)
+- [x] Token usage tracking and cost calculation
+- [x] Created estimateTestCreationCost helper
 
-const questionSchema = z.object({
-  type: z.enum(["multiple-choice", "short-text", "long-text"]),
-  question: z.string(),
-  marks: z.number(),
-  options: z.array(z.string()).optional(),
-  correctAnswer: z.union([z.string(), z.array(z.string())]).optional(),
-  rubric: z.string().optional(),
-});
+#### 12.3.2 Convex Action ✅
 
-const testSchema = z.object({
-  questions: z.array(questionSchema),
-});
+**File:** `convex/ai/actions.ts`
 
-export async function createTest(
-  subject: string,
-  topic: string,
-  difficulty: "easy" | "medium" | "hard",
-  questionCount: number
-): Promise<any> {
-  const prompt = `Create a ${difficulty} test for ${subject} on the topic of "${topic}" with ${questionCount} questions.
+- [x] Implemented createTest action with authentication
+- [x] Added project ownership verification
+- [x] Implemented credit checking with estimated cost
+- [x] Generate test and create fields in database
+- [x] Track usage and deduct credits
+- [x] Return field IDs and test metadata
 
-Requirements:
-- Mix of multiple choice and written questions
-- Appropriate marks allocation
-- Clear, well-structured questions
-- For multiple choice: provide 4 options with correct answer
-- For written questions: provide marking rubric
-
-Generate a comprehensive test suitable for students.`;
-
-  const { object, usage } = await generateObject({
-    model: xai(MODELS.REASONING),
-    schema: testSchema,
-    prompt,
-  });
-
-  // Track usage
-  // Return test structure
-  return object;
-}
-```
-
-#### 12.3.2 Convex Action
-
-```typescript
-export const createTestWithAI = action({
-  args: {
-    projectId: v.id("projects"),
-    subject: v.string(),
-    topic: v.string(),
-    difficulty: v.string(),
-    questionCount: v.number(),
-  },
-  handler: async (ctx, args) => {
-    // Verify ownership
-    // Check credits (high cost for reasoning model)
-    // Generate test
-    // Create fields in database
-    // Track usage
-    // Deduct credits
-    // Return field IDs
-  },
-});
-```
-
-### 12.4 AI Grading
+### 12.4 AI Grading ✅ COMPLETE
 
 **File:** `app/lib/ai/grade-response.ts`
 
-#### 12.4.1 Grade Single Response
+#### 12.4.1 Grade Single Response ✅
 
-```typescript
-import { generateObject } from "ai";
-import { xai, MODELS } from "./config";
-import { z } from "zod";
+- [x] Created gradeResponse function with comprehensive grading logic
+- [x] Implemented Zod schema for grading result validation
+- [x] Support for rubric-based grading
+- [x] Automatic partial credit consideration
+- [x] Token usage tracking and cost calculation
+- [x] Created estimateGradingCost helper
 
-const gradingSchema = z.object({
-  marks: z.number(),
-  maxMarks: z.number(),
-  feedback: z.string(),
-  reasoning: z.string(),
-  isCorrect: z.boolean(),
-});
+#### 12.4.2 Bulk Grading Action ✅
 
-export async function gradeResponse(
-  question: string,
-  studentResponse: string,
-  maxMarks: number,
-  rubric?: string
-): Promise<z.infer<typeof gradingSchema>> {
-  const prompt = `Grade this student response.
+**File:** `convex/ai/actions.ts`
 
-Question: ${question}
-${rubric ? `Marking Rubric: ${rubric}` : ""}
-Maximum Marks: ${maxMarks}
+- [x] Implemented bulkGradeSubmission action
+- [x] Process all text responses for a submission
+- [x] Skip already-marked and auto-graded responses
+- [x] Credit checking before bulk operation
+- [x] Error handling for individual response failures
+- [x] Track usage and deduct credits per response
+- [x] Return success summary with counts
 
-Student Response: ${studentResponse}
+#### 12.4.3 Single Response Grading ✅
 
-Provide:
-1. Marks awarded (0 to ${maxMarks})
-2. Constructive feedback
-3. Reasoning for the marks
-4. Whether answer is correct/acceptable
+**File:** `convex/ai/actions.ts`
 
-Be fair but thorough. Consider partial credit where appropriate.`;
+- [x] Implemented gradeResponse action
+- [x] Get response with ownership verification
+- [x] Check credits before grading
+- [x] Return suggestion without saving (user can accept/modify)
+- [x] Track usage and deduct credits
+- [x] Include reasoning in response
 
-  const { object, usage } = await generateObject({
-    model: xai(MODELS.REASONING),
-    schema: gradingSchema,
-    prompt,
-  });
+### 12.5 AI Credit Management ✅ COMPLETE
 
-  // Track usage
-  return object;
-}
-```
+**File:** `app/lib/ai/credit-helpers.ts`
 
-#### 12.4.2 Bulk Grading Action
+#### 12.5.1 Credit Helper Functions ✅
 
-```typescript
-export const bulkGradeResponses = action({
-  args: {
-    submissionIds: v.array(v.id("submissions")),
-    projectId: v.id("projects"),
-  },
-  handler: async (ctx, args) => {
-    // Verify ownership
-    // Get all text responses from submissions
-    // Check credits (estimate cost)
-    // Process each response with AI
-    // Update responses with marks
-    // Update submission totals
-    // Track usage
-    // Deduct credits
-    // Return summary
-  },
-});
-```
+- [x] Created formatCredits for display formatting
+- [x] Implemented getCreditColorClass for balance-based styling
+- [x] Added getCreditBgColorClass for backgrounds
+- [x] Created formatFeatureName for feature display
+- [x] Implemented shouldWarnLowCredits checker
 
-#### 12.4.3 Single Response Suggestion
+#### 12.5.2 Credit Integration ✅
 
-```typescript
-export const suggestGrade = action({
-  args: {
-    responseId: v.id("responses"),
-  },
-  handler: async (ctx, args) => {
-    // Get response, field, and submission
-    // Verify ownership
-    // Check credits
-    // Call AI grading
-    // Track usage
-    // Deduct credits
-    // Return suggestion (don't save yet)
-  },
-});
-```
+- [x] All AI actions check credits before execution
+- [x] Credits automatically deducted after successful AI calls
+- [x] Usage tracked in aiUsage table (already implemented in Phase 3)
+- [x] Error handling for insufficient credits
+- [x] Cost calculation integrated into all AI functions
 
-### 12.5 AI Credit Management
+### 12.6 AI Feature UI Integration ✅ COMPLETE
 
-#### 12.5.1 Check Credits Before AI Call
+#### 12.6.1 Generate Options Button ✅
 
-```typescript
-// Before any AI operation
-export async function checkCredits(
-  userId: string,
-  estimatedCost: number
-): Promise<boolean> {
-  // Query user's credit balance
-  // Return true if sufficient
-  // Return false if insufficient
-  // Show warning toast if low
-}
-```
+**File:** `app/components/editor/fields/multiple-choice-editor.tsx`
 
-#### 12.5.2 Track and Deduct
+- [x] Enabled Generate Options button
+- [x] Integrated with generateOptions Convex action
+- [x] Added credit balance checking
+- [x] Show loading state during generation
+- [x] Display cost estimate (~0.5 credits)
+- [x] Toast notifications for success/error
+- [x] Auto-update field with generated options
 
-```typescript
-export async function trackAIUsage(
-  userId: string,
-  feature: string,
-  model: string,
-  inputTokens: number,
-  outputTokens: number,
-  metadata?: any
-) {
-  // Calculate cost
-  // Create ai_usage record
-  // Deduct from credits
-  // Update pay-as-you-go meter if applicable
-  // Return new balance
-}
-```
+#### 12.6.2 AI Suggest Button (Marking) ✅
 
-### 12.6 AI Feature UI Integration
+**File:** `app/components/marking/marking-panel.tsx`
 
-#### 12.6.1 Generate Options Button
+- [x] Enabled AI Suggest button for text responses
+- [x] Integrated with gradeResponse Convex action
+- [x] Credit balance checking before grading
+- [x] Popover display with AI suggestion
+- [x] Show marks, feedback, and reasoning
+- [x] Accept button to apply suggestion
+- [x] Close button to dismiss
+- [x] Loading state with spinner
+- [x] Cost display in suggestion
 
-```typescript
-// In multiple-choice field editor
-<Button
-  onClick={handleGenerateOptions}
-  disabled={!correctAnswer || loading}
->
-  <Sparkles className="mr-2" />
-  {loading ? "Generating..." : "Generate AI Options"}
-</Button>
+#### 12.6.3 Bulk AI Marking ✅
 
-// Show credit cost
-<p className="text-xs text-muted">~1 credit</p>
-```
+**File:** `app/components/marking/ai-marking-button.tsx`
 
-#### 12.6.2 AI Suggest Button (Marking)
+- [x] Enabled Bulk AI Marking button
+- [x] Integrated with bulkGradeSubmission action
+- [x] Credit balance checking with estimated cost
+- [x] Progress dialog with real-time updates
+- [x] Progress bar showing completion percentage
+- [x] Individual submission status (success/failure)
+- [x] Success and error counts
+- [x] Proper error handling
+- [x] Toast notifications for completion
 
-```typescript
-<Button
-  variant="ghost"
-  size="sm"
-  onClick={handleAISuggest}
-  disabled={loading}
->
-  <Sparkles className="mr-2" />
-  AI Suggest
-</Button>
+**Phase 12 Status:** ✅ COMPLETE
 
-// Show popover with suggestion
-<Popover>
-  <PopoverContent>
-    <h4>AI Suggestion</h4>
-    <p>Marks: {suggestion.marks}/{maxMarks}</p>
-    <p>Feedback: {suggestion.feedback}</p>
-    <div className="flex gap-2">
-      <Button onClick={acceptSuggestion}>Accept</Button>
-      <Button variant="outline">Modify</Button>
-    </div>
-  </PopoverContent>
-</Popover>
-```
+All AI features implemented and integrated:
+- AI configuration with xAI provider setup
+- Generate dummy options for multiple choice questions
+- AI test creation from topics
+- AI grading for text responses (single and bulk)
+- Credit management system fully integrated
+- All UI components enabled and functional
+- Real-time credit checking and deduction
+- Comprehensive error handling and user feedback
 
-#### 12.6.3 Bulk AI Marking
-
-```typescript
-<Button size="lg" onClick={handleBulkMark}>
-  <Sparkles className="mr-2" />
-  AI Auto-Mark All Text Responses
-</Button>
-
-// Show progress dialog
-<Dialog open={marking}>
-  <DialogContent>
-    <h3>AI Marking in Progress</h3>
-    <Progress value={progress} />
-    <p>{markedCount} / {totalCount} responses marked</p>
-    <Button onClick={cancel}>Cancel</Button>
-  </DialogContent>
-</Dialog>
-```
+**Next Steps:**
+- Phase 13: Billing Integration (Polar setup for credit purchases)
+- Phase 14: Testing & QA
+- Phase 15: Deployment & Optimization
 
 ---
 
