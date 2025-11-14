@@ -47,25 +47,48 @@ export async function loader(args: Route.LoaderArgs) {
   }
 }
 
+import { EditorNavigation } from "~/components/editor/editor-navigation";
+import { PageContainer } from "~/components/shared";
+import { AnalyticsOverview } from "~/components/marking/analytics-overview";
+import { GradeDistributionChart } from "~/components/marking/grade-distribution-chart";
+import { AIMarkingButton } from "~/components/marking/ai-marking-button";
+import { SubmissionsTable } from "~/components/marking/submissions-table";
+
 export default function ProjectMarking(props: Route.ComponentProps) {
   const { project, submissions, statistics } = props.loaderData;
 
+  const unmarkedCount = statistics.submitted - statistics.marked;
+
   return (
     <div className="flex h-screen flex-col">
-      <div className="border-b p-4">
-        <h1 className="text-2xl font-bold">
-          Marking Overview: {project?.name}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Submission Marking and Analytics - Phase 11 Implementation
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          {submissions.length} submissions
-        </p>
-      </div>
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Marking view coming soon...</p>
-      </div>
+      <EditorNavigation
+        projectId={project._id}
+        projectName={project.name}
+        currentTab="marking"
+        status={project.status}
+      />
+      <PageContainer maxWidth="2xl" className="overflow-y-auto py-8">
+        <div className="space-y-8">
+          {/* Analytics Overview */}
+          <AnalyticsOverview statistics={statistics} />
+
+          {/* Grade Distribution Chart */}
+          <GradeDistributionChart
+            gradeDistribution={statistics.gradeDistribution}
+          />
+
+          {/* AI Marking (Phase 12 - Placeholder) */}
+          {unmarkedCount > 0 && (
+            <AIMarkingButton unmarkedCount={unmarkedCount} />
+          )}
+
+          {/* Submissions Table */}
+          <SubmissionsTable
+            projectId={project._id}
+            submissions={submissions}
+          />
+        </div>
+      </PageContainer>
     </div>
   );
 }

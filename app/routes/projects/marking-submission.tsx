@@ -57,24 +57,83 @@ export async function loader(args: Route.LoaderArgs) {
   }
 }
 
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { MarkingHeader } from "~/components/marking/marking-header";
+import { QuestionNavigator } from "~/components/marking/question-navigator";
+import { SubmissionView } from "~/components/marking/submission-view";
+import type { Id } from "../../../convex/_generated/dataModel";
+
 export default function SubmissionMarking(props: Route.ComponentProps) {
-  const { project, submission, fields, responses } = props.loaderData;
+  const { project, submission: initialSubmission, fields, responses: initialResponses } = props.loaderData;
+
+  // Real-time updates
+  const submission = useQuery(api.submissions.get, {
+    submissionId: initialSubmission._id,
+  }) || initialSubmission;
+
+  const responses = useQuery(api.responses.list, {
+    submissionId: initialSubmission._id,
+  }) || initialResponses;
+
+  const [currentFieldId, setCurrentFieldId] = useState<Id<"fields"> | undefined>(
+    fields[0]?._id
+  );
+
+  // Calculate earned and total marks
+  const { earnedMarks, totalMarks } = useMemo(() => {
+    let earned = 0;
+    let total = 0;
+
+    fields.forEach((field) => {
+      const response = responses.find((r) => r.fieldId === field._id);
+      if (response && response.marksAwarded !== undefined) {
+        earned += response.marksAwarded;
+      }
+      if (field.marks) {
+        total += field.marks;
+      }
+    });
+
+    return { earnedMarks: earned, totalMarks: total };
+  }, [fields, responses]);
+
+  // Update submission marks when responses change
+  useEffect(() => {
+    // This will be handled by the marking panel's save action
+    // which will trigger the recalculation
+  }, [earnedMarks, totalMarks]);
+
+  const handleMarkSaved = () => {
+    // Trigger re-fetch of submission data
+    // The real-time queries will handle this automatically
+  };
 
   return (
     <div className="flex h-screen flex-col">
-      <div className="border-b p-4">
-        <h1 className="text-2xl font-bold">Mark Submission: {project?.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          Individual Submission Marking - Phase 11 Implementation
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          {fields.length} fields, {responses.length} responses
-        </p>
-      </div>
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">
-          Individual marking view coming soon...
-        </p>
+      <MarkingHeader
+        submission={submission}
+        projectId={project._id}
+        earnedMarks={earnedMarks}
+        totalMarks={totalMarks}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <QuestionNavigator
+          fields={fields}
+          responses={responses}
+          currentFieldId={currentFieldId}
+          onQuestionClick={setCurrentFieldId}
+          earnedMarks={earnedMarks}
+          totalMarks={totalMarks}
+        />
+        <SubmissionView
+          fields={fields}
+          responses={responses}
+          currentFieldId={currentFieldId}
+          onFieldChange={setCurrentFieldId}
+          onMarkSaved={handleMarkSaved}
+        />
       </div>
     </div>
   );

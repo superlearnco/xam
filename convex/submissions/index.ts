@@ -331,3 +331,90 @@ export const submit = mutation({
     return args.submissionId;
   },
 });
+
+// Recalculate marks for a submission based on all responses
+export const recalculateMarks = mutation({
+  args: {
+    submissionId: v.id("submissions"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)
+      )
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const submission = await ctx.db.get(args.submissionId);
+    if (!submission) {
+      throw new Error("Submission not found");
+    }
+
+    const project = await ctx.db.get(submission.projectId);
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    // Check if user has access
+    const hasAccess =
+      project.userId === user._id ||
+      (user.organizationId && project.organizationId === user.organizationId);
+
+    if (!hasAccess) {
+      throw new Error("Unauthorized");
+    }
+
+    // Get all responses for this submission
+    const responses = await ctx.db
+      .query("responses")
+      .withIndex("by_submission", (q) =>
+        q.eq("submissionId", args.submissionId)
+      )
+      .collect();
+
+    // Calculate total marks
+    let earnedMarks = 0;
+    let totalMarks = 0;
+
+    for (const response of responses) {
+      if (response.marksAwarded !== undefined) {
+        earnedMarks += response.marksAwarded;
+      }
+      if (response.maxMarks !== undefined) {
+        totalMarks += response.maxMarks;
+      }
+    }
+
+    const percentage = totalMarks > 0 ? (earnedMarks / totalMarks) * 100 : 0;
+
+    // Calculate grade
+    let grade = "F";
+    if (percentage >= 90) grade = "A";
+    else if (percentage >= 80) grade = "B";
+    else if (percentage >= 70) grade = "C";
+    else if (percentage >= 60) grade = "D";
+
+    // Update submission
+    await ctx.db.patch(args.submissionId, {
+      earnedMarks,
+      totalMarks,
+      percentage,
+      grade,
+      status: "marked",
+      markedBy: user._id,
+      markedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return { earnedMarks, totalMarks, percentage, grade };
+  },
+});
