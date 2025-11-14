@@ -1,7 +1,9 @@
 # XAM - AI Powered Test Maker
+
 ## Complete Implementation Plan
 
 **PHASE 4 STATUS: ✅ COMPLETE**
+
 - Full authentication & authorization implemented
 - See [PHASE4_SUMMARY.md](PHASE4_SUMMARY.md) for detailed implementation notes
 - See [PHASE4_AUTH_FLOW.md](PHASE4_AUTH_FLOW.md) for authentication flow diagrams
@@ -36,6 +38,7 @@
 ## 1. Project Overview
 
 ### 1.1 Tech Stack
+
 - **Frontend:** React Router 7, TypeScript
 - **Styling:** Tailwind CSS v4, shadcn/ui components
 - **Backend:** Convex (database + serverless functions)
@@ -47,6 +50,7 @@
 - **Other:** number-flow, @dnd-kit
 
 ### 1.2 Design System
+
 - **Primary Color:** `#0071e3` (Apple Blue)
 - **Secondary:** `#f5f5f7` (Apple Light Gray)
 - **Success:** `#34c759` (Apple Green)
@@ -58,10 +62,12 @@
 - **Radius:** 8px, 10px, 12px, 20px
 
 ### 1.3 AI Models
+
 - **General AI:** `xai/grok-4-fast-non-reasoning` (dummy options, quick tasks)
 - **Complex AI:** `xai/grok-4-fast-reasoning` (test creation, grading)
 
 ### 1.4 Billing Model
+
 - Everything free except AI features
 - **Credits:** $1 = 10 credits, minimum $5 purchase
 - **Pay-As-You-Go:** $25/million input tokens, $50/million output tokens
@@ -72,6 +78,7 @@
 ## PHASE 1: Foundation & Setup ✅ COMPLETE
 
 ### 1.1 Environment Setup
+
 - [x] React Router 7 configured
 - [x] Tailwind CSS v4 installed
 - [x] Convex backend initialized
@@ -80,6 +87,7 @@
 - [x] Verify all existing configurations work
 
 ### 1.2 Install Additional Dependencies
+
 - [x] Installed @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 - [x] Installed react-hook-form @hookform/resolvers
 - [x] Installed date-fns
@@ -87,6 +95,7 @@
 - [x] Zod already installed
 
 ### 1.3 Add Missing shadcn/ui Components
+
 - [x] form component created
 - [x] textarea (already exists)
 - [x] switch (already exists)
@@ -98,6 +107,7 @@
 - [x] scroll-area (already exists)
 
 ### 1.4 Project Structure Setup
+
 - [x] Created directory structure:
   - app/components/editor/
   - app/components/marking/
@@ -118,6 +128,7 @@
   - convex/billing/
 
 ### 1.5 Route Configuration
+
 - [x] Updated app/routes.ts with all project routes
 - [x] Created placeholder route files:
   - /projects/:projectId/editor - Editor
@@ -129,6 +140,7 @@
   - /take/:projectId/:submissionId/success - Submission success
 
 ### 1.6 Utility Files Created
+
 - [x] app/lib/constants.ts - App-wide constants and enums
 - [x] app/lib/types.ts - TypeScript type definitions
 - [x] app/lib/utils.ts - Enhanced with helper functions
@@ -138,9 +150,11 @@
 ## PHASE 2: Database Schema ✅ COMPLETE
 
 ### 2.1 Update Convex Schema
+
 **File:** `convex/schema.ts`
 
 #### 2.1.1 Add Projects Table
+
 ```typescript
 projects: defineTable({
   userId: v.string(),
@@ -156,10 +170,11 @@ projects: defineTable({
   .index("userId", ["userId"])
   .index("organizationId", ["organizationId"])
   .index("status", ["status"])
-  .index("publishedUrl", ["publishedUrl"])
+  .index("publishedUrl", ["publishedUrl"]);
 ```
 
 #### 2.1.2 Add Fields Table
+
 ```typescript
 fields: defineTable({
   projectId: v.id("projects"),
@@ -195,10 +210,11 @@ fields: defineTable({
   updatedAt: v.number(),
 })
   .index("projectId", ["projectId"])
-  .index("projectId_order", ["projectId", "order"])
+  .index("projectId_order", ["projectId", "order"]);
 ```
 
 #### 2.1.3 Add Project Options Table
+
 ```typescript
 project_options: defineTable({
   projectId: v.id("projects"),
@@ -224,10 +240,11 @@ project_options: defineTable({
   maxSubmissions: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
-}).index("projectId", ["projectId"])
+}).index("projectId", ["projectId"]);
 ```
 
 #### 2.1.4 Add Submissions Table
+
 ```typescript
 submissions: defineTable({
   projectId: v.id("projects"),
@@ -253,21 +270,17 @@ submissions: defineTable({
   .index("projectId", ["projectId"])
   .index("status", ["status"])
   .index("respondentUserId", ["respondentUserId"])
-  .index("submittedAt", ["submittedAt"])
+  .index("submittedAt", ["submittedAt"]);
 ```
 
 #### 2.1.5 Add Responses Table
+
 ```typescript
 responses: defineTable({
   submissionId: v.id("submissions"),
   fieldId: v.id("fields"),
   projectId: v.id("projects"),
-  value: v.union(
-    v.string(),
-    v.array(v.string()),
-    v.number(),
-    v.null()
-  ),
+  value: v.union(v.string(), v.array(v.string()), v.number(), v.null()),
   fileUrl: v.optional(v.string()),
   isCorrect: v.optional(v.boolean()),
   marksAwarded: v.optional(v.number()),
@@ -278,10 +291,11 @@ responses: defineTable({
 })
   .index("submissionId", ["submissionId"])
   .index("fieldId", ["fieldId"])
-  .index("projectId", ["projectId"])
+  .index("projectId", ["projectId"]);
 ```
 
 #### 2.1.6 Add AI Usage Table
+
 ```typescript
 ai_usage: defineTable({
   userId: v.string(),
@@ -303,10 +317,11 @@ ai_usage: defineTable({
   .index("userId", ["userId"])
   .index("organizationId", ["organizationId"])
   .index("feature", ["feature"])
-  .index("timestamp", ["timestamp"])
+  .index("timestamp", ["timestamp"]);
 ```
 
 #### 2.1.7 Add AI Credits Table
+
 ```typescript
 ai_credits: defineTable({
   userId: v.string(),
@@ -319,10 +334,11 @@ ai_credits: defineTable({
   lastUpdated: v.number(),
 })
   .index("userId", ["userId"])
-  .index("organizationId", ["organizationId"])
+  .index("organizationId", ["organizationId"]);
 ```
 
 #### 2.1.8 Add Organizations Table
+
 ```typescript
 organizations: defineTable({
   name: v.string(),
@@ -333,10 +349,11 @@ organizations: defineTable({
   updatedAt: v.number(),
 })
   .index("createdBy", ["createdBy"])
-  .index("members", ["members"])
+  .index("members", ["members"]);
 ```
 
 ### 2.2 Apply Schema Changes
+
 ```bash
 # Schema will auto-deploy with Convex
 # Verify in Convex dashboard
@@ -347,9 +364,11 @@ organizations: defineTable({
 ## PHASE 3: Backend (Convex Functions) ✅ COMPLETE
 
 ### 3.1 Projects Functions ✅ COMPLETE
+
 **File:** `convex/projects/index.ts`
 
 #### 3.1.1 List Projects
+
 ```typescript
 export const list = query({
   args: {},
@@ -357,11 +376,12 @@ export const list = query({
     // Get current user
     // Return all projects for user
     // Include submission count
-  }
+  },
 });
 ```
 
 #### 3.1.2 Get Single Project
+
 ```typescript
 export const get = query({
   args: { projectId: v.id("projects") },
@@ -369,27 +389,29 @@ export const get = query({
     // Get project by ID
     // Verify user owns it
     // Return project with fields
-  }
+  },
 });
 ```
 
 #### 3.1.3 Create Project
+
 ```typescript
 export const create = mutation({
   args: {
     name: v.string(),
-    type: v.union(v.literal("test"), v.literal("essay"), v.literal("survey"))
+    type: v.union(v.literal("test"), v.literal("essay"), v.literal("survey")),
   },
   handler: async (ctx, args) => {
     // Get user ID
     // Create project
     // Create default project_options
     // Return project ID
-  }
+  },
 });
 ```
 
 #### 3.1.4 Update Project
+
 ```typescript
 export const update = mutation({
   args: {
@@ -400,11 +422,12 @@ export const update = mutation({
   handler: async (ctx, args) => {
     // Verify ownership
     // Update project
-  }
+  },
 });
 ```
 
 #### 3.1.5 Delete Project
+
 ```typescript
 export const deleteProject = mutation({
   args: { projectId: v.id("projects") },
@@ -414,11 +437,12 @@ export const deleteProject = mutation({
     // Delete all submissions and responses
     // Delete project_options
     // Delete project
-  }
+  },
 });
 ```
 
 #### 3.1.6 Publish Project
+
 ```typescript
 export const publish = mutation({
   args: { projectId: v.id("projects") },
@@ -427,11 +451,12 @@ export const publish = mutation({
     // Generate random URL ID
     // Update status to published
     // Return published URL
-  }
+  },
 });
 ```
 
 #### 3.1.7 Unpublish Project
+
 ```typescript
 export const unpublish = mutation({
   args: { projectId: v.id("projects") },
@@ -439,35 +464,39 @@ export const unpublish = mutation({
     // Verify ownership
     // Update status to draft
     // Clear published URL
-  }
+  },
 });
 ```
 
 ### 3.2 Fields Functions ✅ COMPLETE
+
 **File:** `convex/fields/index.ts`
 
 #### 3.2.1 List Fields
+
 ```typescript
 export const list = query({
   args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
     // Get all fields for project
     // Order by order field
-  }
+  },
 });
 ```
 
 #### 3.2.2 Get Field
+
 ```typescript
 export const get = query({
   args: { fieldId: v.id("fields") },
   handler: async (ctx, args) => {
     // Get field by ID
-  }
+  },
 });
 ```
 
 #### 3.2.3 Create Field
+
 ```typescript
 export const create = mutation({
   args: {
@@ -480,11 +509,12 @@ export const create = mutation({
     // Verify project ownership
     // Get max order number
     // Create field with order = max + 1
-  }
+  },
 });
 ```
 
 #### 3.2.4 Update Field
+
 ```typescript
 export const update = mutation({
   args: {
@@ -494,11 +524,12 @@ export const update = mutation({
   handler: async (ctx, args) => {
     // Verify ownership via project
     // Update field
-  }
+  },
 });
 ```
 
 #### 3.2.5 Delete Field
+
 ```typescript
 export const deleteField = mutation({
   args: { fieldId: v.id("fields") },
@@ -506,38 +537,42 @@ export const deleteField = mutation({
     // Verify ownership
     // Delete field
     // Reorder remaining fields
-  }
+  },
 });
 ```
 
 #### 3.2.6 Reorder Fields
+
 ```typescript
 export const reorder = mutation({
   args: {
     projectId: v.id("projects"),
-    fieldIds: v.array(v.id("fields"))
+    fieldIds: v.array(v.id("fields")),
   },
   handler: async (ctx, args) => {
     // Verify ownership
     // Update order for each field
-  }
+  },
 });
 ```
 
 ### 3.3 Project Options Functions ✅ COMPLETE
+
 **File:** `convex/projects/options.ts`
 
 #### 3.3.1 Get Options
+
 ```typescript
 export const get = query({
   args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
     // Get options for project
-  }
+  },
 });
 ```
 
 #### 3.3.2 Update Options
+
 ```typescript
 export const update = mutation({
   args: {
@@ -547,40 +582,44 @@ export const update = mutation({
   handler: async (ctx, args) => {
     // Verify ownership
     // Update options
-  }
+  },
 });
 ```
 
 ### 3.4 Submissions Functions ✅ COMPLETE
+
 **File:** `convex/submissions/index.ts`
 
 #### 3.4.1 List Submissions
+
 ```typescript
 export const list = query({
   args: {
     projectId: v.id("projects"),
-    status: v.optional(v.string())
+    status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Verify ownership
     // Get submissions with optional status filter
     // Include response count
-  }
+  },
 });
 ```
 
 #### 3.4.2 Get Submission
+
 ```typescript
 export const get = query({
   args: { submissionId: v.id("submissions") },
   handler: async (ctx, args) => {
     // Get submission with all responses
     // Include field details
-  }
+  },
 });
 ```
 
 #### 3.4.3 Create Submission
+
 ```typescript
 export const create = mutation({
   args: {
@@ -593,28 +632,30 @@ export const create = mutation({
     // Check max submissions limit
     // Create submission
     // Return submission ID
-  }
+  },
 });
 ```
 
 #### 3.4.4 Update Marks
+
 ```typescript
 export const updateMarks = mutation({
   args: {
     submissionId: v.id("submissions"),
     earnedMarks: v.number(),
-    totalMarks: v.number()
+    totalMarks: v.number(),
   },
   handler: async (ctx, args) => {
     // Calculate percentage
     // Assign letter grade
     // Update submission
     // Set status to marked
-  }
+  },
 });
 ```
 
 #### 3.4.5 Get Statistics
+
 ```typescript
 export const getStatistics = query({
   args: { projectId: v.id("projects") },
@@ -623,100 +664,109 @@ export const getStatistics = query({
     // Get grade distribution
     // Count unmarked submissions
     // Return analytics data
-  }
+  },
 });
 ```
 
 ### 3.5 Responses Functions ✅ COMPLETE
+
 **File:** `convex/responses/index.ts`
 
 #### 3.5.1 Create Response
+
 ```typescript
 export const create = mutation({
   args: {
     submissionId: v.id("submissions"),
     fieldId: v.id("fields"),
-    value: v.any()
+    value: v.any(),
   },
   handler: async (ctx, args) => {
     // Get field details
     // Validate response
     // Auto-mark if multiple choice/checkbox
     // Create response
-  }
+  },
 });
 ```
 
 #### 3.5.2 Update Response
+
 ```typescript
 export const update = mutation({
   args: {
     responseId: v.id("responses"),
-    value: v.any()
+    value: v.any(),
   },
   handler: async (ctx, args) => {
     // Update response
-  }
+  },
 });
 ```
 
 #### 3.5.3 Mark Response
+
 ```typescript
 export const mark = mutation({
   args: {
     responseId: v.id("responses"),
     marksAwarded: v.number(),
     feedback: v.optional(v.string()),
-    isCorrect: v.optional(v.boolean())
+    isCorrect: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Verify ownership
     // Update response
     // Recalculate submission total
-  }
+  },
 });
 ```
 
 #### 3.5.4 Bulk Mark Responses
+
 ```typescript
 export const bulkMark = mutation({
   args: {
     responseIds: v.array(v.id("responses")),
     marks: v.array(v.number()),
-    feedbacks: v.array(v.optional(v.string()))
+    feedbacks: v.array(v.optional(v.string())),
   },
   handler: async (ctx, args) => {
     // Mark multiple responses at once
     // Used by AI marking
-  }
+  },
 });
 ```
 
 ### 3.6 Organizations Functions ✅ COMPLETE
+
 **File:** `convex/organizations/index.ts`
 
 #### 3.6.1 Get Organization
+
 ```typescript
 export const get = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
     // Get organization
-  }
+  },
 });
 ```
 
 #### 3.6.2 List User Organizations
+
 ```typescript
 export const list = query({
   args: {},
   handler: async (ctx) => {
     // Get current user
     // Get all orgs where user is member
-  }
+  },
 });
 ```
 
 #### 3.6.3 Create Organization
+
 ```typescript
 export const create = mutation({
   args: { name: v.string() },
@@ -724,42 +774,46 @@ export const create = mutation({
     // Get user ID
     // Create organization
     // Add user as first member
-  }
+  },
 });
 ```
 
 #### 3.6.4 Add Member
+
 ```typescript
 export const addMember = mutation({
   args: {
     orgId: v.id("organizations"),
-    userId: v.string()
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     // Verify user is admin
     // Add member to array
-  }
+  },
 });
 ```
 
 #### 3.6.5 Remove Member
+
 ```typescript
 export const removeMember = mutation({
   args: {
     orgId: v.id("organizations"),
-    userId: v.string()
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     // Verify user is admin
     // Remove member from array
-  }
+  },
 });
 ```
 
 ### 3.7 AI Credits Functions ✅ COMPLETE
+
 **File:** `convex/credits/index.ts`
 
 #### 3.7.1 Get Credits
+
 ```typescript
 export const getCredits = query({
   args: {},
@@ -767,75 +821,81 @@ export const getCredits = query({
     // Get user ID
     // Get or create credit record
     // Return balance and plan
-  }
+  },
 });
 ```
 
 #### 3.7.2 Purchase Credits
+
 ```typescript
 export const purchaseCredits = mutation({
   args: {
     amount: v.number(),
-    transactionId: v.string()
+    transactionId: v.string(),
   },
   handler: async (ctx, args) => {
     // Get user ID
     // Add credits to balance
     // Log transaction
-  }
+  },
 });
 ```
 
 #### 3.7.3 Deduct Credits
+
 ```typescript
 export const deductCredits = mutation({
   args: {
     cost: v.number(),
     feature: v.string(),
-    metadata: v.optional(v.any())
+    metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     // Get user ID
     // Check sufficient balance
     // Deduct credits
     // Log usage
-  }
+  },
 });
 ```
 
 #### 3.7.4 Get Usage History
+
 ```typescript
 export const getUsageHistory = query({
   args: {
     limit: v.optional(v.number()),
-    offset: v.optional(v.number())
+    offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Get user ID
     // Get paginated usage history
-  }
+  },
 });
 ```
 
 #### 3.7.5 Calculate Cost
+
 ```typescript
 export const calculateCost = query({
   args: {
     tokensInput: v.number(),
-    tokensOutput: v.number()
+    tokensOutput: v.number(),
   },
   handler: async (ctx, args) => {
     // $25/1M input = 0.025 credits per 1K tokens
     // $50/1M output = 0.05 credits per 1K tokens
     // Return total cost in credits
-  }
+  },
 });
 ```
 
 ### 3.8 AI Usage Tracking ✅ COMPLETE
+
 **File:** `convex/ai/tracking.ts`
 
 #### 3.8.1 Track Usage
+
 ```typescript
 export const trackUsage = mutation({
   args: {
@@ -844,7 +904,7 @@ export const trackUsage = mutation({
     tokensInput: v.number(),
     tokensOutput: v.number(),
     projectId: v.optional(v.id("projects")),
-    submissionId: v.optional(v.id("submissions"))
+    submissionId: v.optional(v.id("submissions")),
   },
   handler: async (ctx, args) => {
     // Get user ID
@@ -852,50 +912,54 @@ export const trackUsage = mutation({
     // Create usage record
     // Deduct credits
     // Update meter for pay-as-you-go
-  }
+  },
 });
 ```
 
 #### 3.8.2 Get Usage Stats
+
 ```typescript
 export const getUsageStats = query({
   args: {
     startDate: v.optional(v.number()),
-    endDate: v.optional(v.number())
+    endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Get user ID
     // Aggregate usage by feature
     // Return statistics
-  }
+  },
 });
 ```
 
 ### 3.9 Users Functions (Extend Existing) ✅ COMPLETE
+
 **File:** `convex/users.ts`
 
 #### 3.9.1 Update Profile
+
 ```typescript
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
-    organizationId: v.optional(v.string())
+    organizationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Get user ID
     // Update user record
-  }
+  },
 });
 ```
 
 #### 3.9.2 Get Organization
+
 ```typescript
 export const getOrganization = query({
   args: {},
   handler: async (ctx) => {
     // Get current user
     // Return user's organization
-  }
+  },
 });
 ```
 
@@ -904,18 +968,23 @@ export const getOrganization = query({
 ## PHASE 4: Authentication & Authorization ✅ COMPLETE
 
 ### 4.1 Protected Routes ✅ COMPLETE
-**Files:** 
+
+**Files:**
+
 - `app/lib/auth.ts` - Convex-dependent auth utilities
 - `app/lib/auth-helpers.ts` - Pure auth helper functions
 - `app/lib/auth.test.ts` - Comprehensive test suite
 
 #### 4.1.1 Auth Helpers ✅ COMPLETE
+
 **Client-side hooks:**
+
 - `useIsAuthenticated()` - Check if user is authenticated
 - `useCurrentUser()` - Get current user from Convex
 - `useUserOrganization()` - Get user's organization
 
 **Loader helpers:**
+
 - `requireAuth()` - Require authentication in loaders with redirect
 - `getUserInLoader()` - Get user data in loader context
 - `getUserOrganizationInLoader()` - Get organization in loader
@@ -923,6 +992,7 @@ export const getOrganization = query({
 - `getAuthFromLoader()` - Extract auth data from loader args
 
 **Authorization helpers (auth-helpers.ts):**
+
 - `canAccessProject()` - Check project access (owner or org member)
 - `isProjectOwner()` - Check if user owns project
 - `isProjectPublic()` - Check if project is published
@@ -934,7 +1004,9 @@ export const getOrganization = query({
 - `getRedirectUrl()` - Extract redirect URL from request
 
 #### 4.1.2 Route Loaders ✅ COMPLETE
+
 **Updated routes with authentication:**
+
 - `projects/:projectId/editor` - Auth + project access check
 - `projects/:projectId/options` - Auth + project access check
 - `projects/:projectId/marking` - Auth + project access check
@@ -944,6 +1016,7 @@ export const getOrganization = query({
 - `take/:projectId/:submissionId/success` - Public access with status check
 
 **All protected loaders:**
+
 - Check authentication via `getAuth()` from Clerk
 - Redirect to sign-in with redirect_url parameter if not authenticated
 - Fetch data using `fetchQuery()` with Convex
@@ -951,6 +1024,7 @@ export const getOrganization = query({
 - Handle errors with redirect to dashboard
 
 ### 4.2 Project Ownership Checks ✅ COMPLETE
+
 - Project ownership verified in all convex functions via `identity.tokenIdentifier`
 - User can access own projects or organization projects
 - Organization members can view/edit shared projects
@@ -958,6 +1032,7 @@ export const getOrganization = query({
 - Authorization logic built into convex functions (projects.get, etc.)
 
 ### 4.3 Organization-Based Access ✅ COMPLETE
+
 - Organization membership checked in convex queries
 - Projects shared automatically within organization
 - Organization ID stored on projects for shared access
@@ -965,7 +1040,9 @@ export const getOrganization = query({
 - AI credits can be shared at organization level (schema ready)
 
 ### 4.4 Tests ✅ COMPLETE
+
 **Test file:** `app/lib/auth.test.ts`
+
 - 26 passing tests covering all auth helper functions
 - Tests for project access control
 - Tests for organization membership
@@ -974,97 +1051,127 @@ export const getOrganization = query({
 
 ---
 
-## PHASE 5: UI Components Library
+## PHASE 5: UI Components Library ✅ COMPLETE
 
-### 5.1 Custom Components
+### 5.1 Custom Components ✅ COMPLETE
 
-#### 5.1.1 Logo Component (Already Exists)
+#### 5.1.1 Logo Component (Already Exists) ✅
+
 **File:** `app/components/logo.tsx`
-- Use provided xam logo
-- Use provided superlearn logo
 
-#### 5.1.2 Animated Number Component
-**File:** `app/components/ui/animated-number.tsx`
-```typescript
-// Wrapper around number-flow
-// Props: value, format, duration
-```
+- ✅ Use provided xam logo
+- ✅ Use provided superlearn logo
 
-#### 5.1.3 Empty State Component
-**File:** `app/components/ui/empty-state.tsx`
-```typescript
-// Display when no data
-// Props: icon, title, description, action
-```
+#### 5.1.2 Animated Number Component ✅
 
-#### 5.1.4 Loading Skeleton
-**File:** `app/components/ui/skeleton.tsx`
-```typescript
-// Loading placeholder
-// Props: variant (card, list, table)
-```
+**File:** `app/components/shared/animated-number.tsx`
 
-#### 5.1.5 Stat Card
-**File:** `app/components/ui/stat-card.tsx`
-```typescript
-// Display statistics
-// Props: title, value, change, icon
-```
+- ✅ Custom animation using requestAnimationFrame
+- ✅ Props: value, duration, prefix, suffix, decimals
+- ✅ Easing function (easeOutCubic)
+- ✅ Tested with 4 passing tests
 
-#### 5.1.6 Color Picker
-**File:** `app/components/ui/color-picker.tsx`
-```typescript
-// Color selection input
-// Props: value, onChange
-```
+#### 5.1.3 Empty State Component ✅
 
-### 5.2 Layout Components
+**File:** `app/components/shared/empty-state.tsx`
 
-#### 5.2.1 Page Header
-**File:** `app/components/layout/page-header.tsx`
-```typescript
-// Consistent page header
-// Props: title, description, actions
-```
+- ✅ Display when no data
+- ✅ Props: icon, title, description, action
+- ✅ Tested with 4 passing tests
 
-#### 5.2.2 Page Container
-**File:** `app/components/layout/page-container.tsx`
-```typescript
-// Consistent page wrapper
-// Props: children, maxWidth
-```
+#### 5.1.4 Loading Skeleton ✅
 
-#### 5.2.3 Sidebar Layout
-**File:** `app/components/layout/sidebar-layout.tsx`
-```typescript
-// Three-column layout
-// Props: left, center, right
-```
+**File:** `app/components/shared/loading-skeleton.tsx`
 
-### 5.3 Form Components
+- ✅ Loading placeholders for multiple variants
+- ✅ ProjectCardSkeleton, StatCardSkeleton, TableSkeleton
+- ✅ FormFieldSkeleton, PageHeaderSkeleton, SubmissionDetailSkeleton
 
-#### 5.3.1 Form Field Wrapper
-**File:** `app/components/ui/form-field.tsx`
-```typescript
-// Consistent form field styling
-// Props: label, error, description, children
-```
+#### 5.1.5 Stat Card ✅
 
-#### 5.3.2 Field Icon
-**File:** `app/components/ui/field-icon.tsx`
-```typescript
-// Icon for each field type
-// Props: type, size
-```
+**File:** `app/components/shared/stat-card.tsx`
+
+- ✅ Display statistics with animation
+- ✅ Props: title, value, icon, description, trend, prefix, suffix
+- ✅ Tested with 8 passing tests
+
+#### 5.1.6 Color Picker ✅
+
+**File:** `app/components/shared/color-picker.tsx`
+
+- ✅ Color selection input with presets
+- ✅ 22 preset colors
+- ✅ Custom color input with validation
+- ✅ Props: value, onChange, label
+
+### 5.2 Layout Components ✅ COMPLETE
+
+#### 5.2.1 Page Header ✅
+
+**File:** `app/components/shared/page-header.tsx`
+
+- ✅ Consistent page header
+- ✅ Props: title, description, actions, breadcrumbs
+- ✅ Tested with 4 passing tests
+
+#### 5.2.2 Page Container ✅
+
+**File:** `app/components/shared/page-container.tsx`
+
+- ✅ Consistent page wrapper with responsive padding
+- ✅ Props: children, maxWidth (sm, md, lg, xl, 2xl, full)
+- ✅ Tested with 3 passing tests
+
+#### 5.2.3 Sidebar Layout ✅
+
+**File:** `app/components/shared/sidebar-layout.tsx`
+
+- ✅ Flexible sidebar layout
+- ✅ Props: sidebar, children, sidebarPosition, sidebarWidth
+- ✅ Supports left and right positioning
+
+### 5.3 Form Components ✅ COMPLETE
+
+#### 5.3.1 Form Field Wrapper ✅
+
+**File:** `app/components/shared/form-field-wrapper.tsx`
+
+- ✅ Consistent form field styling
+- ✅ Props: label, error, description, required, icon, children
+- ✅ Tested with 6 passing tests
+
+#### 5.3.2 Field Icon ✅
+
+**File:** `app/components/shared/field-icon.tsx`
+
+- ✅ Icon for each field type
+- ✅ Props: type, size
+- ✅ Helper functions: getFieldIcon, getFieldLabel
+- ✅ Tested with 11 passing tests
+
+### 5.4 Testing ✅ COMPLETE
+
+- ✅ Comprehensive test suite: `app/components/shared/shared-components.test.tsx`
+- ✅ 44 tests passing
+- ✅ Coverage includes all components with edge cases
+- ✅ Uses @testing-library/react and jsdom
+- ✅ Updated vitest.config.ts to include .tsx test files
+
+### 5.5 Exports ✅ COMPLETE
+
+- ✅ All components exported from `app/components/shared/index.ts`
+- ✅ Easy imports: `import { AnimatedNumber, EmptyState } from "~/components/shared"`
 
 ---
 
 ## PHASE 6: Home Page
 
 ### 6.1 Route Setup
+
 **File:** `app/routes/home.tsx`
 
 #### 6.1.1 Page Structure
+
 ```typescript
 export default function Home() {
   return (
@@ -1080,15 +1187,18 @@ export default function Home() {
 ```
 
 ### 6.2 Navigation Component
+
 **File:** `app/components/homepage/navigation.tsx`
 
 #### 6.2.1 Design
+
 - Logo on left
 - Menu items: Features, Pricing, About
 - "Get Started" button on right
 - Transparent background with blur on scroll
 
 #### 6.2.2 Implementation
+
 ```typescript
 // Framer Motion for scroll-triggered blur
 // Sticky positioning
@@ -1096,9 +1206,11 @@ export default function Home() {
 ```
 
 ### 6.3 Hero Section
+
 **File:** `app/components/homepage/hero-section.tsx`
 
 #### 6.3.1 Content
+
 - Main headline: "AI-Powered Test Creation Made Simple"
 - Subheadline: "Create, distribute, and grade tests in minutes"
 - Primary CTA: "Get Started Free"
@@ -1106,6 +1218,7 @@ export default function Home() {
 - Animated mockup/preview
 
 #### 6.3.2 Animations
+
 ```typescript
 // Fade in headline
 // Slide up subheadline
@@ -1114,42 +1227,51 @@ export default function Home() {
 ```
 
 ### 6.4 Features Section
+
 **File:** `app/components/homepage/features-section.tsx`
 
 #### 6.4.1 Features Grid
+
 Six feature cards in 3x2 grid:
 
 **Feature 1: AI Question Generation**
+
 - Icon: Sparkles
 - Description: Generate diverse questions from any topic
 - Benefit: Save hours of prep time
 
 **Feature 2: Smart Auto-Grading**
+
 - Icon: CheckCircle
 - Description: AI marks text responses with context
 - Benefit: Instant feedback for students
 
 **Feature 3: Drag-and-Drop Builder**
+
 - Icon: Layout
 - Description: Build forms visually
 - Benefit: No technical skills required
 
 **Feature 4: Advanced Analytics**
+
 - Icon: BarChart
 - Description: Track class performance
 - Benefit: Data-driven insights
 
 **Feature 5: Flexible Distribution**
+
 - Icon: Share
 - Description: Password protection, time limits
 - Benefit: Secure test delivery
 
 **Feature 6: Survey Mode**
+
 - Icon: FileText
 - Description: Collect feedback and data
 - Benefit: Versatile tool for all needs
 
 #### 6.4.2 Animations
+
 ```typescript
 // Scroll-triggered fade-in
 // Stagger card animations
@@ -1157,23 +1279,28 @@ Six feature cards in 3x2 grid:
 ```
 
 ### 6.5 CTA Section
+
 **File:** `app/components/homepage/cta-section.tsx`
 
 #### 6.5.1 Content
+
 - Headline: "Ready to Transform Your Testing?"
 - Subheadline: "Join thousands of teachers already using xam"
 - CTA Button: "Get Started Free"
 - Trust indicators (no credit card required)
 
 #### 6.5.2 Design
+
 - Clean white background
 - Large, prominent CTA button
 - Simple, focused message
 
 ### 6.6 Footer
+
 **File:** `app/components/homepage/footer.tsx`
 
 #### 6.6.1 Content
+
 - Logo and tagline
 - Links: Features, Pricing, Terms, Privacy
 - Social media icons
@@ -1184,9 +1311,11 @@ Six feature cards in 3x2 grid:
 ## PHASE 7: Dashboard
 
 ### 7.1 Route Setup
+
 **File:** `app/routes/app.tsx`
 
 #### 7.1.1 Loader
+
 ```typescript
 export async function loader({ request }: LoaderFunctionArgs) {
   // Require authentication
@@ -1198,6 +1327,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 ```
 
 #### 7.1.2 Page Structure
+
 ```typescript
 export default function Dashboard() {
   return (
@@ -1212,15 +1342,18 @@ export default function Dashboard() {
 ```
 
 ### 7.2 Dashboard Header
+
 **File:** `app/components/dashboard/dashboard-header.tsx`
 
 #### 7.2.1 Design
+
 - Welcome message: "Welcome back, {name}!"
 - AI credits display (badge)
 - Settings icon/button
 - User menu dropdown
 
 #### 7.2.2 Implementation
+
 ```typescript
 // Display user name from Clerk
 // Show credit balance
@@ -1228,9 +1361,11 @@ export default function Dashboard() {
 ```
 
 ### 7.3 Stats Overview
+
 **File:** `app/components/dashboard/stats-overview.tsx`
 
 #### 7.3.1 Three Stat Cards
+
 ```typescript
 <div className="grid grid-cols-3 gap-4">
   <StatCard title="Tests" value={testCount} icon={FileText} />
@@ -1240,15 +1375,18 @@ export default function Dashboard() {
 ```
 
 ### 7.4 Project Grid
+
 **File:** `app/components/dashboard/project-grid.tsx`
 
 #### 7.4.1 Layout
+
 - Grid of project cards (3-4 per row)
 - Sort by: Recent, Name, Type
 - Filter by: Type, Status
 - Search bar
 
 #### 7.4.2 Empty State
+
 ```typescript
 // When no projects exist
 // Show friendly message
@@ -1256,9 +1394,11 @@ export default function Dashboard() {
 ```
 
 ### 7.5 Project Card
+
 **File:** `app/components/dashboard/project-card.tsx`
 
 #### 7.5.1 Design
+
 - Minimal preview/icon showing project type
 - Project name
 - Type badge (Test/Essay/Survey)
@@ -1268,6 +1408,7 @@ export default function Dashboard() {
 - Quick actions dropdown
 
 #### 7.5.2 Quick Actions
+
 - Edit
 - View Results
 - Options
@@ -1275,6 +1416,7 @@ export default function Dashboard() {
 - Delete
 
 #### 7.5.3 Implementation
+
 ```typescript
 // Click card to edit
 // Hover to show actions
@@ -1282,9 +1424,11 @@ export default function Dashboard() {
 ```
 
 ### 7.6 Create Project Dialog
+
 **File:** `app/components/dashboard/create-project-dialog.tsx`
 
 #### 7.6.1 Design
+
 - Modal/Dialog
 - Three large option boxes:
   - Test (FileCheck icon + description)
@@ -1294,6 +1438,7 @@ export default function Dashboard() {
 - Create and Cancel buttons
 
 #### 7.6.2 Implementation
+
 ```typescript
 // Validate name required
 // Call projects.create mutation
@@ -1302,20 +1447,24 @@ export default function Dashboard() {
 ```
 
 #### 7.6.3 Project Type Descriptions
+
 - **Test:** Multiple choice, short answer, auto-grading
 - **Essay:** Long-form responses, AI-assisted grading
 - **Survey:** Collect feedback, ratings, anonymous responses
 
 ### 7.7 Settings Panel
+
 **File:** `app/components/dashboard/settings-panel.tsx`
 
 #### 7.7.1 Tabs
+
 - Profile
 - Organization
 - AI Credits
 - Billing
 
 #### 7.7.2 Profile Tab
+
 ```typescript
 // Name input
 // Email (read-only from Clerk)
@@ -1323,6 +1472,7 @@ export default function Dashboard() {
 ```
 
 #### 7.7.3 Organization Tab
+
 ```typescript
 // Organization name (read-only or editable)
 // Member list
@@ -1330,6 +1480,7 @@ export default function Dashboard() {
 ```
 
 #### 7.7.4 AI Credits Tab
+
 ```typescript
 // Current balance (large, prominent)
 // Usage chart (last 30 days)
@@ -1338,6 +1489,7 @@ export default function Dashboard() {
 ```
 
 #### 7.7.5 Billing Tab
+
 ```typescript
 // Plan selector (Pay-per-use vs Pay-as-you-go)
 // Current plan display
@@ -1346,9 +1498,11 @@ export default function Dashboard() {
 ```
 
 ### 7.8 AI Credits Display
+
 **File:** `app/components/dashboard/ai-credits-display.tsx`
 
 #### 7.8.1 Design
+
 - Badge showing credit count
 - Color-coded:
   - Green: > 100 credits
@@ -1357,6 +1511,7 @@ export default function Dashboard() {
 - Click to open credits panel
 
 #### 7.8.2 Implementation
+
 ```typescript
 // Real-time updates from Convex
 // Animated number transitions
@@ -1367,9 +1522,11 @@ export default function Dashboard() {
 ## PHASE 8: Editor View
 
 ### 8.1 Route Setup
+
 **File:** `app/routes/app.$projectId.edit.tsx`
 
 #### 8.1.1 Loader
+
 ```typescript
 export async function loader({ params }: LoaderFunctionArgs) {
   // Require auth
@@ -1381,6 +1538,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 ```
 
 #### 8.1.2 Layout
+
 ```typescript
 export default function Editor() {
   return (
@@ -1395,9 +1553,11 @@ export default function Editor() {
 ```
 
 ### 8.2 Editor Navigation
+
 **File:** `app/components/editor/editor-navigation.tsx`
 
 #### 8.2.1 Design
+
 - Top bar across full width
 - Back button (to dashboard)
 - Project name (editable inline)
@@ -1406,6 +1566,7 @@ export default function Editor() {
 - Publish button (primary action)
 
 #### 8.2.2 Implementation
+
 ```typescript
 // Navigate between views
 // Save project name on blur
@@ -1413,26 +1574,28 @@ export default function Editor() {
 ```
 
 ### 8.3 Field Palette (Left Sidebar)
+
 **File:** `app/components/editor/field-palette.tsx`
 
 #### 8.3.1 Field Types List
+
 ```typescript
 const fieldTypes = [
   // Text Fields
   { type: "short-text", label: "Short Text", icon: Type },
   { type: "long-text", label: "Long Text", icon: AlignLeft },
-  
+
   // Choice Fields
   { type: "multiple-choice", label: "Multiple Choice", icon: CheckCircle },
   { type: "checkbox", label: "Checkboxes", icon: CheckSquare },
   { type: "dropdown", label: "Dropdown", icon: ChevronDown },
-  
+
   // Media
   { type: "file-upload", label: "File Upload", icon: Upload },
-  
+
   // Survey Only (conditional)
   { type: "rating", label: "Rating", icon: Star },
-  
+
   // Advanced
   { type: "number", label: "Number", icon: Hash },
   { type: "date", label: "Date", icon: Calendar },
@@ -1441,6 +1604,7 @@ const fieldTypes = [
 ```
 
 #### 8.3.2 Drag and Drop
+
 ```typescript
 // Use @dnd-kit
 // Make each field draggable
@@ -1448,15 +1612,18 @@ const fieldTypes = [
 ```
 
 #### 8.3.3 Click to Add
+
 ```typescript
 // Click field type to add to bottom
 // Alternative to dragging
 ```
 
 ### 8.4 Form Builder (Center)
+
 **File:** `app/components/editor/form-builder.tsx`
 
 #### 8.4.1 Drop Zone
+
 ```typescript
 // Droppable area
 // Show placeholder when empty
@@ -1464,6 +1631,7 @@ const fieldTypes = [
 ```
 
 #### 8.4.2 Field List
+
 ```typescript
 // Sortable list of added fields
 // Each field is a FieldItem component
@@ -1471,6 +1639,7 @@ const fieldTypes = [
 ```
 
 #### 8.4.3 Empty State
+
 ```typescript
 // Show when no fields added
 // Large icon
@@ -1479,9 +1648,11 @@ const fieldTypes = [
 ```
 
 ### 8.5 Field Item
+
 **File:** `app/components/editor/field-item.tsx`
 
 #### 8.5.1 Display Mode
+
 ```typescript
 // Question number
 // Question text preview
@@ -1491,6 +1662,7 @@ const fieldTypes = [
 ```
 
 #### 8.5.2 Edit Mode
+
 ```typescript
 // Expand field to show editor
 // Question text input
@@ -1501,18 +1673,20 @@ const fieldTypes = [
 ```
 
 #### 8.5.3 Multiple Choice Editor
+
 ```typescript
 // List of options (editable)
 // Add/remove option buttons
 // Radio buttons to select correct answer
 // "Generate AI Options" button
-  // Disabled until correct answer selected
-  // Shows credit cost
-  // Calls AI function
-  // Replaces existing options
+// Disabled until correct answer selected
+// Shows credit cost
+// Calls AI function
+// Replaces existing options
 ```
 
 #### 8.5.4 Checkbox Editor
+
 ```typescript
 // List of options (editable)
 // Add/remove option buttons
@@ -1521,6 +1695,7 @@ const fieldTypes = [
 ```
 
 #### 8.5.5 File Upload Editor
+
 ```typescript
 // Allowed file types (multiselect)
 // Max file size input
@@ -1528,6 +1703,7 @@ const fieldTypes = [
 ```
 
 #### 8.5.6 Rating Editor (Survey Only)
+
 ```typescript
 // Scale selector (1-5, 1-10, etc.)
 // Min label input
@@ -1536,52 +1712,61 @@ const fieldTypes = [
 ```
 
 ### 8.6 Property Panel (Right Sidebar)
+
 **File:** `app/components/editor/property-panel.tsx`
 
 #### 8.6.1 No Selection State
+
 ```typescript
 // Show when no field selected
 // Message: "Select a field to edit properties"
 ```
 
 #### 8.6.2 Field Properties
+
 ```typescript
 // Shows properties for selected field
 // Common properties:
-  // Question text (textarea)
-  // Description/help text
-  // Required toggle
-  // Marks input (test/essay only)
+// Question text (textarea)
+// Description/help text
+// Required toggle
+// Marks input (test/essay only)
 ```
 
 #### 8.6.3 Field-Specific Properties
 
 **Short Text:**
+
 - Placeholder text
 - Min length
 - Max length
 - Input type (text, email, url, tel)
 
 **Long Text:**
+
 - Placeholder text
 - Min length
 - Max length
 - Rows (height)
 
 **Multiple Choice:**
+
 - Allow "Other" option
 - Randomize options (per test)
 
 **Dropdown:**
+
 - Placeholder text
 - Allow search
 
 **File Upload:**
+
 - Allowed types
 - Max size
 - Multiple files
 
 **Number:**
+
 - Min value
 - Max value
 - Step
@@ -1589,25 +1774,30 @@ const fieldTypes = [
 - Suffix (e.g., kg)
 
 **Date:**
+
 - Min date
 - Max date
 - Format
 
 **Scale:**
+
 - Min value
 - Max value
 - Step
 - Labels
 
 **Rating:**
+
 - Scale (1-5, 1-10)
 - Show numbers
 - Required
 
 ### 8.7 Field Components
+
 **Directory:** `app/components/editor/field-components/`
 
 Create a component for each field type:
+
 - `short-text-field.tsx`
 - `long-text-field.tsx`
 - `multiple-choice-field.tsx`
@@ -1620,12 +1810,14 @@ Create a component for each field type:
 - `scale-field.tsx`
 
 Each component:
+
 - Handles display and edit modes
 - Shows field-specific options
 - Validates input
 - Calls update mutation on change
 
 ### 8.8 Auto-Save Implementation
+
 ```typescript
 // Debounce field changes
 // Save to Convex after 500ms of no changes
@@ -1639,9 +1831,11 @@ Each component:
 ## PHASE 9: Options View
 
 ### 9.1 Route Setup
+
 **File:** `app/routes/app.$projectId.options.tsx`
 
 #### 9.1.1 Loader
+
 ```typescript
 export async function loader({ params }: LoaderFunctionArgs) {
   // Require auth
@@ -1653,6 +1847,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 ```
 
 #### 9.1.2 Layout
+
 ```typescript
 export default function Options() {
   return (
@@ -1671,9 +1866,11 @@ export default function Options() {
 ```
 
 ### 9.2 Branding Section
+
 **File:** `app/components/options/branding-section.tsx`
 
 #### 9.2.1 Fields
+
 ```typescript
 // Test title (shown in header)
 // Description (shown before test starts)
@@ -1683,6 +1880,7 @@ export default function Options() {
 ```
 
 #### 9.2.2 Implementation
+
 ```typescript
 // Color pickers with presets
 // File upload with preview
@@ -1690,19 +1888,22 @@ export default function Options() {
 ```
 
 ### 9.3 Access Control Section
+
 **File:** `app/components/options/access-control-section.tsx`
 
 #### 9.3.1 Fields
+
 ```typescript
 // Require login toggle
 // Password protection toggle
-  // Show password input when enabled
-  // Password visibility toggle
+// Show password input when enabled
+// Password visibility toggle
 // Email domain restriction
-  // Input field (e.g., "school.edu")
+// Input field (e.g., "school.edu")
 ```
 
 #### 9.3.2 Implementation
+
 ```typescript
 // Validate password strength
 // Hash password before saving
@@ -1710,12 +1911,14 @@ export default function Options() {
 ```
 
 ### 9.4 Test Settings Section
+
 **File:** `app/components/options/test-settings-section.tsx`
 
 #### 9.4.1 Fields (Test/Essay Only)
+
 ```typescript
 // Time limit toggle
-  // Minutes input when enabled
+// Minutes input when enabled
 // Show progress bar toggle
 // Shuffle questions toggle
 // Shuffle options toggle
@@ -1724,33 +1927,39 @@ export default function Options() {
 ```
 
 #### 9.4.2 Implementation
+
 ```typescript
 // Conditional rendering based on project type
 // Validate time limit > 0
 ```
 
 ### 9.5 Feedback Settings Section
+
 **File:** `app/components/options/feedback-settings-section.tsx`
 
 #### 9.5.1 Fields
+
 ```typescript
 // Instant feedback toggle
 // Show correct answers toggle
 // Show score toggle
 // Release feedback date (optional)
-  // Date picker when not instant
+// Date picker when not instant
 ```
 
 #### 9.5.2 Implementation
+
 ```typescript
 // Disable dependent options when instant feedback off
 // Validate release date in future
 ```
 
 ### 9.6 Submission Settings Section
+
 **File:** `app/components/options/submission-settings-section.tsx`
 
 #### 9.6.1 Fields
+
 ```typescript
 // Allow multiple submissions toggle
 // Show confirmation message toggle
@@ -1761,6 +1970,7 @@ export default function Options() {
 ```
 
 #### 9.6.2 Implementation
+
 ```typescript
 // Character limit on confirmation message
 // Validate close date in future
@@ -1768,9 +1978,11 @@ export default function Options() {
 ```
 
 ### 9.7 Publish Dialog
+
 **File:** `app/components/options/publish-dialog.tsx`
 
 #### 9.7.1 Trigger
+
 ```typescript
 // "Publish" button in navigation
 // Check if project has fields
@@ -1778,19 +1990,21 @@ export default function Options() {
 ```
 
 #### 9.7.2 Dialog Content
+
 ```typescript
 // Generate random URL ID (8-12 characters)
 // Display full URL: xam.app/test/{randomId}
 // Copy button
 // QR code (use qrcode.react)
 // Share buttons:
-  // Email (mailto link)
-  // Copy link
-  // Download QR code
+// Email (mailto link)
+// Copy link
+// Download QR code
 // Unpublish button (if already published)
 ```
 
 #### 9.7.3 Implementation
+
 ```typescript
 // Call publish mutation
 // Update project status
@@ -1803,9 +2017,11 @@ export default function Options() {
 ## PHASE 10: Test Taking View
 
 ### 10.1 Public Access Route
+
 **File:** `app/routes/test.$testId.start.tsx`
 
 #### 10.1.1 Loader
+
 ```typescript
 export async function loader({ params }: LoaderFunctionArgs) {
   // Get project by publishedUrl
@@ -1817,6 +2033,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 ```
 
 #### 10.1.2 Start Screen (Test/Essay Only)
+
 ```typescript
 export default function TestStart() {
   return (
@@ -1825,7 +2042,7 @@ export default function TestStart() {
         <SuperlearnLogo />
         <h1>{project.name}</h1>
         <p>{options.description}</p>
-        
+
         <Form>
           <Input label="Full Name" required />
           <Input label="Email" type="email" required={options.requireLogin} />
@@ -1834,7 +2051,7 @@ export default function TestStart() {
           )}
           <Button type="submit">Start Test</Button>
         </Form>
-        
+
         <TestInfo>
           {options.timeLimit && <p>Time Limit: {options.timeLimit} minutes</p>}
           <p>Questions: {fields.length}</p>
@@ -1846,6 +2063,7 @@ export default function TestStart() {
 ```
 
 #### 10.1.3 Survey Direct Start
+
 ```typescript
 // Surveys don't show start screen
 // Go directly to form
@@ -1853,9 +2071,11 @@ export default function TestStart() {
 ```
 
 ### 10.2 Test Taking Route
+
 **File:** `app/routes/test.$testId.tsx`
 
 #### 10.2.1 Loader
+
 ```typescript
 export async function loader({ params, request }: LoaderFunctionArgs) {
   // Get project by publishedUrl
@@ -1869,6 +2089,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 ```
 
 #### 10.2.2 Layout
+
 ```typescript
 export default function TestTaking() {
   return (
@@ -1885,9 +2106,11 @@ export default function TestTaking() {
 ```
 
 ### 10.3 Test Header
+
 **File:** `app/components/test/test-header.tsx`
 
 #### 10.3.1 Design
+
 ```typescript
 // Logo (custom or superlearn)
 // Test name
@@ -1896,6 +2119,7 @@ export default function TestTaking() {
 ```
 
 #### 10.3.2 Timer Implementation
+
 ```typescript
 // Countdown timer
 // Warn at 5 minutes remaining
@@ -1904,9 +2128,11 @@ export default function TestTaking() {
 ```
 
 ### 10.4 Progress Bar
+
 **File:** `app/components/test/progress-bar.tsx`
 
 #### 10.4.1 Implementation
+
 ```typescript
 // Calculate percentage based on answered questions
 // Smooth animation
@@ -1915,9 +2141,11 @@ export default function TestTaking() {
 ```
 
 ### 10.5 Test Form
+
 **File:** `app/components/test/test-form.tsx`
 
 #### 10.5.1 Structure
+
 ```typescript
 // Render all fields in order
 // Each field is a TestFieldRenderer
@@ -1928,6 +2156,7 @@ export default function TestTaking() {
 ```
 
 #### 10.5.2 Auto-Save
+
 ```typescript
 // Debounce input changes
 // Save to Convex after 1 second
@@ -1937,9 +2166,11 @@ export default function TestTaking() {
 ```
 
 ### 10.6 Test Field Renderer
+
 **File:** `app/components/test/test-field-renderer.tsx`
 
 #### 10.6.1 Field Display
+
 ```typescript
 // Question number
 // Question text
@@ -1950,6 +2181,7 @@ export default function TestTaking() {
 ```
 
 #### 10.6.2 Input Types
+
 - Short text: `<Input />`
 - Long text: `<Textarea />`
 - Multiple choice: `<RadioGroup />`
@@ -1962,6 +2194,7 @@ export default function TestTaking() {
 - Scale: `<Slider />`
 
 #### 10.6.3 Validation
+
 ```typescript
 // Required field check
 // Min/max length for text
@@ -1971,9 +2204,11 @@ export default function TestTaking() {
 ```
 
 ### 10.7 Test Footer
+
 **File:** `app/components/test/test-footer.tsx`
 
 #### 10.7.1 Design
+
 ```typescript
 // Previous button (disabled on first question)
 // Next button (validate before proceeding)
@@ -1982,6 +2217,7 @@ export default function TestTaking() {
 ```
 
 #### 10.7.2 Submit Confirmation
+
 ```typescript
 // Show dialog before submitting
 // List unanswered required questions
@@ -1990,9 +2226,11 @@ export default function TestTaking() {
 ```
 
 ### 10.8 Submission Success Route
+
 **File:** `app/routes/test.$testId.submitted.tsx`
 
 #### 10.8.1 Success Animation
+
 ```typescript
 export default function TestSubmitted() {
   return (
@@ -2000,23 +2238,23 @@ export default function TestSubmitted() {
       <div className="text-center">
         <SuccessAnimation />
         <h1>Test Submitted Successfully!</h1>
-        
+
         {options.instantFeedback && (
           <div>
             <h2>Your Score</h2>
             <AnimatedNumber value={score} suffix="%" />
-            <p>{earnedMarks} / {totalMarks} points</p>
-            
+            <p>
+              {earnedMarks} / {totalMarks} points
+            </p>
+
             {options.showCorrectAnswers && (
               <Button>View Correct Answers</Button>
             )}
           </div>
         )}
-        
-        {options.confirmationMessage && (
-          <p>{options.confirmationMessage}</p>
-        )}
-        
+
+        {options.confirmationMessage && <p>{options.confirmationMessage}</p>}
+
         <Button variant="outline">Close Window</Button>
       </div>
     </div>
@@ -2025,9 +2263,11 @@ export default function TestSubmitted() {
 ```
 
 ### 10.9 Success Animation Component
+
 **File:** `app/components/test/success-animation.tsx`
 
 #### 10.9.1 Animated Checkmark
+
 ```typescript
 // SVG checkmark
 // Draw path animation (0 to 1)
@@ -2042,9 +2282,11 @@ export default function TestSubmitted() {
 ## PHASE 11: Marking View
 
 ### 11.1 Marking Overview Route
+
 **File:** `app/routes/app.$projectId.mark.tsx`
 
 #### 11.1.1 Loader
+
 ```typescript
 export async function loader({ params }: LoaderFunctionArgs) {
   // Require auth
@@ -2057,6 +2299,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 ```
 
 #### 11.1.2 Layout
+
 ```typescript
 export default function Marking() {
   return (
@@ -2073,9 +2316,11 @@ export default function Marking() {
 ```
 
 ### 11.2 Analytics Overview
+
 **File:** `app/components/marking/analytics-overview.tsx`
 
 #### 11.2.1 Top Stats Row
+
 ```typescript
 <div className="grid grid-cols-3 gap-6">
   <Card>
@@ -2083,7 +2328,7 @@ export default function Marking() {
     <GradeDistributionChart />
     <AnimatedNumber value={average} suffix="%" />
   </Card>
-  
+
   <Card>
     <h3>Unmarked Submissions</h3>
     <div className="text-4xl">
@@ -2091,7 +2336,7 @@ export default function Marking() {
       <span className="text-muted">/ {totalCount}</span>
     </div>
   </Card>
-  
+
   <Card>
     <h3>Grade Distribution</h3>
     <BarChart data={distribution} />
@@ -2100,6 +2345,7 @@ export default function Marking() {
 ```
 
 #### 11.2.2 Grade Distribution Chart
+
 **File:** `app/components/marking/grade-distribution-chart.tsx`
 
 ```typescript
@@ -2110,9 +2356,11 @@ export default function Marking() {
 ```
 
 ### 11.3 AI Marking Actions
+
 **File:** `app/components/marking/ai-marking-button.tsx`
 
 #### 11.3.1 Bulk AI Marking
+
 ```typescript
 <Card>
   <Button size="lg" onClick={handleAIMarkAll}>
@@ -2120,13 +2368,14 @@ export default function Marking() {
     AI Auto-Mark All Text Responses
   </Button>
   <p className="text-sm text-muted">
-    Uses AI to grade all text responses. 
-    Estimated cost: {estimatedCredits} credits
+    Uses AI to grade all text responses. Estimated cost: {estimatedCredits}{" "}
+    credits
   </p>
 </Card>
 ```
 
 #### 11.3.2 AI Marking Dialog
+
 ```typescript
 // Show progress dialog
 // List submissions being marked
@@ -2136,6 +2385,7 @@ export default function Marking() {
 ```
 
 #### 11.3.3 Implementation
+
 ```typescript
 // Get all unmarked text responses
 // Batch process with AI
@@ -2145,24 +2395,22 @@ export default function Marking() {
 ```
 
 ### 11.4 Submissions Table
+
 **File:** `app/components/marking/submissions-table.tsx`
 
 #### 11.4.1 Table Tabs
+
 ```typescript
 <Tabs defaultValue="unmarked">
   <TabsList>
-    <TabsTrigger value="unmarked">
-      Unmarked ({unmarkedCount})
-    </TabsTrigger>
-    <TabsTrigger value="marked">
-      Marked ({markedCount})
-    </TabsTrigger>
+    <TabsTrigger value="unmarked">Unmarked ({unmarkedCount})</TabsTrigger>
+    <TabsTrigger value="marked">Marked ({markedCount})</TabsTrigger>
   </TabsList>
-  
+
   <TabsContent value="unmarked">
     <SubmissionsDataTable data={unmarked} />
   </TabsContent>
-  
+
   <TabsContent value="marked">
     <SubmissionsDataTable data={marked} />
   </TabsContent>
@@ -2170,6 +2418,7 @@ export default function Marking() {
 ```
 
 #### 11.4.2 Table Columns
+
 ```typescript
 // Name
 // Email
@@ -2180,6 +2429,7 @@ export default function Marking() {
 ```
 
 #### 11.4.3 Features
+
 - Sortable columns
 - Search by name/email
 - Filter by date range
@@ -2188,6 +2438,7 @@ export default function Marking() {
 - Pagination
 
 #### 11.4.4 Implementation
+
 ```typescript
 // Use @tanstack/react-table
 // Server-side sorting/filtering
@@ -2195,9 +2446,11 @@ export default function Marking() {
 ```
 
 ### 11.5 Individual Marking Route
+
 **File:** `app/routes/app.$projectId.mark.$submissionId.tsx`
 
 #### 11.5.1 Loader
+
 ```typescript
 export async function loader({ params }: LoaderFunctionArgs) {
   // Require auth
@@ -2209,6 +2462,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 ```
 
 #### 11.5.2 Layout
+
 ```typescript
 export default function SubmissionMarking() {
   return (
@@ -2224,9 +2478,11 @@ export default function SubmissionMarking() {
 ```
 
 ### 11.6 Marking Header
+
 **File:** `app/components/marking/marking-header.tsx`
 
 #### 11.6.1 Design
+
 ```typescript
 <div className="border-b p-4 flex items-center justify-between">
   <div className="flex items-center gap-4">
@@ -2241,7 +2497,7 @@ export default function SubmissionMarking() {
       </p>
     </div>
   </div>
-  
+
   <div className="text-right">
     <div className="text-2xl font-bold">
       <AnimatedNumber value={earnedMarks} /> / {totalMarks}
@@ -2254,9 +2510,11 @@ export default function SubmissionMarking() {
 ```
 
 ### 11.7 Question Navigator
+
 **File:** `app/components/marking/question-navigator.tsx`
 
 #### 11.7.1 Design (Left Sidebar)
+
 ```typescript
 <div className="w-64 border-r overflow-y-auto">
   <div className="p-4">
@@ -2275,7 +2533,7 @@ export default function SubmissionMarking() {
       ))}
     </div>
   </div>
-  
+
   <div className="p-4 border-t">
     <div className="text-center">
       <p className="text-sm text-muted">Total Score</p>
@@ -2288,20 +2546,23 @@ export default function SubmissionMarking() {
 ```
 
 #### 11.7.2 Question Nav Item
+
 ```typescript
 // Show status indicator:
-  // ✓ Green checkmark - Marked
-  // ⚠ Yellow warning - Partially marked
-  // ○ Gray circle - Not marked
+// ✓ Green checkmark - Marked
+// ⚠ Yellow warning - Partially marked
+// ○ Gray circle - Not marked
 // Show marks: X/Y
 // Highlight current question
 // Click to scroll to question
 ```
 
 ### 11.8 Submission View
+
 **File:** `app/components/marking/submission-view.tsx`
 
 #### 11.8.1 Structure
+
 ```typescript
 // Scrollable area
 // Show each question with response
@@ -2310,6 +2571,7 @@ export default function SubmissionMarking() {
 ```
 
 #### 11.8.2 Question Display
+
 ```typescript
 <div className="p-8">
   {fields.map((field, index) => (
@@ -2319,13 +2581,11 @@ export default function SubmissionMarking() {
           <span>Question {index + 1}</span>
           <span>{field.marks} marks</span>
         </QuestionHeader>
-        
+
         <QuestionText>{field.question}</QuestionText>
-        
-        <StudentAnswer>
-          {getResponse(field._id)}
-        </StudentAnswer>
-        
+
+        <StudentAnswer>{getResponse(field._id)}</StudentAnswer>
+
         <MarkingPanel
           response={getResponseObject(field._id)}
           field={field}
@@ -2338,9 +2598,11 @@ export default function SubmissionMarking() {
 ```
 
 ### 11.9 Marking Panel
+
 **File:** `app/components/marking/marking-panel.tsx`
 
 #### 11.9.1 Auto-Marked Fields (Multiple Choice, Checkbox)
+
 ```typescript
 // Show automatic result
 // Display: Correct ✓ or Incorrect ✗
@@ -2350,6 +2612,7 @@ export default function SubmissionMarking() {
 ```
 
 #### 11.9.2 Text Response Fields
+
 ```typescript
 <Card className="mt-4">
   <CardHeader>
@@ -2361,7 +2624,7 @@ export default function SubmissionMarking() {
       </Button>
     </div>
   </CardHeader>
-  
+
   <CardContent>
     <div className="space-y-4">
       <div>
@@ -2388,7 +2651,7 @@ export default function SubmissionMarking() {
           </Button>
         </div>
       </div>
-      
+
       <div>
         <Label>Status</Label>
         <ToggleGroup type="single" value={status} onValueChange={setStatus}>
@@ -2397,7 +2660,7 @@ export default function SubmissionMarking() {
           <ToggleGroupItem value="incorrect">Incorrect</ToggleGroupItem>
         </ToggleGroup>
       </div>
-      
+
       <div>
         <Label>Feedback (optional)</Label>
         <Textarea
@@ -2406,7 +2669,7 @@ export default function SubmissionMarking() {
           onChange={(e) => setFeedback(e.target.value)}
         />
       </div>
-      
+
       <Button onClick={handleSave}>Save Mark</Button>
     </div>
   </CardContent>
@@ -2414,6 +2677,7 @@ export default function SubmissionMarking() {
 ```
 
 #### 11.9.3 AI Suggest Implementation
+
 ```typescript
 // Show loading state
 // Call AI grading function
@@ -2423,6 +2687,7 @@ export default function SubmissionMarking() {
 ```
 
 #### 11.9.4 Navigation
+
 ```typescript
 <div className="flex justify-between mt-8">
   <Button
@@ -2432,11 +2697,8 @@ export default function SubmissionMarking() {
   >
     <ChevronLeft /> Previous Question
   </Button>
-  
-  <Button
-    onClick={nextQuestion}
-    disabled={isLastQuestion}
-  >
+
+  <Button onClick={nextQuestion} disabled={isLastQuestion}>
     Next Question <ChevronRight />
   </Button>
 </div>
@@ -2447,9 +2709,11 @@ export default function SubmissionMarking() {
 ## PHASE 12: AI Integration
 
 ### 12.1 AI Configuration
+
 **File:** `app/lib/ai/config.ts`
 
 #### 12.1.1 Setup xAI Provider
+
 ```typescript
 import { createOpenAI } from "@ai-sdk/openai";
 
@@ -2466,10 +2730,11 @@ export const MODELS = {
 ```
 
 #### 12.1.2 Cost Calculation
+
 ```typescript
 export const TOKEN_COSTS = {
   INPUT_PER_1K: 0.025, // $25/1M = 0.025 credits per 1K tokens
-  OUTPUT_PER_1K: 0.05,  // $50/1M = 0.05 credits per 1K tokens
+  OUTPUT_PER_1K: 0.05, // $50/1M = 0.05 credits per 1K tokens
 };
 
 export function calculateCost(inputTokens: number, outputTokens: number) {
@@ -2480,9 +2745,11 @@ export function calculateCost(inputTokens: number, outputTokens: number) {
 ```
 
 ### 12.2 Generate Dummy Options
+
 **File:** `app/lib/ai/generate-options.ts`
 
 #### 12.2.1 Function Implementation
+
 ```typescript
 import { generateText } from "ai";
 import { xai, MODELS } from "./config";
@@ -2512,7 +2779,7 @@ Example output: ["Option 1", "Option 2", "Option 3"]`;
 
   // Parse response
   const options = JSON.parse(text);
-  
+
   // Track usage
   // Return options
   return options;
@@ -2520,6 +2787,7 @@ Example output: ["Option 1", "Option 2", "Option 3"]`;
 ```
 
 #### 12.2.2 Convex Action
+
 **File:** `convex/ai-actions.ts`
 
 ```typescript
@@ -2545,9 +2813,11 @@ export const generateOptions = action({
 ```
 
 ### 12.3 AI Test Creation
+
 **File:** `app/lib/ai/create-test.ts`
 
 #### 12.3.1 Function Implementation
+
 ```typescript
 import { generateObject } from "ai";
 import { xai, MODELS } from "./config";
@@ -2596,6 +2866,7 @@ Generate a comprehensive test suitable for students.`;
 ```
 
 #### 12.3.2 Convex Action
+
 ```typescript
 export const createTestWithAI = action({
   args: {
@@ -2618,9 +2889,11 @@ export const createTestWithAI = action({
 ```
 
 ### 12.4 AI Grading
+
 **File:** `app/lib/ai/grade-response.ts`
 
 #### 12.4.1 Grade Single Response
+
 ```typescript
 import { generateObject } from "ai";
 import { xai, MODELS } from "./config";
@@ -2668,6 +2941,7 @@ Be fair but thorough. Consider partial credit where appropriate.`;
 ```
 
 #### 12.4.2 Bulk Grading Action
+
 ```typescript
 export const bulkGradeResponses = action({
   args: {
@@ -2689,6 +2963,7 @@ export const bulkGradeResponses = action({
 ```
 
 #### 12.4.3 Single Response Suggestion
+
 ```typescript
 export const suggestGrade = action({
   args: {
@@ -2709,6 +2984,7 @@ export const suggestGrade = action({
 ### 12.5 AI Credit Management
 
 #### 12.5.1 Check Credits Before AI Call
+
 ```typescript
 // Before any AI operation
 export async function checkCredits(
@@ -2723,6 +2999,7 @@ export async function checkCredits(
 ```
 
 #### 12.5.2 Track and Deduct
+
 ```typescript
 export async function trackAIUsage(
   userId: string,
@@ -2743,6 +3020,7 @@ export async function trackAIUsage(
 ### 12.6 AI Feature UI Integration
 
 #### 12.6.1 Generate Options Button
+
 ```typescript
 // In multiple-choice field editor
 <Button
@@ -2758,6 +3036,7 @@ export async function trackAIUsage(
 ```
 
 #### 12.6.2 AI Suggest Button (Marking)
+
 ```typescript
 <Button
   variant="ghost"
@@ -2784,6 +3063,7 @@ export async function trackAIUsage(
 ```
 
 #### 12.6.3 Bulk AI Marking
+
 ```typescript
 <Button size="lg" onClick={handleBulkMark}>
   <Sparkles className="mr-2" />
@@ -2808,7 +3088,9 @@ export async function trackAIUsage(
 ### 13.1 Polar Setup
 
 #### 13.1.1 Create Products in Polar Dashboard
+
 1. **AI Credits (One-time)**
+
    - Product name: "AI Credits"
    - Type: One-time payment
    - Variable pricing: Yes
@@ -2823,13 +3105,16 @@ export async function trackAIUsage(
    - Description: "Pay for AI usage at the end of each month"
 
 #### 13.1.2 Polar Webhook Configuration
+
 - Webhook URL: `https://yourdomain.com/api/polar/webhook`
 - Events: `checkout.success`, `subscription.created`, `subscription.updated`, `subscription.canceled`
 
 ### 13.2 Convex Billing Functions
+
 **File:** `convex/billing.ts`
 
 #### 13.2.1 Create Checkout Session
+
 ```typescript
 import { action } from "./_generated/server";
 import { v } from "convex/values";
@@ -2848,6 +3133,7 @@ export const createCheckout = action({
 ```
 
 #### 13.2.2 Handle Payment Success
+
 ```typescript
 export const handlePaymentSuccess = mutation({
   args: {
@@ -2858,7 +3144,7 @@ export const handlePaymentSuccess = mutation({
   handler: async (ctx, args) => {
     // Convert amount to credits ($1 = 10 credits)
     const credits = args.amount * 10;
-    
+
     // Add credits to user balance
     // Create transaction record
     // Send confirmation email
@@ -2867,6 +3153,7 @@ export const handlePaymentSuccess = mutation({
 ```
 
 #### 13.2.3 Handle Subscription Created
+
 ```typescript
 export const handleSubscriptionCreated = mutation({
   args: {
@@ -2883,6 +3170,7 @@ export const handleSubscriptionCreated = mutation({
 ```
 
 #### 13.2.4 Track Metered Usage
+
 ```typescript
 export const trackMeteredUsage = mutation({
   args: {
@@ -2901,6 +3189,7 @@ export const trackMeteredUsage = mutation({
 ### 13.3 Billing UI Components
 
 #### 13.3.1 Purchase Credits Dialog
+
 **File:** `app/components/dashboard/purchase-credits-dialog.tsx`
 
 ```typescript
@@ -2913,12 +3202,12 @@ export function PurchaseCreditsDialog() {
       <DialogTrigger asChild>
         <Button>Purchase Credits</Button>
       </DialogTrigger>
-      
+
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Purchase AI Credits</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
             <Label>Amount (USD)</Label>
@@ -2932,13 +3221,13 @@ export function PurchaseCreditsDialog() {
               You will receive {credits} credits
             </p>
           </div>
-          
+
           <div className="bg-secondary p-4 rounded">
             <h4 className="font-medium">Pricing</h4>
             <p className="text-sm">$1 = 10 Credits</p>
             <p className="text-sm">Minimum: $5 (50 credits)</p>
           </div>
-          
+
           <Button onClick={handleCheckout} className="w-full">
             Continue to Payment
           </Button>
@@ -2950,6 +3239,7 @@ export function PurchaseCreditsDialog() {
 ```
 
 #### 13.3.2 Plan Selector
+
 **File:** `app/components/dashboard/plan-selector.tsx`
 
 ```typescript
@@ -2972,7 +3262,7 @@ export function PlanSelector() {
           </Button>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Pay-As-You-Go</CardTitle>
@@ -2996,6 +3286,7 @@ export function PlanSelector() {
 ```
 
 #### 13.3.3 Usage History
+
 **File:** `app/components/dashboard/usage-history.tsx`
 
 ```typescript
@@ -3003,7 +3294,7 @@ export function UsageHistory() {
   return (
     <div>
       <h3>AI Usage History</h3>
-      
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -3018,9 +3309,7 @@ export function UsageHistory() {
             <TableRow key={item._id}>
               <TableCell>{formatDate(item.timestamp)}</TableCell>
               <TableCell>{item.feature}</TableCell>
-              <TableCell>
-                {item.tokensInput + item.tokensOutput}
-              </TableCell>
+              <TableCell>{item.tokensInput + item.tokensOutput}</TableCell>
               <TableCell>{item.cost} credits</TableCell>
             </TableRow>
           ))}
@@ -3032,9 +3321,11 @@ export function UsageHistory() {
 ```
 
 ### 13.4 Webhook Handler
+
 **File:** `convex/http.ts` (extend existing)
 
 #### 13.4.1 Polar Webhook Endpoint
+
 ```typescript
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
@@ -3048,9 +3339,9 @@ http.route({
     // Verify webhook signature
     // Parse event
     // Handle different event types
-    
+
     const event = await request.json();
-    
+
     switch (event.type) {
       case "checkout.success":
         await ctx.runMutation(api.billing.handlePaymentSuccess, {
@@ -3059,7 +3350,7 @@ http.route({
           transactionId: event.data.id,
         });
         break;
-        
+
       case "subscription.created":
         await ctx.runMutation(api.billing.handleSubscriptionCreated, {
           userId: event.data.user_id,
@@ -3067,10 +3358,10 @@ http.route({
           meterId: event.data.meter_id,
         });
         break;
-        
+
       // Handle other events
     }
-    
+
     return new Response(null, { status: 200 });
   }),
 });
@@ -3085,19 +3376,25 @@ export default http;
 ### 14.1 Unit Tests
 
 #### 14.1.1 Test Utilities
+
 **File:** `app/lib/utils.test.ts`
+
 - Test helper functions
 - Test validation functions
 - Test formatting functions
 
 #### 14.1.2 Test AI Functions
+
 **File:** `app/lib/ai/*.test.ts`
+
 - Mock AI responses
 - Test cost calculations
 - Test error handling
 
 #### 14.1.3 Test Convex Functions
+
 **File:** `convex/*.test.ts`
+
 - Test queries and mutations
 - Test authorization checks
 - Test data validation
@@ -3105,17 +3402,20 @@ export default http;
 ### 14.2 Integration Tests
 
 #### 14.2.1 Test User Flows
+
 - Create account → Dashboard → Create test → Edit fields → Publish
 - Take test → Submit → View results
 - Mark submissions → AI grading → Update scores
 
 #### 14.2.2 Test AI Features
+
 - Generate dummy options
 - AI test creation
 - AI grading accuracy
 - Credit deduction
 
 #### 14.2.3 Test Billing
+
 - Purchase credits
 - Deduct credits
 - Subscription billing
@@ -3124,6 +3424,7 @@ export default http;
 ### 14.3 E2E Tests (Playwright)
 
 #### 14.3.1 Critical User Journeys
+
 ```typescript
 test("teacher can create and publish test", async ({ page }) => {
   // Login
@@ -3156,6 +3457,7 @@ test("teacher can mark submission", async ({ page }) => {
 ### 14.4 Manual Testing Checklist
 
 #### 14.4.1 UI/UX Testing
+
 - [ ] Responsive design on mobile, tablet, desktop
 - [ ] Keyboard navigation works
 - [ ] Focus states visible
@@ -3164,6 +3466,7 @@ test("teacher can mark submission", async ({ page }) => {
 - [ ] Animations performant
 
 #### 14.4.2 Feature Testing
+
 - [ ] All field types work correctly
 - [ ] Drag and drop functions
 - [ ] Auto-save reliable
@@ -3172,6 +3475,7 @@ test("teacher can mark submission", async ({ page }) => {
 - [ ] Charts display correctly
 
 #### 14.4.3 Browser Testing
+
 - [ ] Chrome/Edge
 - [ ] Firefox
 - [ ] Safari
@@ -3180,12 +3484,14 @@ test("teacher can mark submission", async ({ page }) => {
 ### 14.5 Performance Testing
 
 #### 14.5.1 Metrics to Monitor
+
 - Page load time < 2s
 - Time to interactive < 3s
 - Lighthouse score > 90
 - Bundle size < 500KB
 
 #### 14.5.2 Optimization
+
 - Code splitting
 - Image optimization
 - Lazy loading
@@ -3194,12 +3500,14 @@ test("teacher can mark submission", async ({ page }) => {
 ### 14.6 Security Testing
 
 #### 14.6.1 Authentication
+
 - [ ] Protected routes require auth
 - [ ] Ownership checks on all mutations
 - [ ] API keys secured
 - [ ] Webhook signatures verified
 
 #### 14.6.2 Data Validation
+
 - [ ] Input sanitization
 - [ ] SQL injection prevention (N/A with Convex)
 - [ ] XSS prevention
@@ -3212,6 +3520,7 @@ test("teacher can mark submission", async ({ page }) => {
 ### 15.1 Environment Variables
 
 #### 15.1.1 Required Variables
+
 ```bash
 # Clerk Authentication
 VITE_CLERK_PUBLISHABLE_KEY=pk_...
@@ -3235,6 +3544,7 @@ VITE_APP_URL=https://xam.app
 ### 15.2 Vercel Deployment
 
 #### 15.2.1 Deploy Configuration
+
 ```json
 // vercel.json
 {
@@ -3247,6 +3557,7 @@ VITE_APP_URL=https://xam.app
 ```
 
 #### 15.2.2 Deploy Steps
+
 1. Connect GitHub repository
 2. Configure environment variables
 3. Set build command
@@ -3257,6 +3568,7 @@ VITE_APP_URL=https://xam.app
 ### 15.3 Convex Deployment
 
 #### 15.3.1 Production Setup
+
 ```bash
 # Deploy to production
 npx convex deploy --prod
@@ -3267,6 +3579,7 @@ npx convex env set POLAR_ACCESS_TOKEN polar_... --prod
 ```
 
 #### 15.3.2 Database Backups
+
 - Configure automatic backups
 - Set retention policy
 - Test restore process
@@ -3274,6 +3587,7 @@ npx convex env set POLAR_ACCESS_TOKEN polar_... --prod
 ### 15.4 Custom Domain Setup
 
 #### 15.4.1 Domain Configuration
+
 - Point DNS to Vercel
 - Configure SSL certificate
 - Set up redirects (www → non-www)
@@ -3282,6 +3596,7 @@ npx convex env set POLAR_ACCESS_TOKEN polar_... --prod
 ### 15.5 Monitoring & Analytics
 
 #### 15.5.1 Vercel Analytics
+
 ```typescript
 // Already installed: @vercel/analytics
 // Verify tracking works
@@ -3289,6 +3604,7 @@ npx convex env set POLAR_ACCESS_TOKEN polar_... --prod
 ```
 
 #### 15.5.2 Error Tracking
+
 ```bash
 # Install Sentry (optional)
 npm install @sentry/react
@@ -3297,6 +3613,7 @@ npm install @sentry/react
 ```
 
 #### 15.5.3 Metrics to Track
+
 - User signups
 - Tests created
 - Tests taken
@@ -3308,6 +3625,7 @@ npm install @sentry/react
 ### 15.6 Documentation
 
 #### 15.6.1 User Documentation
+
 - Getting started guide
 - Feature tutorials
 - FAQ
@@ -3315,6 +3633,7 @@ npm install @sentry/react
 - Support contact
 
 #### 15.6.2 Developer Documentation
+
 - Code architecture
 - API documentation
 - Deployment guide
@@ -3323,6 +3642,7 @@ npm install @sentry/react
 ### 15.7 Launch Checklist
 
 #### 15.7.1 Pre-Launch
+
 - [ ] All features tested
 - [ ] Security audit complete
 - [ ] Performance optimized
@@ -3332,6 +3652,7 @@ npm install @sentry/react
 - [ ] Documentation written
 
 #### 15.7.2 Launch Day
+
 - [ ] Deploy to production
 - [ ] Verify all features work
 - [ ] Test payment flow
@@ -3340,6 +3661,7 @@ npm install @sentry/react
 - [ ] Be ready for support
 
 #### 15.7.3 Post-Launch
+
 - [ ] Collect user feedback
 - [ ] Fix critical bugs
 - [ ] Optimize based on metrics
@@ -3351,6 +3673,7 @@ npm install @sentry/react
 ## APPENDIX A: Component Reference
 
 ### A.1 Complete File Structure
+
 ```
 xam/
 ├── app/
@@ -3482,6 +3805,7 @@ xam/
 ## APPENDIX B: Key Features Summary
 
 ### B.1 Core Features
+
 1. ✓ User authentication (Clerk)
 2. ✓ Project creation (Test/Essay/Survey)
 3. ✓ Drag-and-drop form builder
@@ -3494,6 +3818,7 @@ xam/
 10. ✓ Credit-based billing
 
 ### B.2 AI Features
+
 1. Generate dummy options for multiple choice
 2. Create entire tests from topics
 3. Auto-grade text responses
@@ -3501,6 +3826,7 @@ xam/
 5. Bulk AI marking
 
 ### B.3 Billing Features
+
 1. Pay-per-use credits
 2. Pay-as-you-go subscription
 3. Metered billing
@@ -3512,6 +3838,7 @@ xam/
 ## APPENDIX C: Success Metrics
 
 ### C.1 Technical Metrics
+
 - Page load time: < 2s
 - Time to interactive: < 3s
 - Error rate: < 1%
@@ -3519,6 +3846,7 @@ xam/
 - Lighthouse score: > 90
 
 ### C.2 Business Metrics
+
 - User signups: Track growth
 - Test creation rate: Tests per user
 - AI feature adoption: % using AI
@@ -3526,6 +3854,7 @@ xam/
 - Retention: Month-over-month
 
 ### C.3 User Satisfaction
+
 - NPS score
 - Feature requests
 - Bug reports
