@@ -13,8 +13,8 @@ export const xai = createOpenAI({
 // Model identifiers - using Vercel AI Gateway format (provider/model-name)
 // The gateway routes requests based on the provider/model-name format
 export const MODELS = {
-  FAST: "xai/grok-beta", // Fast non-reasoning model for quick tasks
-  REASONING: "xai/grok-beta", // Reasoning model for complex tasks
+  FAST: "xai/grok-4-fast-non-reasoning", // Fast non-reasoning model for quick tasks
+  REASONING: "xai/grok-4-fast-non-reasoning", // Using same model for all tasks
 } as const;
 
 // Token costs (in credits per 1000 tokens)

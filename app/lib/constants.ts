@@ -59,8 +59,8 @@ export type AIFeature = (typeof AI_FEATURES)[keyof typeof AI_FEATURES];
 
 // AI Models - using Vercel AI Gateway format
 export const AI_MODELS = {
-  FAST: "xai/grok-beta",
-  REASONING: "xai/grok-beta",
+  FAST: "xai/grok-4-fast-non-reasoning",
+  REASONING: "xai/grok-4-fast-non-reasoning",
 } as const;
 
 export type AIModel = (typeof AI_MODELS)[keyof typeof AI_MODELS];

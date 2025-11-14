@@ -64,8 +64,7 @@
 ### 1.3 AI Models
 
 - **AI Gateway:** All AI requests route through Vercel AI Gateway (`https://gateway.vercel.ai/v1`)
-- **General AI:** `xai/grok-beta` (dummy options, quick tasks)
-- **Complex AI:** `xai/grok-beta` (test creation, grading)
+- **AI Model:** `xai/grok-4-fast-non-reasoning` (used for all AI tasks: test creation, grading, option generation)
 - **Chat:** `openai/gpt-4o` (via Vercel AI Gateway)
 
 ### 1.4 Billing Model
