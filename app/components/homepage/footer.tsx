@@ -2,37 +2,60 @@ import { Link } from "react-router";
 
 export default function FooterSection() {
   return (
-    <footer className="py-16 md:py-32">
-      <div className="mx-auto max-w-5xl px-6">
-        <Link to="/" aria-label="go home" className="mx-auto block size-fit">
-          <img src="/rsk.png" alt="RSK Logo" className="h-12 w-12" />
-        </Link>
-        <div className="my-8 flex flex-wrap justify-center gap-6 text-sm">
-          <Link
-            to="https://x.com/rasmickyy"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="X/Twitter"
-            className="text-muted-foreground hover:text-primary block"
-          >
-            <svg
-              className="size-6"
-              xmlns="http://www.w3.org/2000/svg"
-              width="1em"
-              height="1em"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fill="currentColor"
-                d="M10.488 14.651L15.25 21h7l-7.858-10.478L20.93 3h-2.65l-5.117 5.886L8.75 3h-7l7.51 10.015L2.32 21h2.65zM16.25 19L5.75 5h2l10.5 14z"
-              ></path>
-            </svg>
-          </Link>
+    <footer className="border-t py-16">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          {/* Logo and tagline */}
+          <div className="col-span-1 md:col-span-2">
+            <Link to="/" aria-label="go home" className="block mb-4">
+              <img src="/xam full.png" alt="xam Logo" className="h-8" />
+            </Link>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              AI-powered test creation and grading platform for teachers and educators.
+            </p>
+          </div>
+
+          {/* Product links */}
+          <div>
+            <h3 className="font-semibold mb-4">Product</h3>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">
+                  Features
+                </a>
+              </li>
+              <li>
+                <Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">
+                  Pricing
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Legal links */}
+          <div>
+            <h3 className="font-semibold mb-4">Legal</h3>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <Link to="#" className="text-muted-foreground hover:text-primary transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="#" className="text-muted-foreground hover:text-primary transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
-        <span className="text-muted-foreground block text-center text-sm">
-          {" "}
-          © {new Date().getFullYear()} RSK, All rights reserved
-        </span>
+
+        {/* Bottom section */}
+        <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <span className="text-muted-foreground text-sm">
+            © {new Date().getFullYear()} xam by superlearn. All rights reserved.
+          </span>
+        </div>
       </div>
     </footer>
   );
