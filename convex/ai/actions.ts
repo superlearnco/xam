@@ -19,13 +19,13 @@ export const generateOptions = action({
     }
 
     // Get field to verify ownership
-    const field = await ctx.runQuery(api.fields.get, { fieldId: args.fieldId });
+    const field = await ctx.runQuery(api.fields.index.get, { fieldId: args.fieldId });
     if (!field) {
       throw new Error("Field not found");
     }
 
     // Get project to verify ownership
-    const project = await ctx.runQuery(api.projects.get, {
+    const project = await ctx.runQuery(api.projects.index.get, {
       projectId: field.projectId,
     });
     if (!project) {
@@ -34,7 +34,7 @@ export const generateOptions = action({
 
     // Check credits (estimate ~0.5 credits)
     const estimatedCost = 0.5;
-    const creditsCheck = await ctx.runQuery(api.credits.checkSufficient, {
+    const creditsCheck = await ctx.runQuery(api.credits.index.checkSufficient, {
       amount: estimatedCost,
     });
 
@@ -54,7 +54,7 @@ export const generateOptions = action({
       const result = await generateDummyOptions(args.question, args.correctAnswer);
 
       // Deduct credits
-      await ctx.runMutation(api.credits.deductCredits, {
+      await ctx.runMutation(api.credits.index.deductCredits, {
         cost: result.cost,
         feature: "generate_options",
         metadata: {
@@ -67,7 +67,7 @@ export const generateOptions = action({
 
       // Update field with new options (add to existing options)
       const allOptions = [args.correctAnswer, ...result.options];
-      await ctx.runMutation(api.fields.update, {
+      await ctx.runMutation(api.fields.index.update, {
         fieldId: args.fieldId,
         options: allOptions,
       });
@@ -101,7 +101,7 @@ export const gradeResponse = action({
     }
 
     // Get response
-    const response = await ctx.runQuery(api.responses.get, {
+    const response = await ctx.runQuery(api.responses.index.get, {
       responseId: args.responseId,
     });
     if (!response) {
@@ -109,7 +109,7 @@ export const gradeResponse = action({
     }
 
     // Get field
-    const field = await ctx.runQuery(api.fields.get, {
+    const field = await ctx.runQuery(api.fields.index.get, {
       fieldId: response.fieldId,
     });
     if (!field) {
@@ -117,7 +117,7 @@ export const gradeResponse = action({
     }
 
     // Get project to verify ownership
-    const project = await ctx.runQuery(api.projects.get, {
+    const project = await ctx.runQuery(api.projects.index.get, {
       projectId: field.projectId,
     });
     if (!project) {
@@ -133,7 +133,7 @@ export const gradeResponse = action({
     const responseLength = response.value.length;
     const estimatedCost = 1.5; // Rough estimate
 
-    const creditsCheck = await ctx.runQuery(api.credits.checkSufficient, {
+    const creditsCheck = await ctx.runQuery(api.credits.index.checkSufficient, {
       amount: estimatedCost,
     });
 
@@ -161,7 +161,7 @@ export const gradeResponse = action({
       );
 
       // Deduct credits
-      await ctx.runMutation(api.credits.deductCredits, {
+      await ctx.runMutation(api.credits.index.deductCredits, {
         cost: result.cost,
         feature: "grade_response",
         metadata: {
@@ -206,7 +206,7 @@ export const bulkGradeSubmission = action({
     }
 
     // Get submission
-    const submission = await ctx.runQuery(api.submissions.get, {
+    const submission = await ctx.runQuery(api.submissions.index.get, {
       submissionId: args.submissionId,
     });
     if (!submission) {
@@ -214,7 +214,7 @@ export const bulkGradeSubmission = action({
     }
 
     // Get project to verify ownership
-    const project = await ctx.runQuery(api.projects.get, {
+    const project = await ctx.runQuery(api.projects.index.get, {
       projectId: submission.projectId,
     });
     if (!project) {
@@ -222,14 +222,21 @@ export const bulkGradeSubmission = action({
     }
 
     // Get all responses for this submission
-    const responses = submission.responses || [];
+    const responses = await ctx.runQuery(api.responses.index.listBySubmission, {
+      submissionId: args.submissionId,
+    });
+
+    // Get all fields for this project
+    const fields = await ctx.runQuery(api.fields.index.list, {
+      projectId: submission.projectId,
+    });
 
     // Filter text responses that haven't been marked
     const textResponsesToGrade = responses.filter((r) => {
-      const field = submission.fields?.find((f) => f._id === r.fieldId);
+      const field = fields.find((f) => f._id === r.fieldId);
       return (
         field &&
-        (field.type === "short-text" || field.type === "long-text") &&
+        (field.type === "short_text" || field.type === "long_text") &&
         r.marksAwarded === undefined &&
         r.value &&
         typeof r.value === "string" &&
@@ -248,7 +255,7 @@ export const bulkGradeSubmission = action({
     // Estimate total cost
     const estimatedCost = textResponsesToGrade.length * 1.5;
 
-    const creditsCheck = await ctx.runQuery(api.credits.checkSufficient, {
+    const creditsCheck = await ctx.runQuery(api.credits.index.checkSufficient, {
       amount: estimatedCost,
     });
 
@@ -269,7 +276,7 @@ export const bulkGradeSubmission = action({
     // Grade each response
     for (const response of textResponsesToGrade) {
       try {
-        const field = submission.fields?.find((f) => f._id === response.fieldId);
+        const field = fields.find((f) => f._id === response.fieldId);
         if (!field) continue;
 
         // Grade using AI
@@ -284,9 +291,10 @@ export const bulkGradeSubmission = action({
         );
 
         // Mark the response
-        await ctx.runMutation(api.responses.mark, {
+        await ctx.runMutation(api.responses.index.mark, {
           responseId: response._id,
           marksAwarded: result.marks,
+          maxMarks: result.maxMarks,
           feedback: result.feedback,
           isCorrect: result.isCorrect,
         });
@@ -295,7 +303,7 @@ export const bulkGradeSubmission = action({
         gradedCount++;
 
         // Deduct credits for this response
-        await ctx.runMutation(api.credits.deductCredits, {
+        await ctx.runMutation(api.credits.index.deductCredits, {
           cost: result.cost,
           feature: "bulk_grade",
           metadata: {
@@ -345,7 +353,7 @@ export const createTest = action({
     }
 
     // Get project to verify ownership
-    const project = await ctx.runQuery(api.projects.get, {
+    const project = await ctx.runQuery(api.projects.index.get, {
       projectId: args.projectId,
     });
     if (!project) {
@@ -355,7 +363,7 @@ export const createTest = action({
     // Estimate cost (expensive operation)
     const estimatedCost = args.questionCount * 3;
 
-    const creditsCheck = await ctx.runQuery(api.credits.checkSufficient, {
+    const creditsCheck = await ctx.runQuery(api.credits.index.checkSufficient, {
       amount: estimatedCost,
     });
 
@@ -387,15 +395,15 @@ export const createTest = action({
 
         // Map AI question types to our field types
         let fieldType:
-          | "short-text"
-          | "long-text"
-          | "multiple-choice"
-          | "checkbox" = "short-text";
-        if (question.type === "multiple-choice") fieldType = "multiple-choice";
+          | "short_text"
+          | "long_text"
+          | "multiple_choice"
+          | "checkbox" = "short_text";
+        if (question.type === "multiple-choice") fieldType = "multiple_choice";
         else if (question.type === "checkbox") fieldType = "checkbox";
-        else if (question.type === "long-text") fieldType = "long-text";
+        else if (question.type === "long-text") fieldType = "long_text";
 
-        const fieldId = await ctx.runMutation(api.fields.create, {
+        const fieldId = await ctx.runMutation(api.fields.index.create, {
           projectId: args.projectId,
           type: fieldType,
           question: question.question,
@@ -410,7 +418,7 @@ export const createTest = action({
       }
 
       // Deduct credits
-      await ctx.runMutation(api.credits.deductCredits, {
+      await ctx.runMutation(api.credits.index.deductCredits, {
         cost: result.cost,
         feature: "generate_test",
         metadata: {
@@ -423,7 +431,7 @@ export const createTest = action({
 
       // Update project description if provided
       if (result.description) {
-        await ctx.runMutation(api.projects.update, {
+        await ctx.runMutation(api.projects.index.update, {
           projectId: args.projectId,
           description: result.description,
         });
