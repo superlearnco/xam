@@ -9,7 +9,11 @@
     "typecheck": "react-router typegen && tsc",
     "test": "vitest run",
     "test:ui": "vitest --ui",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:perf": "npm run build && tsx scripts/check-bundle-size.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.22",
@@ -67,6 +71,7 @@
     "zod": "^3.25.39"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@react-router/dev": "^7.5.3",
     "@tailwindcss/vite": "^4.1.4",
     "@testing-library/react": "^16.3.0",
@@ -78,6 +83,7 @@
     "convex-test": "^0.0.38",
     "jsdom": "^27.2.0",
     "tailwindcss": "^4.1.4",
+    "tsx": "^4.20.6",
     "tw-animate-css": "^1.3.2",
     "typescript": "^5.8.3",
     "vite": "^6.3.3",
