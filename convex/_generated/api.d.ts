@@ -8,17 +8,7 @@
  * @module
  */
 
-import type * as ai_actions from "../ai/actions.js";
-import type * as ai_tracking from "../ai/tracking.js";
-import type * as billing from "../billing.js";
-import type * as credits_index from "../credits/index.js";
-import type * as fields_index from "../fields/index.js";
 import type * as http from "../http.js";
-import type * as organizations_index from "../organizations/index.js";
-import type * as projects_index from "../projects/index.js";
-import type * as projects_options from "../projects/options.js";
-import type * as responses_index from "../responses/index.js";
-import type * as submissions_index from "../submissions/index.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 
@@ -37,17 +27,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "ai/actions": typeof ai_actions;
-  "ai/tracking": typeof ai_tracking;
-  billing: typeof billing;
-  "credits/index": typeof credits_index;
-  "fields/index": typeof fields_index;
   http: typeof http;
-  "organizations/index": typeof organizations_index;
-  "projects/index": typeof projects_index;
-  "projects/options": typeof projects_options;
-  "responses/index": typeof responses_index;
-  "submissions/index": typeof submissions_index;
   subscriptions: typeof subscriptions;
   users: typeof users;
 }>;

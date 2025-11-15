@@ -1,22 +1,15 @@
 import { httpRouter } from "convex/server";
 import { paymentWebhook } from "./subscriptions";
 import { httpAction } from "./_generated/server";
-import { createOpenAI } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
-import { api } from "./_generated/api";
-
-// Configure OpenAI provider to use Vercel AI Gateway
-const openai = createOpenAI({
-  apiKey: process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY || "",
-  baseURL: process.env.AI_GATEWAY_URL || "https://gateway.vercel.ai/v1",
-});
 
 export const chat = httpAction(async (ctx, req) => {
   // Extract the `messages` from the body of the request
   const { messages } = await req.json();
 
   const result = streamText({
-    model: openai("openai/gpt-4o"), // Using Vercel AI Gateway format
+    model: openai("gpt-4o"),
     messages,
     async onFinish({ text }) {
       // implement your own logic here, e.g. for storing messages

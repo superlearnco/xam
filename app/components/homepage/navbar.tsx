@@ -1,13 +1,15 @@
 "use client";
 import { UserButton } from "@clerk/react-router";
-import { Menu, X } from "lucide-react";
+import { Github, Menu, X } from "lucide-react";
 import React, { useCallback } from "react";
 import { Link } from "react-router";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
 const menuItems = [
+  { name: "Home", href: "#hero" },
   { name: "Features", href: "#features" },
+  { name: "Team", href: "#team" },
   { name: "Pricing", href: "#pricing" },
 ];
 
@@ -69,7 +71,7 @@ export const Navbar = ({
                 className="flex items-center space-x-2 font-semibold text-xl"
                 prefetch="viewport"
               >
-                <img src="/xam full.png" alt="xam Logo" className="h-8" />
+                <img src="/rsk.png" alt="RSK Logo" className="h-12 w-12" />
               </Link>
 
               <button
@@ -113,6 +115,14 @@ export const Navbar = ({
                 </ul>
               </div>
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
+                <Link
+                  to="https://github.com/michaelshimeles/react-starter-kit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center"
+                >
+                  <Github className="w-5 h-5" />
+                </Link>
                 {loaderData?.isSignedIn ? (
                   <div className="flex items-center gap-3">
                     <Button asChild size="sm">

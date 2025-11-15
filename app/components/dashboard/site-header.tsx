@@ -1,6 +1,6 @@
+import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
-import { AICreditsBadge } from "./ai-credits-badge";
 
 export function SiteHeader() {
   return (
@@ -12,7 +12,16 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <div className="ml-auto flex items-center gap-2">
-          <AICreditsBadge />
+          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
+            <a
+              href="https://github.com/michaelshimeles/react-starter-kit"
+              rel="noopener noreferrer"
+              target="_blank"
+              className="dark:text-foreground"
+            >
+              GitHub
+            </a>
+          </Button>
         </div>
       </div>
     </header>

@@ -1,21 +1,21 @@
 import { getAuth } from "@clerk/react-router/ssr.server";
 import { fetchAction, fetchQuery } from "convex/nextjs";
-import { Navbar } from "~/components/homepage/navbar";
-import HeroSection from "~/components/homepage/hero-section";
-import FeaturesSection from "~/components/homepage/features-section";
-import CTASection from "~/components/homepage/cta-section";
+import ContentSection from "~/components/homepage/content";
 import Footer from "~/components/homepage/footer";
+import Integrations from "~/components/homepage/integrations";
 import Pricing from "~/components/homepage/pricing";
+import Team from "~/components/homepage/team";
 import { api } from "../../convex/_generated/api";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
-  const title = "xam - AI-Powered Test Creation Made Simple";
+  const title = "React Starter Kit - Launch Your SAAS Quickly";
   const description =
-    "Create, distribute, and grade tests in minutes with the power of AI. Perfect for teachers, trainers, and educators.";
-  const keywords = "AI, Test Creation, Auto-Grading, Education, Teachers, Quiz, Assessment, Online Testing";
-  const siteUrl = "https://www.xam.app/";
-  const imageUrl = "/xam full.png";
+    "This powerful starter kit is designed to help you launch your SAAS application quickly and efficiently.";
+  const keywords = "React, Starter Kit, SAAS, Launch, Quickly, Efficiently";
+  const siteUrl = "https://www.reactstarter.xyz/";
+  const imageUrl =
+    "https://jdj14ctwppwprnqu.public.blob.vercel-storage.com/rsk-image-FcUcfBMBgsjNLo99j3NhKV64GT2bQl.png";
 
   return [
     { title },
@@ -32,7 +32,7 @@ export function meta({}: Route.MetaArgs) {
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
     { property: "og:url", content: siteUrl },
-    { property: "og:site_name", content: "xam by superlearn" },
+    { property: "og:site_name", content: "React Starter Kit" },
     { property: "og:image", content: imageUrl },
 
     // Twitter Card
@@ -47,8 +47,8 @@ export function meta({}: Route.MetaArgs) {
       name: "keywords",
       content: keywords,
     },
-    { name: "author", content: "superlearn" },
-    { name: "favicon", content: "/xam favicon.png" },
+    { name: "author", content: "Ras Mic" },
+    { name: "favicon", content: imageUrl },
   ];
 }
 
@@ -78,11 +78,10 @@ export async function loader(args: Route.LoaderArgs) {
 export default function Home({ loaderData }: Route.ComponentProps) {
   return (
     <>
-      <Navbar loaderData={loaderData} />
-      <HeroSection loaderData={loaderData} />
-      <FeaturesSection />
+      <Integrations loaderData={loaderData} />
+      <ContentSection />
+      <Team />
       <Pricing loaderData={loaderData} />
-      <CTASection loaderData={loaderData} />
       <Footer />
     </>
   );
