@@ -58,6 +58,7 @@ export const upsertUser = mutation({
       name: identity.name,
       email: identity.email,
       tokenIdentifier: identity.subject,
+      credits: 0,
     });
 
     return await ctx.db.get(userId);

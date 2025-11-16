@@ -7,6 +7,7 @@ export default defineSchema({
     email: v.optional(v.string()),
     image: v.optional(v.string()),
     tokenIdentifier: v.string(),
+    credits: v.optional(v.number()),
   }).index("by_token", ["tokenIdentifier"]),
   subscriptions: defineTable({
     userId: v.optional(v.string()),
@@ -28,6 +29,8 @@ export default defineSchema({
     metadata: v.optional(v.any()),
     customFieldData: v.optional(v.any()),
     customerId: v.optional(v.string()),
+    isMetered: v.optional(v.boolean()), // Pay-as-you-go plans
+    meterIds: v.optional(v.array(v.string())), // Associated meter IDs
   })
     .index("userId", ["userId"])
     .index("polarId", ["polarId"]),
@@ -40,4 +43,27 @@ export default defineSchema({
   })
     .index("type", ["type"])
     .index("polarEventId", ["polarEventId"]),
+  creditTransactions: defineTable({
+    userId: v.string(),
+    amount: v.number(),
+    type: v.union(v.literal("purchase"), v.literal("usage"), v.literal("refund")),
+    description: v.optional(v.string()),
+    polarOrderId: v.optional(v.string()),
+    meterId: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("userId", ["userId"])
+    .index("polarOrderId", ["polarOrderId"]),
+  meterUsage: defineTable({
+    userId: v.string(),
+    subscriptionId: v.string(),
+    meterId: v.string(),
+    amount: v.number(),
+    description: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("userId", ["userId"])
+    .index("subscriptionId", ["subscriptionId"])
+    .index("meterId", ["meterId"]),
 });
