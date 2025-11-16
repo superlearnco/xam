@@ -41,45 +41,6 @@ This guide will help you set up credit-based pricing in your Polar dashboard.
    - Make sure the product is **NOT archived**
    - The product should appear in your product list
 
-## Step 1b: Create Pay-as-You-Go Plans (Optional)
-
-1. **Create a Recurring Product**
-
-   - Click **"New Product"** or **"Create Product"**
-   - Fill in the product details:
-     - **Name**: "Pay-as-You-Go" or "Metered Plan" (include "pay-as-you-go" in the name for auto-detection)
-     - **Description**: "Pay only for what you use. Usage is billed automatically."
-     - **Product Type**: Select **"Recurring"** (subscription)
-     - **Archived**: Leave unchecked
-
-2. **Add Subscription Price**
-
-   - Click **"Add Price"** or **"New Price"**
-   - Set:
-     - **Price Amount**: Base subscription fee (can be $0 if you only charge for usage)
-     - **Currency**: USD (or your preferred currency)
-     - **Type**: Recurring
-     - **Billing Period**: Monthly or Yearly
-     - **Billing Interval**: Monthly or Yearly
-
-3. **Mark as Metered**
-
-   - In the product **Metadata** section, add:
-     - Key: `isMetered`
-     - Value: `true`
-   - Or include "pay-as-you-go" in the product name (the system will auto-detect it)
-
-4. **Add Meter IDs (Optional)**
-
-   - If you have specific meter IDs, add them to metadata:
-     - Key: `meterIds`
-     - Value: `["meter_id_1", "meter_id_2"]` (JSON array of meter IDs)
-
-5. **Set Up Meters**
-   - Go to **Meters** section in Polar dashboard
-   - Create meters for the usage you want to track
-   - Note the Meter IDs for use in your application
-
 ## Step 2: Verify Webhook Configuration
 
 1. **Go to Settings → Webhooks**
@@ -102,40 +63,7 @@ This guide will help you set up credit-based pricing in your Polar dashboard.
    - Copy the webhook secret
    - Add it to your `.env.local` file as `POLAR_WEBHOOK_SECRET`
 
-## Step 3: Set Up Polar Meters
-
-**For Pay-as-You-Go Plans:**
-
-1. **Navigate to Meters**
-
-   - Go to **Meters** in the sidebar (if available in your Polar plan)
-
-2. **Create a Meter**
-
-   - Click **"New Meter"** or **"Create Meter"**
-   - Configure:
-     - **Name**: "API Calls", "Feature Usage", or whatever you're tracking
-     - **Aggregation**: Sum (to track total usage)
-     - **Window Size**: Daily, Weekly, or Monthly (your preference)
-     - **Event Filter**: Configure based on the events you'll send
-     - **Unit Price**: Set the price per unit (e.g., $0.10 per API call)
-
-3. **Associate Meter with Product**
-
-   - Link the meter to your pay-as-you-go product
-   - This allows Polar to automatically bill based on usage
-
-4. **Note Meter ID**
-   - Copy the Meter ID from the meter details
-   - You'll use this in your code when calling `useCredits` with `meterId`
-
-**For Credit-Based Tracking (Optional):**
-
-- Meters can also be used for tracking credit usage
-- Set `reportToPolar: true` when calling `useCredits` to log usage to Polar
-- This is for analytics/tracking purposes, not billing
-
-## Step 4: Test Your Setup
+## Step 3: Test Your Setup
 
 1. **Test Credit Purchase**
 
@@ -159,7 +87,7 @@ This guide will help you set up credit-based pricing in your Polar dashboard.
    - View recent webhook deliveries
    - Verify `order.created` events are being received and processed
 
-## Step 5: Environment Variables
+## Step 4: Environment Variables
 
 Make sure these are set in your `.env.local`:
 
@@ -212,9 +140,7 @@ POLAR_SERVER=sandbox  # or "production" for live
 - Ensure events are enabled in webhook settings
 - Use a tool like ngrok for local testing
 
-## How Both Systems Work Together
-
-The system supports **both** credit-based and pay-as-you-go billing:
+## How Credit-Based Billing Works
 
 ### Credit-Based Billing
 
@@ -223,26 +149,9 @@ The system supports **both** credit-based and pay-as-you-go billing:
 - Users must have enough credits to use features
 - Use: `useCredits({ amount: 10, description: "API call" })`
 
-### Pay-as-You-Go Billing
-
-- Users subscribe to a recurring plan
-- Usage is automatically billed via Polar Meters
-- No upfront credit purchase needed
-- Use: `useCredits({ amount: 10, meterId: "your_meter_id", description: "API call" })`
-- The system automatically detects if user has pay-as-you-go and routes to meter reporting
-
-### Automatic Detection
-
-The `useCredits` action automatically:
-
-1. Checks if user has an active pay-as-you-go subscription
-2. If yes and `meterId` is provided → Reports to Polar Meter (no credit deduction)
-3. If no → Deducts from credit balance (requires sufficient credits)
-
 ### Example Usage in Your Code
 
 ```typescript
-// This works for both credit-based and pay-as-you-go users
 import { useAction } from "convex/react";
 import { api } from "~/convex/_generated/api";
 
@@ -250,8 +159,7 @@ const useCredits = useAction(api.credits.useCredits);
 
 // When user performs an action that costs credits:
 await useCredits({
-  amount: 10, // Cost in credits/units
-  meterId: "your_meter_id", // Required for pay-as-you-go
+  amount: 10, // Cost in credits
   description: "API call made",
 });
 ```
@@ -260,8 +168,7 @@ await useCredits({
 
 Once set up:
 
-1. Users can purchase credits OR subscribe to pay-as-you-go plans
+1. Users can purchase credits
 2. Credits are automatically added when payment completes
-3. Pay-as-you-go subscriptions are automatically tracked
-4. Use the `useCredits` action in your code - it handles both billing types automatically
-5. Track usage and transactions in your database
+3. Use the `useCredits` action in your code to deduct credits
+4. Track usage and transactions in your database

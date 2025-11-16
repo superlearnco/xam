@@ -155,34 +155,8 @@ export const getCreditTransactions = query({
   },
 });
 
-// Check if user has pay-as-you-go subscription
-export const hasPayAsYouGoSubscription = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return { hasPayAsYouGo: false, subscription: null };
-    }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
-      .unique();
-
-    if (!user) {
-      return { hasPayAsYouGo: false, subscription: null };
-    }
-
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("userId", (q) => q.eq("userId", user.tokenIdentifier))
-      .first();
-
-    const hasPayAsYouGo = subscription?.status === "active" && subscription?.isMetered === true;
-    return { hasPayAsYouGo, subscription };
-  },
-});
-
-// Use credits or report to meter (handles both credit-based and pay-as-you-go)
+// Use credits
 export const useCredits = action({
   args: {
     amount: v.number(),
@@ -190,39 +164,36 @@ export const useCredits = action({
     meterId: v.optional(v.string()),
     reportToPolar: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; remainingCredits?: number; billingType: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    remainingCredits?: number;
+    billingType: string;
+  }> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
     }
 
-    // Check if user has pay-as-you-go subscription
-    const payAsYouGoCheck = await ctx.runQuery(api.credits.hasPayAsYouGoSubscription);
-    
-    if (payAsYouGoCheck.hasPayAsYouGo && args.meterId) {
-      // Pay-as-you-go: Report usage to Polar Meter (no credit deduction)
-      const meterResult = await ctx.runAction(api.credits.reportMeterUsage, {
-        meterId: args.meterId,
-        amount: args.amount,
-        description: args.description,
-      });
-      return meterResult;
-    }
-
-    // Credit-based: Check if user has enough credits
+    // Check if user has enough credits
     const creditCheck = await ctx.runQuery(api.credits.checkCredits, {
       amount: args.amount,
     });
 
     if (!creditCheck.hasEnough) {
-      throw new Error(`Insufficient credits. You have ${creditCheck.credits} credits, but need ${args.amount}.`);
+      throw new Error(
+        `Insufficient credits. You have ${creditCheck.credits} credits, but need ${args.amount}.`
+      );
     }
 
     // Optionally report to Polar Meter if configured (for tracking purposes)
     if (args.reportToPolar && args.meterId && process.env.POLAR_ACCESS_TOKEN) {
       try {
         const polar = new Polar({
-          server: (process.env.POLAR_SERVER as "sandbox" | "production") || "sandbox",
+          server:
+            (process.env.POLAR_SERVER as "sandbox" | "production") || "sandbox",
           accessToken: process.env.POLAR_ACCESS_TOKEN,
         });
 
@@ -232,8 +203,10 @@ export const useCredits = action({
         );
 
         if (subscription?.customerId) {
-          // Log usage for tracking (actual billing happens via Polar Meters)
-          console.log(`Tracking meter usage: ${args.meterId}, amount: ${args.amount}, customer: ${subscription.customerId}`);
+          // Log usage for tracking
+          console.log(
+            `Tracking meter usage: ${args.meterId}, amount: ${args.amount}, customer: ${subscription.customerId}`
+          );
         }
       } catch (error) {
         console.error("Error reporting to Polar Meter (non-fatal):", error);
@@ -242,123 +215,95 @@ export const useCredits = action({
     }
 
     // Deduct credits from user account
-    const result: { credits: number } = await ctx.runMutation(api.credits.deductCredits, {
-      userId: identity.subject,
-      amount: args.amount,
-      description: args.description || `Credits used${args.meterId ? ` (meter: ${args.meterId})` : ""}`,
-      meterId: args.meterId,
-    });
+    const result: { credits: number } = await ctx.runMutation(
+      api.credits.deductCredits,
+      {
+        userId: identity.subject,
+        amount: args.amount,
+        description:
+          args.description ||
+          `Credits used${args.meterId ? ` (meter: ${args.meterId})` : ""}`,
+        meterId: args.meterId,
+      }
+    );
 
-    return { success: true, remainingCredits: result.credits, billingType: "credits" };
+    return {
+      success: true,
+      remainingCredits: result.credits,
+      billingType: "credits",
+    };
   },
 });
 
-// Report usage to Polar Meter for pay-as-you-go subscriptions
-export const reportMeterUsage = action({
+
+// Debug queries
+export const debugWebhookEvents = query({
   args: {
-    meterId: v.string(),
-    amount: v.number(),
-    description: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; billingType: string }> => {
+  handler: async (ctx, args) => {
+    const events = await ctx.db
+      .query("webhookEvents")
+      .order("desc")
+      .take(args.limit || 10);
+    return events;
+  },
+});
+
+export const debugCreditTransactions = query({
+  args: {
+    userId: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity && !args.userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = args.userId || identity!.subject;
+    const transactions = await ctx.db
+      .query("creditTransactions")
+      .withIndex("userId", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(args.limit || 20);
+    return transactions;
+  },
+});
+
+export const debugOrderWebhooks = query({
+  handler: async (ctx) => {
+    const orderEvents = await ctx.db
+      .query("webhookEvents")
+      .withIndex("type", (q) => q.eq("type", "order.created"))
+      .order("desc")
+      .take(10);
+    return orderEvents;
+  },
+});
+
+export const debugUserCredits = query({
+  args: {
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.email) {
+      const user = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .first();
+      return user;
+    }
+
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
     }
 
-    if (!process.env.POLAR_ACCESS_TOKEN) {
-      throw new Error("POLAR_ACCESS_TOKEN is not configured");
-    }
-
-    const polar = new Polar({
-      server: (process.env.POLAR_SERVER as "sandbox" | "production") || "sandbox",
-      accessToken: process.env.POLAR_ACCESS_TOKEN,
-    });
-
-    // Get user and subscription
-    const user = await ctx.runQuery(api.users.findUserByToken, {
-      tokenIdentifier: identity.subject,
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const subscription = await ctx.runQuery(
-      api.subscriptions.fetchUserSubscription
-    );
-
-    if (!subscription?.customerId) {
-      throw new Error("Customer ID not found. User needs an active subscription.");
-    }
-
-    if (!subscription.isMetered) {
-      throw new Error("User does not have a pay-as-you-go subscription.");
-    }
-
-    // Verify meter ID is associated with this subscription
-    if (subscription.meterIds && !subscription.meterIds.includes(args.meterId)) {
-      console.warn(`Meter ID ${args.meterId} not in subscription meter list, but proceeding anyway`);
-    }
-
-    // Report usage to Polar Meter
-    try {
-      // Note: Adjust this based on actual Polar SDK API
-      // Polar may use a different method name or structure
-      console.log(`Reporting meter usage to Polar:`, {
-        meterId: args.meterId,
-        customerId: subscription.customerId,
-        amount: args.amount,
-        metadata: args.metadata || {},
-      });
-
-      // Store usage record
-      await ctx.runMutation(api.credits.recordMeterUsage, {
-        userId: identity.subject,
-        subscriptionId: subscription._id,
-        meterId: args.meterId,
-        amount: args.amount,
-        description: args.description,
-        metadata: args.metadata,
-      });
-
-      // If Polar SDK has meters.reportUsage or similar, uncomment:
-      // await polar.meters.reportUsage({
-      //   meterId: args.meterId,
-      //   customerId: subscription.customerId,
-      //   amount: args.amount,
-      //   metadata: args.metadata || {},
-      // });
-
-      return { success: true, billingType: "pay-as-you-go" };
-    } catch (error) {
-      console.error("Error reporting meter usage:", error);
-      throw error;
-    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+    return user;
   },
 });
-
-// Record meter usage in database
-export const recordMeterUsage = mutation({
-  args: {
-    userId: v.string(),
-    subscriptionId: v.string(),
-    meterId: v.string(),
-    amount: v.number(),
-    description: v.optional(v.string()),
-    metadata: v.optional(v.any()),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.insert("meterUsage", {
-      userId: args.userId,
-      subscriptionId: args.subscriptionId,
-      meterId: args.meterId,
-      amount: args.amount,
-      description: args.description,
-      metadata: args.metadata,
-      createdAt: Date.now(),
-    });
-  },
-});
-

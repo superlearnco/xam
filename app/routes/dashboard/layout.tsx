@@ -2,6 +2,7 @@ import { getAuth } from "@clerk/react-router/ssr.server";
 import { redirect } from "react-router";
 import type { Route } from "./+types/layout";
 import { Outlet } from "react-router";
+import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args);
@@ -15,5 +16,10 @@ export async function loader(args: Route.LoaderArgs) {
 }
 
 export default function DashboardLayout() {
-  return <Outlet />;
+  return (
+    <div className="flex flex-col min-h-screen">
+      <DashboardNav />
+      <Outlet />
+    </div>
+  );
 }

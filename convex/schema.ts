@@ -29,8 +29,8 @@ export default defineSchema({
     metadata: v.optional(v.any()),
     customFieldData: v.optional(v.any()),
     customerId: v.optional(v.string()),
-    isMetered: v.optional(v.boolean()), // Pay-as-you-go plans
-    meterIds: v.optional(v.array(v.string())), // Associated meter IDs
+    isMetered: v.optional(v.boolean()),
+    meterIds: v.optional(v.array(v.string())),
   })
     .index("userId", ["userId"])
     .index("polarId", ["polarId"]),

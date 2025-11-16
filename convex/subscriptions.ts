@@ -134,7 +134,8 @@ export const getAvailablePlans = action({
 export const getCreditProducts = action({
   handler: async (ctx) => {
     const polar = new Polar({
-      server: (process.env.POLAR_SERVER as "sandbox" | "production") || "sandbox",
+      server:
+        (process.env.POLAR_SERVER as "sandbox" | "production") || "sandbox",
       accessToken: process.env.POLAR_ACCESS_TOKEN,
     });
 
@@ -164,45 +165,6 @@ export const getCreditProducts = action({
   },
 });
 
-// Get pay-as-you-go plans (recurring subscriptions with metered billing)
-export const getPayAsYouGoPlans = action({
-  handler: async (ctx) => {
-    const polar = new Polar({
-      server: (process.env.POLAR_SERVER as "sandbox" | "production") || "sandbox",
-      accessToken: process.env.POLAR_ACCESS_TOKEN,
-    });
-
-    const { result } = await polar.products.list({
-      organizationId: process.env.POLAR_ORGANIZATION_ID,
-      isArchived: false,
-    });
-
-    // Filter for recurring products that are metered (pay-as-you-go)
-    // You can identify these by checking metadata or product name patterns
-    // For now, we'll return all recurring products and let you mark them as metered in Polar
-    const payAsYouGoPlans = result.items
-      .filter((item) => item.isRecurring)
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        isRecurring: item.isRecurring,
-        prices: item.prices.map((price: any) => ({
-          id: price.id,
-          amount: price.priceAmount,
-          currency: price.priceCurrency,
-          interval: price.recurringInterval,
-        })),
-        // Check metadata or name to determine if it's metered
-        // You can set this in Polar product metadata
-        isMetered: item.metadata?.isMetered === true || item.name?.toLowerCase().includes("pay-as-you-go") || false,
-      }));
-
-    return {
-      items: payAsYouGoPlans,
-    };
-  },
-});
 
 export const createCheckoutSession = action({
   args: {
@@ -349,31 +311,27 @@ export const handleWebhookEvent = mutation({
     // Extract event type from webhook payload
     const eventType = args.body.type;
 
+    // Log all incoming webhook events for debugging
+    console.log(`[WEBHOOK] Received event type: ${eventType}`);
+    console.log(
+      `[WEBHOOK] Full webhook payload:`,
+      JSON.stringify(args.body, null, 2)
+    );
+
     // Store webhook event
     await ctx.db.insert("webhookEvents", {
       type: eventType,
-      polarEventId: args.body.data.id,
-      createdAt: args.body.data.created_at,
-      modifiedAt: args.body.data.modified_at || args.body.data.created_at,
+      polarEventId: args.body.data?.id || "unknown",
+      createdAt: args.body.data?.created_at || new Date().toISOString(),
+      modifiedAt:
+        args.body.data?.modified_at ||
+        args.body.data?.created_at ||
+        new Date().toISOString(),
       data: args.body.data,
     });
 
     switch (eventType) {
       case "subscription.created":
-        // Check if this is a metered subscription
-        // You can set isMetered in product metadata or check product name
-        const productMetadata = args.body.data.metadata || {};
-        const isMetered = productMetadata.isMetered === true || 
-                         productMetadata.isMetered === "true" ||
-                         false; // Default to false if not specified
-        
-        // Get meter IDs from metadata if provided
-        const meterIds = productMetadata.meterIds 
-          ? (Array.isArray(productMetadata.meterIds) 
-              ? productMetadata.meterIds 
-              : JSON.parse(productMetadata.meterIds))
-          : undefined;
-
         // Insert new subscription
         await ctx.db.insert("subscriptions", {
           polarId: args.body.data.id,
@@ -404,8 +362,6 @@ export const handleWebhookEvent = mutation({
           metadata: args.body.data.metadata || {},
           customFieldData: args.body.data.custom_field_data || {},
           customerId: args.body.data.customer_id,
-          isMetered: isMetered,
-          meterIds: meterIds,
         });
         break;
 
@@ -504,42 +460,174 @@ export const handleWebhookEvent = mutation({
         }
         break;
 
+      case "checkout.created":
+      case "checkout.succeeded":
+        // Checkout events might have metadata we need
+        console.log(`[WEBHOOK] Received ${eventType} event`);
+        console.log(
+          `[WEBHOOK] Checkout data:`,
+          JSON.stringify(args.body.data, null, 2)
+        );
+        // Don't process credits here, wait for order.created
+        break;
+
       case "order.created":
         // Handle credit purchases from one-time orders
         // $1 = 10 credits
-        const orderData = args.body.data;
-        let userId = orderData.metadata?.userId;
-        
-        // If userId not in metadata, try to find user by customer email
-        if (!userId && orderData.customer_email) {
-          const userByEmail = await ctx.db
-            .query("users")
-            .filter((q) => q.eq(q.field("email"), orderData.customer_email))
-            .first();
-          if (userByEmail) {
-            userId = userByEmail.tokenIdentifier;
+        try {
+          const orderData = args.body.data;
+          console.log("[WEBHOOK] Processing order.created webhook");
+          console.log(
+            "[WEBHOOK] Order data:",
+            JSON.stringify(orderData, null, 2)
+          );
+          console.log(
+            "[WEBHOOK] Order metadata:",
+            JSON.stringify(orderData.metadata, null, 2)
+          );
+
+          // Try multiple ways to get userId from metadata
+          // Check both order metadata and checkout metadata (if present)
+          let userId =
+            orderData.metadata?.userId ||
+            orderData.metadata?.user_id ||
+            orderData.metadata?.["userId"] ||
+            orderData.checkout?.metadata?.userId ||
+            orderData.checkout_metadata?.userId;
+
+          console.log("[WEBHOOK] userId from metadata:", userId);
+
+          // If userId not in metadata, try to find user by customer email
+          if (!userId && orderData.customer_email) {
+            console.log(
+              "[WEBHOOK] Looking up user by email:",
+              orderData.customer_email
+            );
+            const userByEmail = await ctx.db
+              .query("users")
+              .filter((q) => q.eq(q.field("email"), orderData.customer_email))
+              .first();
+            if (userByEmail) {
+              userId = userByEmail.tokenIdentifier;
+              console.log(
+                "[WEBHOOK] Found user by email:",
+                userByEmail.email,
+                "tokenIdentifier:",
+                userId
+              );
+            } else {
+              console.log(
+                "[WEBHOOK] No user found with email:",
+                orderData.customer_email
+              );
+            }
           }
-        }
-        
-        if (userId && orderData.product_id) {
-          // Calculate credits: $1 = 10 credits
-          // amount_total is in cents, so: (amount_total / 100) * 10 = credits
-          const amountInDollars = orderData.amount_total / 100;
+
+          // Also try customer_id if available
+          if (!userId && orderData.customer_id) {
+            console.log(
+              "[WEBHOOK] Looking up user by customer_id:",
+              orderData.customer_id
+            );
+            // Note: customer_id might not directly map to our user, but worth trying
+          }
+
+          if (!userId) {
+            console.error(
+              "[WEBHOOK] ERROR: No userId found in order metadata or by email"
+            );
+            console.error(
+              "[WEBHOOK] Order metadata keys:",
+              Object.keys(orderData.metadata || {})
+            );
+            console.error("[WEBHOOK] Order data keys:", Object.keys(orderData));
+            console.error(
+              "[WEBHOOK] Full order data:",
+              JSON.stringify(orderData, null, 2)
+            );
+            break;
+          }
+
+          // Check if this order was already processed (prevent duplicate credits)
+          const existingTransaction = await ctx.db
+            .query("creditTransactions")
+            .withIndex("polarOrderId", (q) =>
+              q.eq("polarOrderId", orderData.id)
+            )
+            .first();
+
+          if (existingTransaction) {
+            console.log("Order already processed, skipping:", orderData.id);
+            break;
+          }
+
+          // Polar orders have an items array, not a single product_id
+          // Check if this is a one-time product (credit purchase)
+          const orderItems = orderData.items || [];
+
+          if (orderItems.length === 0) {
+            console.log("Order has no items, skipping credit addition");
+            break;
+          }
+
+          // Calculate total credits from all items
+          // For one-time products (credit purchases), use amount (in cents)
+          // $1 = 10 credits, amount is in cents
+          const amountInDollars = (orderData.amount || 0) / 100;
           const creditsToAdd = Math.floor(amountInDollars * 10);
-          
+
+          console.log(
+            `Order amount: $${amountInDollars}, Credits to add: ${creditsToAdd}`
+          );
+
           if (creditsToAdd > 0) {
-            await ctx.runMutation(api.credits.addCredits, {
+            // Find the user and add credits directly (mutations can't call other mutations)
+            const user = await ctx.db
+              .query("users")
+              .withIndex("by_token", (q) => q.eq("tokenIdentifier", userId))
+              .unique();
+
+            if (!user) {
+              console.error("User not found:", userId);
+              break;
+            }
+
+            const currentCredits = user.credits || 0;
+            const newCredits = currentCredits + creditsToAdd;
+
+            // Update user credits
+            await ctx.db.patch(user._id, {
+              credits: newCredits,
+            });
+
+            // Create transaction record
+            await ctx.db.insert("creditTransactions", {
               userId: userId,
               amount: creditsToAdd,
+              type: "purchase",
               description: `Purchased ${creditsToAdd} credits`,
               polarOrderId: orderData.id,
+              createdAt: Date.now(),
             });
+
+            console.log(
+              `Successfully added ${creditsToAdd} credits to user ${userId}. New balance: ${newCredits}`
+            );
+          } else {
+            console.log("No credits to add (amount is 0 or negative)");
           }
+        } catch (error) {
+          console.error("Error processing order.created webhook:", error);
+          // Don't throw - we want to store the webhook event even if processing fails
         }
         break;
 
       default:
-        console.log(`Unhandled event type: ${eventType}`);
+        console.log(`[WEBHOOK] Unhandled event type: ${eventType}`);
+        console.log(
+          `[WEBHOOK] Event data:`,
+          JSON.stringify(args.body.data, null, 2)
+        );
         break;
     }
   },
@@ -612,6 +700,342 @@ export const paymentWebhook = httpAction(async (ctx, request) => {
   }
 });
 
+// Debug queries
+export const debugGetWebhookEvents = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const events = await ctx.db
+      .query("webhookEvents")
+      .order("desc")
+      .take(args.limit || 20);
+    return events;
+  },
+});
+
+export const debugGetOrderWebhooks = query({
+  handler: async (ctx) => {
+    const orderEvents = await ctx.db
+      .query("webhookEvents")
+      .withIndex("type", (q) => q.eq("type", "order.created"))
+      .order("desc")
+      .take(10);
+    return orderEvents;
+  },
+});
+
+// Test query to manually add credits
+export const testAddCreditsToUser = mutation({
+  args: {
+    email: v.string(),
+    amount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Find user by email
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+
+    if (!user) {
+      throw new Error(`User not found with email: ${args.email}`);
+    }
+
+    console.log("Found user:", JSON.stringify(user, null, 2));
+
+    const currentCredits = user.credits || 0;
+    const newCredits = currentCredits + args.amount;
+
+    console.log(
+      `Current credits: ${currentCredits}, Adding: ${args.amount}, New total: ${newCredits}`
+    );
+
+    // Update user credits
+    await ctx.db.patch(user._id, {
+      credits: newCredits,
+    });
+
+    // Create transaction record
+    await ctx.db.insert("creditTransactions", {
+      userId: user.tokenIdentifier,
+      amount: args.amount,
+      type: "purchase",
+      description: `Manual test credit addition`,
+      createdAt: Date.now(),
+    });
+
+    console.log(
+      `Successfully added ${args.amount} credits to user ${user.email}. New balance: ${newCredits}`
+    );
+
+    return {
+      success: true,
+      user: user.email,
+      oldCredits: currentCredits,
+      newCredits: newCredits,
+    };
+  },
+});
+
+// Test mutation to simulate order.created webhook
+export const testOrderCreatedWebhook = mutation({
+  args: {
+    orderId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find a recent order webhook
+    const orderWebhook = await ctx.db
+      .query("webhookEvents")
+      .withIndex("type", (q) => q.eq("type", "order.created"))
+      .order("desc")
+      .first();
+
+    if (!orderWebhook) {
+      throw new Error("No order.created webhook found");
+    }
+
+    const orderData = orderWebhook.data;
+    console.log("[TEST] Processing order.created webhook");
+    console.log("[TEST] Order data:", JSON.stringify(orderData, null, 2));
+    console.log(
+      "[TEST] Order metadata:",
+      JSON.stringify(orderData.metadata, null, 2)
+    );
+
+    // Try multiple ways to get userId from metadata
+    let userId =
+      orderData.metadata?.userId ||
+      orderData.metadata?.user_id ||
+      orderData.metadata?.["userId"] ||
+      orderData.checkout?.metadata?.userId ||
+      orderData.checkout_metadata?.userId;
+
+    console.log("[TEST] userId from metadata:", userId);
+
+    // If userId not in metadata, try to find user by customer email
+    if (!userId && orderData.customer_email) {
+      console.log("[TEST] Looking up user by email:", orderData.customer_email);
+      const userByEmail = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), orderData.customer_email))
+        .first();
+      if (userByEmail) {
+        userId = userByEmail.tokenIdentifier;
+        console.log(
+          "[TEST] Found user by email:",
+          userByEmail.email,
+          "tokenIdentifier:",
+          userId
+        );
+      } else {
+        console.log(
+          "[TEST] No user found with email:",
+          orderData.customer_email
+        );
+      }
+    }
+
+    if (!userId) {
+      console.error("[TEST] ERROR: No userId found");
+      return { success: false, error: "No userId found" };
+    }
+
+    // Check if this order was already processed
+    const existingTransaction = await ctx.db
+      .query("creditTransactions")
+      .withIndex("polarOrderId", (q) => q.eq("polarOrderId", orderData.id))
+      .first();
+
+    if (existingTransaction) {
+      console.log("[TEST] Order already processed, skipping:", orderData.id);
+      return { success: false, error: "Order already processed" };
+    }
+
+    // Calculate credits
+    const amountInDollars = (orderData.amount || 0) / 100;
+    const creditsToAdd = Math.floor(amountInDollars * 10);
+
+    console.log(
+      "[TEST] Order amount: $" +
+        amountInDollars +
+        ", Credits to add: " +
+        creditsToAdd
+    );
+
+    if (creditsToAdd <= 0) {
+      console.log("[TEST] No credits to add");
+      return { success: false, error: "No credits to add" };
+    }
+
+    // Find the user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", userId))
+      .unique();
+
+    if (!user) {
+      console.error("[TEST] User not found:", userId);
+      return { success: false, error: "User not found" };
+    }
+
+    console.log("[TEST] Found user:", user.email);
+
+    const currentCredits = user.credits || 0;
+    const newCredits = currentCredits + creditsToAdd;
+
+    // Update user credits
+    await ctx.db.patch(user._id, {
+      credits: newCredits,
+    });
+
+    // Create transaction record
+    await ctx.db.insert("creditTransactions", {
+      userId: userId,
+      amount: creditsToAdd,
+      type: "purchase",
+      description: `Purchased ${creditsToAdd} credits`,
+      polarOrderId: orderData.id,
+      createdAt: Date.now(),
+    });
+
+    console.log(
+      "[TEST] Successfully added " +
+        creditsToAdd +
+        " credits to user " +
+        userId +
+        ". New balance: " +
+        newCredits
+    );
+
+    return {
+      success: true,
+      userId: userId,
+      creditsAdded: creditsToAdd,
+      newBalance: newCredits,
+      orderId: orderData.id,
+    };
+  },
+});
+
+// Mutation to reprocess all unprocessed order.created webhooks
+export const reprocessAllOrders = mutation({
+  handler: async (ctx) => {
+    // Get all order.created webhooks
+    const orderWebhooks = await ctx.db
+      .query("webhookEvents")
+      .withIndex("type", (q) => q.eq("type", "order.created"))
+      .collect();
+
+    console.log(`[REPROCESS] Found ${orderWebhooks.length} order webhooks`);
+
+    const results = {
+      total: orderWebhooks.length,
+      processed: 0,
+      skipped: 0,
+      errors: [] as string[],
+    };
+
+    for (const webhook of orderWebhooks) {
+      const orderData = webhook.data;
+
+      try {
+        // Get userId
+        let userId =
+          orderData.metadata?.userId ||
+          orderData.metadata?.user_id ||
+          orderData.metadata?.["userId"] ||
+          orderData.checkout?.metadata?.userId ||
+          orderData.checkout_metadata?.userId;
+
+        // Try email lookup if no userId
+        if (!userId && orderData.customer_email) {
+          const userByEmail = await ctx.db
+            .query("users")
+            .filter((q) => q.eq(q.field("email"), orderData.customer_email))
+            .first();
+          if (userByEmail) {
+            userId = userByEmail.tokenIdentifier;
+          }
+        }
+
+        if (!userId) {
+          console.log(`[REPROCESS] No userId for order ${orderData.id}`);
+          results.skipped++;
+          continue;
+        }
+
+        // Check if already processed
+        const existingTransaction = await ctx.db
+          .query("creditTransactions")
+          .withIndex("polarOrderId", (q) => q.eq("polarOrderId", orderData.id))
+          .first();
+
+        if (existingTransaction) {
+          console.log(`[REPROCESS] Order ${orderData.id} already processed`);
+          results.skipped++;
+          continue;
+        }
+
+        // Calculate credits
+        const amountInDollars = (orderData.amount || 0) / 100;
+        const creditsToAdd = Math.floor(amountInDollars * 10);
+
+        if (creditsToAdd <= 0) {
+          console.log(`[REPROCESS] No credits for order ${orderData.id}`);
+          results.skipped++;
+          continue;
+        }
+
+        // Find user
+        const user = await ctx.db
+          .query("users")
+          .withIndex("by_token", (q) => q.eq("tokenIdentifier", userId))
+          .unique();
+
+        if (!user) {
+          console.log(`[REPROCESS] User not found for order ${orderData.id}`);
+          results.errors.push(`User not found: ${userId}`);
+          continue;
+        }
+
+        // Add credits
+        const currentCredits = user.credits || 0;
+        const newCredits = currentCredits + creditsToAdd;
+
+        await ctx.db.patch(user._id, {
+          credits: newCredits,
+        });
+
+        await ctx.db.insert("creditTransactions", {
+          userId: userId,
+          amount: creditsToAdd,
+          type: "purchase",
+          description: `Reprocessed: Purchased ${creditsToAdd} credits`,
+          polarOrderId: orderData.id,
+          createdAt: Date.now(),
+        });
+
+        console.log(
+          `[REPROCESS] Added ${creditsToAdd} credits to ${user.email}. New balance: ${newCredits}`
+        );
+        results.processed++;
+      } catch (error) {
+        console.error(
+          `[REPROCESS] Error processing order ${orderData.id}:`,
+          error
+        );
+        results.errors.push(`Order ${orderData.id}: ${error}`);
+      }
+    }
+
+    console.log(
+      `[REPROCESS] Complete. Processed: ${results.processed}, Skipped: ${results.skipped}, Errors: ${results.errors.length}`
+    );
+    return results;
+  },
+});
+
 export const createCustomerPortalUrl = action({
   handler: async (ctx, args: { customerId: string }) => {
     const polar = new Polar({
@@ -629,6 +1053,30 @@ export const createCustomerPortalUrl = action({
     } catch (error) {
       console.error("Error creating customer session:", error);
       throw new Error("Failed to create customer session");
+    }
+  },
+});
+
+// Query to get recent webhook events for debugging
+export const getRecentWebhookEvents = query({
+  args: {
+    limit: v.optional(v.number()),
+    eventType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.eventType) {
+      const events = await ctx.db
+        .query("webhookEvents")
+        .withIndex("type", (q) => q.eq("type", args.eventType!))
+        .order("desc")
+        .take(args.limit || 50);
+      return events;
+    } else {
+      const events = await ctx.db
+        .query("webhookEvents")
+        .order("desc")
+        .take(args.limit || 50);
+      return events;
     }
   },
 });
