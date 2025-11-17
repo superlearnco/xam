@@ -8,5 +8,4 @@ alwaysApply: true
 - Always use the todos tool provided to keep track of tasks.
 - Never do "npx convex deploy". Only use "npx convex dev", and I will deploy it myself after testing.
 - Ensure you write tests and test code before submitting.
-- ONLY USE SHADCN/UI COMPONENTS FOR NEW UI ELEMENTS.
 - No emojis, only icons, if needed
