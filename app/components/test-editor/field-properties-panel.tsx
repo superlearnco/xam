@@ -132,220 +132,246 @@ export function FieldPropertiesPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto flex flex-col">
-        <div className="flex-1 overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle>Field Properties</SheetTitle>
-            <SheetDescription>
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto flex flex-col p-0">
+        <div className="sticky top-0 bg-background border-b px-6 py-4 z-10">
+          <SheetHeader>
+            <SheetTitle className="text-lg">Field Properties</SheetTitle>
+            <SheetDescription className="text-sm">
               Configure the properties for this field
             </SheetDescription>
           </SheetHeader>
+        </div>
 
-          <div className="space-y-6 px-1">
-          {/* Basic Properties */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Basic Properties</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="field-label">Label</Label>
-              <Input
-                id="field-label"
-                value={localField.label}
-                onChange={(e) => handleLabelChange(e.target.value)}
-                placeholder="Field label"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="field-required"
-                checked={localField.required || false}
-                onCheckedChange={(checked) =>
-                  handleRequiredChange(checked === true)
-                }
-              />
-              <Label htmlFor="field-required" className="cursor-pointer">
-                Required
-              </Label>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Display Properties */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Display Properties</h3>
-
-            {isTextInput && (
-              <div className="space-y-2">
-                <Label htmlFor="field-placeholder">Placeholder</Label>
-                <Input
-                  id="field-placeholder"
-                  value={localField.placeholder || ""}
-                  onChange={(e) => handlePlaceholderChange(e.target.value)}
-                  placeholder="Enter placeholder text"
-                />
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-8 px-6 py-6">
+            {/* Basic Properties */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-base font-semibold text-foreground">Basic Properties</h3>
               </div>
+              
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="field-label" className="font-medium text-sm">Label</Label>
+                  <Input
+                    id="field-label"
+                    value={localField.label}
+                    onChange={(e) => handleLabelChange(e.target.value)}
+                    placeholder="Enter field label"
+                    className="h-9"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <Checkbox
+                    id="field-required"
+                    checked={localField.required || false}
+                    onCheckedChange={(checked) =>
+                      handleRequiredChange(checked === true)
+                    }
+                    className="mt-0"
+                  />
+                  <Label htmlFor="field-required" className="cursor-pointer font-medium text-sm">
+                    Required
+                  </Label>
+                </div>
+              </div>
+            </section>
+
+            <Separator className="my-2" />
+
+            {/* Display Properties */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-base font-semibold text-foreground">Display Properties</h3>
+              </div>
+
+              <div className="space-y-3">
+                {isTextInput && (
+                  <div className="space-y-2">
+                    <Label htmlFor="field-placeholder" className="font-medium text-sm">Placeholder</Label>
+                    <Input
+                      id="field-placeholder"
+                      value={localField.placeholder || ""}
+                      onChange={(e) => handlePlaceholderChange(e.target.value)}
+                      placeholder="Enter placeholder text"
+                      className="h-9"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="field-help-text" className="font-medium text-sm">Help Text</Label>
+                  <Textarea
+                    id="field-help-text"
+                    value={localField.helpText || ""}
+                    onChange={(e) => handleHelpTextChange(e.target.value)}
+                    placeholder="Enter help text or description"
+                    rows={3}
+                    className="resize-none text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="field-width" className="font-medium text-sm">Width</Label>
+                  <Select
+                    value={localField.width || "full"}
+                    onValueChange={handleWidthChange}
+                  >
+                    <SelectTrigger id="field-width" className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">Full Width</SelectItem>
+                      <SelectItem value="half">Half Width</SelectItem>
+                      <SelectItem value="third">Third Width</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            {/* Validation Rules */}
+            {isTextInput && (
+              <>
+                <Separator className="my-2" />
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-base font-semibold text-foreground">Validation</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="field-min-length" className="font-medium text-sm">Min Length</Label>
+                        <Input
+                          id="field-min-length"
+                          type="number"
+                          min="0"
+                          value={localField.minLength || ""}
+                          onChange={(e) =>
+                            handleMinLengthChange(parseInt(e.target.value) || 0)
+                          }
+                          placeholder="0"
+                          className="h-9"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="field-max-length" className="font-medium text-sm">Max Length</Label>
+                        <Input
+                          id="field-max-length"
+                          type="number"
+                          min="0"
+                          value={localField.maxLength || ""}
+                          onChange={(e) =>
+                            handleMaxLengthChange(parseInt(e.target.value) || 0)
+                          }
+                          placeholder="Unlimited"
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="field-pattern" className="font-medium text-sm">Pattern (Regex)</Label>
+                      <Input
+                        id="field-pattern"
+                        value={localField.pattern || ""}
+                        onChange={(e) => handlePatternChange(e.target.value)}
+                        placeholder="e.g., ^[A-Za-z]+$"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </section>
+              </>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="field-help-text">Help Text</Label>
-              <Textarea
-                id="field-help-text"
-                value={localField.helpText || ""}
-                onChange={(e) => handleHelpTextChange(e.target.value)}
-                placeholder="Enter help text or description"
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="field-width">Width</Label>
-              <Select
-                value={localField.width || "full"}
-                onValueChange={handleWidthChange}
-              >
-                <SelectTrigger id="field-width">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full">Full Width</SelectItem>
-                  <SelectItem value="half">Half Width</SelectItem>
-                  <SelectItem value="third">Third Width</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Validation Rules */}
-          {isTextInput && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Validation Rules</h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="field-min-length">Min Length</Label>
-                    <Input
-                      id="field-min-length"
-                      type="number"
-                      min="0"
-                      value={localField.minLength || ""}
-                      onChange={(e) =>
-                        handleMinLengthChange(parseInt(e.target.value) || 0)
-                      }
-                      placeholder="0"
-                    />
+            {/* Options */}
+            {needsOptions && (
+              <>
+                <Separator className="my-2" />
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-base font-semibold text-foreground">Options</h3>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="field-max-length">Max Length</Label>
-                    <Input
-                      id="field-max-length"
-                      type="number"
-                      min="0"
-                      value={localField.maxLength || ""}
-                      onChange={(e) =>
-                        handleMaxLengthChange(parseInt(e.target.value) || 0)
-                      }
-                      placeholder="Unlimited"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="field-pattern">Pattern (Regex)</Label>
-                  <Input
-                    id="field-pattern"
-                    value={localField.pattern || ""}
-                    onChange={(e) => handlePatternChange(e.target.value)}
-                    placeholder="e.g., ^[A-Za-z]+$"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Options */}
-          {needsOptions && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Options</h3>
-
-                <div className="space-y-2">
-                  {(localField.options || []).map((option, index) => {
-                    const isCorrect = (localField.correctAnswers || []).includes(index);
-                    return (
-                      <div key={index} className="flex items-center gap-2">
-                        {isQuestionType && (
-                          <Checkbox
-                            id={`panel-option-correct-${localField.id}-${index}`}
-                            checked={isCorrect}
-                            onCheckedChange={(checked) =>
-                              handleCorrectAnswerChange(index, checked === true)
+                    {(localField.options || []).map((option, index) => {
+                      const isCorrect = (localField.correctAnswers || []).includes(index);
+                      return (
+                        <div key={index} className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          {isQuestionType && (
+                            <Checkbox
+                              id={`panel-option-correct-${localField.id}-${index}`}
+                              checked={isCorrect}
+                              onCheckedChange={(checked) =>
+                                handleCorrectAnswerChange(index, checked === true)
+                              }
+                              title="Mark as correct answer"
+                              className="mt-0"
+                            />
+                          )}
+                          <Input
+                            value={option}
+                            onChange={(e) =>
+                              handleOptionChange(index, e.target.value)
                             }
-                            title="Mark as correct answer"
+                            placeholder={`Option ${index + 1}`}
+                            className="flex-1 h-8 text-sm"
                           />
-                        )}
-                        <Input
-                          value={option}
-                          onChange={(e) =>
-                            handleOptionChange(index, e.target.value)
-                          }
-                          placeholder={`Option ${index + 1}`}
-                          className="flex-1"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOptionRemove(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleOptionAdd}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Option
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOptionRemove(index)}
+                            className="h-8 w-8"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOptionAdd}
+                      className="w-full mt-2 h-9"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Option
+                    </Button>
+                  </div>
+                </section>
+              </>
+            )}
 
-          {/* Marks */}
-          {isQuestionType && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Grading</h3>
+            {/* Marks */}
+            {isQuestionType && (
+              <>
+                <Separator className="my-2" />
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-base font-semibold text-foreground">Grading</h3>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="field-marks">Marks</Label>
-                  <Input
-                    id="field-marks"
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={localField.marks ?? 1}
-                    onChange={(e) =>
-                      handleMarksChange(parseFloat(e.target.value) || 0)
-                    }
-                    className="w-32"
-                  />
-                </div>
-              </div>
-            </>
-          )}
+                  <div className="space-y-2">
+                    <Label htmlFor="field-marks" className="font-medium text-sm">Marks</Label>
+                    <Input
+                      id="field-marks"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={localField.marks ?? 1}
+                      onChange={(e) =>
+                        handleMarksChange(parseFloat(e.target.value) || 0)
+                      }
+                      className="h-9 w-24"
+                    />
+                  </div>
+                </section>
+              </>
+            )}
           </div>
         </div>
       </SheetContent>
