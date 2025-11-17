@@ -19,7 +19,14 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import { Input } from "~/components/ui/input";
+import { Textarea } from "~/components/ui/textarea";
+import { Label } from "~/components/ui/label";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
+import { cn } from "~/lib/utils";
 
 function generateFieldId(): string {
   return `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -256,6 +263,12 @@ export default function TestEditorPage() {
       onClick: () => setActiveTab("editor"),
     },
     {
+      value: "preview",
+      label: "Preview",
+      active: activeTab === "preview",
+      onClick: () => setActiveTab("preview"),
+    },
+    {
       value: "options",
       label: "Options",
       active: activeTab === "options",
@@ -372,6 +385,13 @@ export default function TestEditorPage() {
           </div>
         </div>
       )}
+      {activeTab === "preview" && (
+        <TestPreview 
+          testName={testName}
+          testDescription={testDescription}
+          fields={fields}
+        />
+      )}
       {activeTab === "publish" && (
         <div className="flex flex-1 items-center justify-center p-6">
           <div className="text-center text-muted-foreground">
@@ -382,6 +402,296 @@ export default function TestEditorPage() {
       )}
       </div>
     </>
+  );
+}
+
+// Preview component for testing the test
+function TestPreview({
+  testName,
+  testDescription,
+  fields,
+}: {
+  testName: string;
+  testDescription: string;
+  fields: TestField[];
+}) {
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  const handleInputChange = (fieldId: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [fieldId]: value }));
+  };
+
+  const renderField = (field: TestField) => {
+    const fieldValue = formData[field.id] || "";
+
+    switch (field.type) {
+      case "shortInput":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <Input
+              id={field.id}
+              value={fieldValue}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              required={field.required}
+              minLength={field.minLength}
+              maxLength={field.maxLength}
+            />
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "longInput":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <Textarea
+              id={field.id}
+              value={fieldValue}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              required={field.required}
+              minLength={field.minLength}
+              maxLength={field.maxLength}
+              className="resize-none"
+            />
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "multipleChoice":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <div className="space-y-2">
+              {(field.options || []).map((option, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id={`${field.id}-${index}`}
+                    name={field.id}
+                    value={String(index)}
+                    checked={fieldValue === String(index)}
+                    onChange={(e) => handleInputChange(field.id, e.target.value)}
+                    required={field.required}
+                    className="h-4 w-4 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  />
+                  <Label htmlFor={`${field.id}-${index}`} className="font-normal cursor-pointer">
+                    {option || `Option ${index + 1}`}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "checkboxes":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <div className="space-y-2">
+              {(field.options || []).map((option, index) => {
+                const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                const isChecked = checkedValues.includes(String(index));
+                return (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${field.id}-${index}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
+                        if (checked) {
+                          handleInputChange(field.id, [...currentValues, String(index)]);
+                        } else {
+                          handleInputChange(
+                            field.id,
+                            currentValues.filter((v) => v !== String(index))
+                          );
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`${field.id}-${index}`} className="font-normal cursor-pointer">
+                      {option || `Option ${index + 1}`}
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "dropdown":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <Select
+              value={fieldValue}
+              onValueChange={(value) => handleInputChange(field.id, value)}
+              required={field.required}
+            >
+              <SelectTrigger id={field.id}>
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                {(field.options || []).map((option, index) => (
+                  <SelectItem key={index} value={String(index)}>
+                    {option || `Option ${index + 1}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "imageChoice":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <div className="grid grid-cols-2 gap-4">
+              {(field.options || []).map((option, index) => {
+                const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                const isSelected = selectedValues.includes(String(index));
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => {
+                      const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
+                      if (isSelected) {
+                        handleInputChange(
+                          field.id,
+                          currentValues.filter((v) => v !== String(index))
+                        );
+                      } else {
+                        handleInputChange(field.id, [...currentValues, String(index)]);
+                      }
+                    }}
+                    className={cn(
+                      "border-2 rounded-lg p-4 aspect-square flex flex-col items-center justify-center transition-all",
+                      isSelected
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <div className="text-sm text-center">
+                      {option || `Image ${index + 1}`}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "fileUpload":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-2">
+                Click to upload or drag and drop
+              </p>
+              <input
+                type="file"
+                id={field.id}
+                onChange={(e) => handleInputChange(field.id, e.target.files?.[0])}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById(field.id)?.click()}
+              >
+                Choose File
+              </Button>
+            </div>
+            {field.helpText && (
+              <p className="text-sm text-muted-foreground">{field.helpText}</p>
+            )}
+          </div>
+        );
+
+      case "pageBreak":
+        return (
+          <div key={field.id} className="py-8">
+            <Separator />
+            <div className="text-center -mt-3">
+              <span className="bg-background px-2 text-xs text-muted-foreground">
+                Page Break
+              </span>
+            </div>
+          </div>
+        );
+
+      case "infoBlock":
+        return (
+          <div key={field.id} className="p-4 bg-muted rounded-lg">
+            <p className="text-sm whitespace-pre-wrap">{field.label}</p>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="flex flex-1 overflow-auto">
+      <div className="flex-1 max-w-3xl mx-auto w-full p-6 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">{testName || "Untitled Test"}</h1>
+          {testDescription && (
+            <p className="text-muted-foreground">{testDescription}</p>
+          )}
+        </div>
+        <Separator />
+        <form className="space-y-6">
+          {fields
+            .sort((a, b) => a.order - b.order)
+            .map((field) => renderField(field))}
+        </form>
+      </div>
+    </div>
   );
 }
 
