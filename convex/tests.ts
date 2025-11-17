@@ -164,3 +164,24 @@ export const updateTest = mutation({
   },
 });
 
+export const deleteTest = mutation({
+  args: {
+    testId: v.id("tests"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const test = await ctx.db.get(args.testId);
+
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    await ctx.db.delete(args.testId);
+  },
+});
+

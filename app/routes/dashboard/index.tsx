@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Link } from "react-router";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "convex/_generated/dataModel";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -21,10 +22,30 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { Label } from "~/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { NewTestDialog } from "~/components/dashboard/new-test-dialog";
+import { Pencil, Trash2 } from "lucide-react";
 
 export default function Page() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [testToEdit, setTestToEdit] = useState<{
+    id: Id<"tests">;
+    name: string;
+    description?: string;
+  } | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [testToDelete, setTestToDelete] = useState<Id<"tests"> | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<
     "all" | "test" | "survey" | "essay"
@@ -36,6 +57,62 @@ export default function Page() {
     type: typeFilter === "all" ? undefined : typeFilter,
     sortBy,
   });
+
+  const deleteTest = useMutation(api.tests.deleteTest);
+  const updateTest = useMutation(api.tests.updateTest);
+
+  const handleEditClick = (test: { _id: Id<"tests">; name: string; description?: string }) => {
+    setTestToEdit({
+      id: test._id,
+      name: test.name,
+      description: test.description,
+    });
+    setEditName(test.name);
+    setEditDescription(test.description || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!testToEdit || !editName.trim()) return;
+
+    try {
+      await updateTest({
+        testId: testToEdit.id,
+        name: editName.trim(),
+        description: editDescription.trim() || undefined,
+      });
+      setEditDialogOpen(false);
+      setTestToEdit(null);
+      setEditName("");
+      setEditDescription("");
+    } catch (error) {
+      console.error("Failed to update test:", error);
+    }
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+    setTestToEdit(null);
+    setEditName("");
+    setEditDescription("");
+  };
+
+  const handleDeleteClick = (testId: Id<"tests">) => {
+    setTestToDelete(testId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (testToDelete) {
+      try {
+        await deleteTest({ testId: testToDelete });
+        setDeleteDialogOpen(false);
+        setTestToDelete(null);
+      } catch (error) {
+        console.error("Failed to delete test:", error);
+      }
+    }
+  };
 
   const getTypeLabel = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -133,7 +210,7 @@ export default function Page() {
                       Created {new Date(test.createdAt).toLocaleDateString()}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-2">
                     <Button 
                       variant="outline" 
                       className="w-full"
@@ -143,6 +220,26 @@ export default function Page() {
                         View
                       </Link>
                     </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleEditClick(test)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteClick(test._id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))
@@ -152,6 +249,73 @@ export default function Page() {
       </div>
 
       <NewTestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <Dialog open={editDialogOpen} onOpenChange={handleEditClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Test</DialogTitle>
+            <DialogDescription>
+              Update the test name and description.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                placeholder="Enter test name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                placeholder="Enter test description (optional)"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleEditClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSave} disabled={!editName.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Test</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this test? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setTestToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
