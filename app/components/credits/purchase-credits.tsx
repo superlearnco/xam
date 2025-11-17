@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@clerk/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Loader2, Coins } from "lucide-react";
+import { Loader2, Coins, ExternalLink } from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -20,10 +20,13 @@ export function PurchaseCredits() {
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
   const [creditProducts, setCreditProducts] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingPortal, setLoadingPortal] = useState(false);
 
   const userCredits = useQuery(api.credits.getUserCredits);
+  const subscription = useQuery(api.subscriptions.fetchUserSubscription);
   const getCreditProducts = useAction(api.subscriptions.getCreditProducts);
   const createCheckout = useAction(api.subscriptions.createCheckoutSession);
+  const createPortalUrl = useAction(api.subscriptions.createCustomerPortalUrl);
   const upsertUser = useMutation(api.users.upsertUser);
 
   // Sync user when signed in
@@ -70,6 +73,28 @@ export function PurchaseCredits() {
     }
   };
 
+  const handleOpenBillingPortal = async () => {
+    if (!subscription?.customerId) {
+      setError("No billing information available. Please make a purchase first.");
+      return;
+    }
+
+    setLoadingPortal(true);
+    setError(null);
+
+    try {
+      const result = await createPortalUrl({
+        customerId: subscription.customerId,
+      });
+      window.open(result.url, "_blank");
+    } catch (error) {
+      console.error("Failed to open customer portal:", error);
+      setError("Failed to open billing portal. Please try again.");
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
+
   if (!isSignedIn) {
     return (
       <Card>
@@ -105,6 +130,26 @@ export function PurchaseCredits() {
             </div>
           </div>
         </CardHeader>
+        <CardFooter>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleOpenBillingPortal}
+            disabled={loadingPortal || !subscription?.customerId}
+          >
+            {loadingPortal ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Opening...
+              </>
+            ) : (
+              <>
+                View Transactions
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </CardFooter>
       </Card>
 
       <Card>
