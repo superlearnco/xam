@@ -160,7 +160,7 @@ export default function TestEditorPage() {
         id: generateFieldId(),
         type: fieldType,
         label: "",
-        required: false,
+        required: fieldType !== "pageBreak" && fieldType !== "infoBlock",
         options:
           fieldType === "multipleChoice" ||
           fieldType === "checkboxes" ||
@@ -220,7 +220,7 @@ export default function TestEditorPage() {
       id: generateFieldId(),
       type: fieldType,
       label: "",
-      required: false,
+      required: fieldType !== "pageBreak" && fieldType !== "infoBlock",
       options:
         fieldType === "multipleChoice" ||
         fieldType === "checkboxes" ||
@@ -653,7 +653,14 @@ function TestPreview({
 
       case "pageBreak":
         return (
-          <div key={field.id} className="py-8">
+          <div 
+            key={field.id} 
+            className="py-8"
+            style={{
+              pageBreakAfter: 'always',
+              breakAfter: 'page',
+            }}
+          >
             <Separator />
             <div className="text-center -mt-3">
               <span className="bg-background px-2 text-xs text-muted-foreground">
@@ -688,7 +695,22 @@ function TestPreview({
         <form className="space-y-6">
           {fields
             .sort((a, b) => a.order - b.order)
-            .map((field) => renderField(field))}
+            .map((field, index, sortedFields) => {
+              const prevField = index > 0 ? sortedFields[index - 1] : null;
+              const shouldBreakBefore = prevField?.type === "pageBreak";
+              
+              return (
+                <div
+                  key={field.id}
+                  style={shouldBreakBefore ? {
+                    pageBreakBefore: 'always',
+                    breakBefore: 'page',
+                  } : undefined}
+                >
+                  {renderField(field)}
+                </div>
+              );
+            })}
         </form>
       </div>
     </div>
