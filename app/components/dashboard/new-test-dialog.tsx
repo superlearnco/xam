@@ -33,7 +33,7 @@ export function NewTestDialog({ open, onOpenChange }: NewTestDialogProps) {
 
     if (selectedType === "test") {
       onOpenChange(false);
-      navigate("/dashboard/test/new");
+      navigate(`/dashboard/test/new?name=${encodeURIComponent(name.trim())}&type=${selectedType}`);
     }
     // Survey and Essay are coming soon
   };

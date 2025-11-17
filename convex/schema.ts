@@ -69,7 +69,30 @@ export default defineSchema({
   tests: defineTable({
     userId: v.string(),
     name: v.string(),
+    description: v.optional(v.string()),
     type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    fields: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("shortInput"),
+            v.literal("longInput"),
+            v.literal("multipleChoice"),
+            v.literal("checkboxes"),
+            v.literal("dropdown"),
+            v.literal("imageChoice"),
+            v.literal("fileUpload"),
+            v.literal("pageBreak"),
+            v.literal("infoBlock")
+          ),
+          label: v.string(),
+          required: v.optional(v.boolean()),
+          options: v.optional(v.array(v.string())),
+          order: v.number(),
+        })
+      )
+    ),
     createdAt: v.number(),
   }).index("userId", ["userId"]),
 });

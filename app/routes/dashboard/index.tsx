@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Link } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "~/components/ui/button";
@@ -20,11 +21,6 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "~/components/ui/tooltip";
 import { NewTestDialog } from "~/components/dashboard/new-test-dialog";
 
 export default function Page() {
@@ -138,18 +134,15 @@ export default function Page() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <Button disabled variant="outline" className="w-full">
-                            View
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Coming Soon</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      asChild
+                    >
+                      <Link to={`/dashboard/test/new?testId=${test._id}`}>
+                        View
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
               ))

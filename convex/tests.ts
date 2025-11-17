@@ -1,5 +1,6 @@
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 export const listTests = query({
   args: {
@@ -43,6 +44,123 @@ export const listTests = query({
     }
 
     return filteredTests;
+  },
+});
+
+export const getTest = query({
+  args: {
+    testId: v.id("tests"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      return null;
+    }
+
+    const test = await ctx.db.get(args.testId);
+
+    if (!test || test.userId !== identity.subject) {
+      return null;
+    }
+
+    return test;
+  },
+});
+
+export const createTest = mutation({
+  args: {
+    name: v.string(),
+    type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const testId = await ctx.db.insert("tests", {
+      userId: identity.subject,
+      name: args.name,
+      type: args.type,
+      description: args.description,
+      fields: [],
+      createdAt: Date.now(),
+    });
+
+    return testId;
+  },
+});
+
+export const updateTest = mutation({
+  args: {
+    testId: v.id("tests"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    fields: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("shortInput"),
+            v.literal("longInput"),
+            v.literal("multipleChoice"),
+            v.literal("checkboxes"),
+            v.literal("dropdown"),
+            v.literal("imageChoice"),
+            v.literal("fileUpload"),
+            v.literal("pageBreak"),
+            v.literal("infoBlock")
+          ),
+          label: v.string(),
+          required: v.optional(v.boolean()),
+          options: v.optional(v.array(v.string())),
+          order: v.number(),
+        })
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const test = await ctx.db.get(args.testId);
+
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    const updates: {
+      name?: string;
+      description?: string;
+      fields?: Array<{
+        id: string;
+        type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "fileUpload" | "pageBreak" | "infoBlock";
+        label: string;
+        required?: boolean;
+        options?: string[];
+        order: number;
+      }>;
+    } = {};
+
+    if (args.name !== undefined) {
+      updates.name = args.name;
+    }
+    if (args.description !== undefined) {
+      updates.description = args.description;
+    }
+    if (args.fields !== undefined) {
+      updates.fields = args.fields;
+    }
+
+    await ctx.db.patch(args.testId, updates);
+
+    return await ctx.db.get(args.testId);
   },
 });
 
