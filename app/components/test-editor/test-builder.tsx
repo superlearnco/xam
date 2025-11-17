@@ -10,6 +10,7 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { FieldRenderer, type TestField } from "./field-renderer";
 import { cn } from "~/lib/utils";
+import type { RefObject } from "react";
 
 interface TestBuilderProps {
   testName: string;
@@ -19,6 +20,8 @@ interface TestBuilderProps {
   onDescriptionChange: (description: string) => void;
   onFieldUpdate: (field: TestField) => void;
   onFieldDelete: (fieldId: string) => void;
+  fieldRefs?: RefObject<Map<string, HTMLDivElement>>;
+  onFieldSettingsClick?: (field: TestField) => void;
 }
 
 export function TestBuilder({
@@ -29,6 +32,8 @@ export function TestBuilder({
   onDescriptionChange,
   onFieldUpdate,
   onFieldDelete,
+  fieldRefs,
+  onFieldSettingsClick,
 }: TestBuilderProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "test-builder-drop-zone",
@@ -89,6 +94,14 @@ export function TestBuilder({
                 field={field}
                 onUpdate={onFieldUpdate}
                 onDelete={onFieldDelete}
+                onSettingsClick={onFieldSettingsClick}
+                fieldRef={(el) => {
+                  if (fieldRefs?.current && el) {
+                    fieldRefs.current.set(field.id, el);
+                  } else if (fieldRefs?.current && !el) {
+                    fieldRefs.current.delete(field.id);
+                  }
+                }}
               />
             ))}
           </SortableContext>

@@ -17,6 +17,7 @@ import {
   Info,
   Plus,
   X,
+  Settings,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -33,12 +34,22 @@ export interface TestField {
   required?: boolean;
   options?: string[];
   order: number;
+  correctAnswers?: number[];
+  marks?: number;
+  placeholder?: string;
+  helpText?: string;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  width?: string;
 }
 
 interface FieldRendererProps {
   field: TestField;
   onUpdate: (field: TestField) => void;
   onDelete: (fieldId: string) => void;
+  fieldRef?: (el: HTMLDivElement | null) => void;
+  onSettingsClick?: (field: TestField) => void;
 }
 
 const FieldIcons: Record<FieldType, React.ComponentType<{ className?: string }>> = {
@@ -57,6 +68,8 @@ export function FieldRenderer({
   field,
   onUpdate,
   onDelete,
+  fieldRef,
+  onSettingsClick,
 }: FieldRendererProps) {
   const {
     attributes,
@@ -96,7 +109,33 @@ export function FieldRenderer({
   const handleOptionRemove = (index: number) => {
     const newOptions = [...(field.options || [])];
     newOptions.splice(index, 1);
-    onUpdate({ ...field, options: newOptions });
+    // Remove correct answer if it was for this option
+    const newCorrectAnswers = (field.correctAnswers || []).filter((ans) => {
+      if (ans >= index) {
+        return ans !== index;
+      }
+      return true;
+    }).map((ans) => ans > index ? ans - 1 : ans);
+    onUpdate({ ...field, options: newOptions, correctAnswers: newCorrectAnswers });
+  };
+
+  const handleCorrectAnswerChange = (index: number, checked: boolean) => {
+    const currentAnswers = field.correctAnswers || [];
+    if (field.type === "checkboxes") {
+      // Multiple selection for checkboxes
+      if (checked) {
+        onUpdate({ ...field, correctAnswers: [...currentAnswers, index] });
+      } else {
+        onUpdate({ ...field, correctAnswers: currentAnswers.filter((ans) => ans !== index) });
+      }
+    } else {
+      // Single selection for multipleChoice/dropdown - replace previous selection
+      onUpdate({ ...field, correctAnswers: checked ? [index] : [] });
+    }
+  };
+
+  const handleMarksChange = (marks: number) => {
+    onUpdate({ ...field, marks });
   };
 
   const needsOptions =
@@ -106,10 +145,17 @@ export function FieldRenderer({
     field.type === "imageChoice";
 
   const isEditable = field.type !== "pageBreak" && field.type !== "infoBlock";
+  
+  const isQuestionType = field.type === "multipleChoice" || field.type === "checkboxes" || field.type === "dropdown";
+
+  const combinedRef = (el: HTMLDivElement | null) => {
+    setNodeRef(el);
+    fieldRef?.(el);
+  };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={combinedRef}
       style={style}
       className={cn(
         "group relative border-2 border-border rounded-lg p-4 bg-card transition-all",
@@ -163,6 +209,17 @@ export function FieldRenderer({
                 </Label>
               </div>
             )}
+            {onSettingsClick && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onSettingsClick(field)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Field settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -176,25 +233,38 @@ export function FieldRenderer({
           {needsOptions && (
             <div className="space-y-2 pl-9">
               <Label className="text-sm text-muted-foreground">Options</Label>
-              {(field.options || []).map((option, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={option}
-                    onChange={(e) =>
-                      handleOptionChange(index, e.target.value)
-                    }
-                    placeholder={`Option ${index + 1}`}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleOptionRemove(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              {(field.options || []).map((option, index) => {
+                const isCorrect = (field.correctAnswers || []).includes(index);
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    {isQuestionType && (
+                      <Checkbox
+                        id={`option-correct-${field.id}-${index}`}
+                        checked={isCorrect}
+                        onCheckedChange={(checked) =>
+                          handleCorrectAnswerChange(index, checked === true)
+                        }
+                        title="Mark as correct answer"
+                      />
+                    )}
+                    <Input
+                      value={option}
+                      onChange={(e) =>
+                        handleOptionChange(index, e.target.value)
+                      }
+                      placeholder={`Option ${index + 1}`}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleOptionRemove(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
               <Button
                 variant="outline"
                 size="sm"
@@ -204,6 +274,24 @@ export function FieldRenderer({
                 <Plus className="h-4 w-4 mr-2" />
                 Add Option
               </Button>
+            </div>
+          )}
+
+          {isQuestionType && (
+            <div className="space-y-3 pl-9 border-t pt-3">
+              <div className="flex items-center gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-sm text-muted-foreground">Marks</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={field.marks ?? 1}
+                    onChange={(e) => handleMarksChange(parseFloat(e.target.value) || 0)}
+                    className="w-24"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -242,20 +330,33 @@ export function FieldRenderer({
           {field.type === "imageChoice" && field.options && field.options.length > 0 && (
             <div className="pl-9">
               <div className="grid grid-cols-2 gap-4">
-                {field.options.map((option, index) => (
-                  <div
-                    key={index}
-                    className="border-2 border-border rounded-lg p-4 aspect-square flex items-center justify-center bg-muted/30"
-                  >
-                    {option ? (
-                      <span className="text-sm">{option}</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        Image option {index + 1}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {field.options.map((option, index) => {
+                  const isCorrect = (field.correctAnswers || []).includes(index);
+                  return (
+                    <div key={index} className="relative">
+                      <div className="absolute top-2 left-2 z-10">
+                        <Checkbox
+                          id={`image-correct-${field.id}-${index}`}
+                          checked={isCorrect}
+                          onCheckedChange={(checked) =>
+                            handleCorrectAnswerChange(index, checked === true)
+                          }
+                          title="Mark as correct answer"
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="border-2 border-border rounded-lg p-4 aspect-square flex items-center justify-center bg-muted/30">
+                        {option ? (
+                          <span className="text-sm">{option}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Image option {index + 1}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

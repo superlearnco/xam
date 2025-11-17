@@ -118,6 +118,14 @@ export const updateTest = mutation({
           required: v.optional(v.boolean()),
           options: v.optional(v.array(v.string())),
           order: v.number(),
+          correctAnswers: v.optional(v.array(v.number())),
+          marks: v.optional(v.number()),
+          placeholder: v.optional(v.string()),
+          helpText: v.optional(v.string()),
+          minLength: v.optional(v.number()),
+          maxLength: v.optional(v.number()),
+          pattern: v.optional(v.string()),
+          width: v.optional(v.string()),
         })
       )
     ),
@@ -145,6 +153,14 @@ export const updateTest = mutation({
         required?: boolean;
         options?: string[];
         order: number;
+        correctAnswers?: number[];
+        marks?: number;
+        placeholder?: string;
+        helpText?: string;
+        minLength?: number;
+        maxLength?: number;
+        pattern?: string;
+        width?: string;
       }>;
     } = {};
 

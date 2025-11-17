@@ -91,9 +91,10 @@ export const FIELD_TYPES: FieldTypeConfig[] = [
 
 interface DraggableFieldTypeProps {
   fieldType: FieldTypeConfig;
+  onClick?: () => void;
 }
 
-export function DraggableFieldType({ fieldType }: DraggableFieldTypeProps) {
+export function DraggableFieldType({ fieldType, onClick }: DraggableFieldTypeProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `field-type-${fieldType.type}`,
@@ -117,8 +118,9 @@ export function DraggableFieldType({ fieldType }: DraggableFieldTypeProps) {
       style={style}
       {...listeners}
       {...attributes}
+      onClick={onClick}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border-2 border-border bg-card cursor-grab active:cursor-grabbing transition-all hover:border-primary hover:bg-accent",
+        "flex items-center gap-3 p-3 rounded-lg border-2 border-border bg-card cursor-pointer transition-all hover:border-primary hover:bg-accent",
         isDragging && "opacity-50"
       )}
     >
@@ -135,7 +137,11 @@ export function DraggableFieldType({ fieldType }: DraggableFieldTypeProps) {
   );
 }
 
-export function FieldTypesSidebar() {
+interface FieldTypesSidebarProps {
+  onFieldTypeClick?: (fieldType: FieldType) => void;
+}
+
+export function FieldTypesSidebar({ onFieldTypeClick }: FieldTypesSidebarProps) {
   return (
     <div className="w-64 border-r bg-muted/30 p-4 space-y-2 overflow-y-auto">
       <div className="mb-4">
@@ -143,11 +149,15 @@ export function FieldTypesSidebar() {
           Field Types
         </h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Drag to add to your test
+          Click or drag to add to your test
         </p>
       </div>
       {FIELD_TYPES.map((fieldType) => (
-        <DraggableFieldType key={fieldType.type} fieldType={fieldType} />
+        <DraggableFieldType 
+          key={fieldType.type} 
+          fieldType={fieldType}
+          onClick={() => onFieldTypeClick?.(fieldType.type)}
+        />
       ))}
     </div>
   );

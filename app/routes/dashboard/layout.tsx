@@ -1,7 +1,7 @@
 import { getAuth } from "@clerk/react-router/ssr.server";
 import { redirect } from "react-router";
 import type { Route } from "./+types/layout";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 
 export async function loader(args: Route.LoaderArgs) {
@@ -16,9 +16,12 @@ export async function loader(args: Route.LoaderArgs) {
 }
 
 export default function DashboardLayout() {
+  const location = useLocation();
+  const isTestEditor = location.pathname.includes("/test/new");
+
   return (
     <div className="flex flex-col min-h-screen">
-      <DashboardNav />
+      {!isTestEditor && <DashboardNav />}
       <Outlet />
     </div>
   );

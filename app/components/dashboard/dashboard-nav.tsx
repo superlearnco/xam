@@ -7,7 +7,16 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { cn } from "~/lib/utils";
 
-export function DashboardNav() {
+interface DashboardNavProps {
+  tabs?: {
+    value: string;
+    label: string;
+    active: boolean;
+    onClick: () => void;
+  }[];
+}
+
+export function DashboardNav({ tabs }: DashboardNavProps) {
   const userCredits = useQuery(api.credits.getUserCredits);
   const credits = userCredits?.credits || 0;
 
@@ -22,6 +31,28 @@ export function DashboardNav() {
             className="h-8 w-auto"
           />
         </Link>
+
+        {/* Center: Tabs if provided */}
+        {tabs && tabs.length > 0 && (
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-[3px] h-9">
+            {tabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={tab.onClick}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "disabled:pointer-events-none disabled:opacity-50",
+                  tab.active
+                    ? "bg-background text-foreground shadow"
+                    : "text-muted-foreground hover:bg-background/50"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Right side: Credits card and UserButton */}
         <div className="flex items-center gap-3">
