@@ -11,6 +11,7 @@
 import type * as credits from "../credits.js";
 import type * as http from "../http.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as tests from "../tests.js";
 import type * as users from "../users.js";
 
 import type {
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   credits: typeof credits;
   http: typeof http;
   subscriptions: typeof subscriptions;
+  tests: typeof tests;
   users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

@@ -66,4 +66,10 @@ export default defineSchema({
     .index("userId", ["userId"])
     .index("subscriptionId", ["subscriptionId"])
     .index("meterId", ["meterId"]),
+  tests: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    createdAt: v.number(),
+  }).index("userId", ["userId"]),
 });
