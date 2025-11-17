@@ -1,230 +1,275 @@
-"use client";
-import { useAuth } from "@clerk/react-router";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { Check, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { Button } from "~/components/ui/button";
+import { useMemo } from "react";
+import { Link } from "react-router";
+import { ArrowUpRight, Check, Loader2 } from "lucide-react";
+
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { api } from "../../../convex/_generated/api";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 
-export default function Pricing({ loaderData }: { loaderData: any }) {
-  const { isSignedIn } = useAuth();
-  const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+type EmbeddedPrice = {
+  id: string;
+  amount: number;
+  currency: string;
+  interval?: string;
+};
 
-  const userSubscription = useQuery(api.subscriptions.fetchUserSubscription);
-  const createCheckout = useAction(api.subscriptions.createCheckoutSession);
-  const createPortalUrl = useAction(api.subscriptions.createCustomerPortalUrl);
-  const upsertUser = useMutation(api.users.upsertUser);
+type EmbeddedPlan = {
+  id: string;
+  name: string;
+  description: string;
+  isRecurring?: boolean;
+  prices: EmbeddedPrice[];
+  features?: string[];
+};
 
-  const handleSubscribe = async (priceId: string) => {
-    if (!isSignedIn) {
-      window.location.href = "/sign-in";
-      return;
-    }
+type EmbeddedPlansPayload = {
+  items: EmbeddedPlan[];
+};
 
-    setLoadingPriceId(priceId);
-    setError(null);
-
-    try {
-      // Ensure user exists in database before action
-      await upsertUser();
-
-      // If user has active subscription, redirect to customer portal for plan changes
-      if (
-        userSubscription?.status === "active" &&
-        userSubscription?.customerId
-      ) {
-        const portalResult = await createPortalUrl({
-          customerId: userSubscription.customerId,
-        });
-        window.open(portalResult.url, "_blank");
-        setLoadingPriceId(null);
-        return;
-      }
-
-      // Otherwise, create new checkout for first-time subscription
-      const checkoutUrl = await createCheckout({ priceId });
-
-      window.location.href = checkoutUrl;
-    } catch (error) {
-      console.error("Failed to process subscription action:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to process request. Please try again.";
-      setError(errorMessage);
-      setLoadingPriceId(null);
-    }
+type PricingLoaderData = {
+  plans?: EmbeddedPlansPayload;
+  subscription?: {
+    status?: string;
+    amount?: number;
   };
+};
+
+type PricingSectionProps = {
+  loaderData?: PricingLoaderData;
+};
+
+type NormalizedPlan = {
+  id: string;
+  name: string;
+  description: string;
+  priceLabel: string;
+  currencyLabel: string;
+  badge?: string;
+  features: string[];
+  buttonLabel: string;
+  intervalLabel?: string;
+  isPopular: boolean;
+  isCurrent: boolean;
+};
+
+const FALLBACK_PLANS: EmbeddedPlan[] = [
+  {
+    id: "starter",
+    name: "Starter",
+    description: "Launch your first assessments with guided templates.",
+    isRecurring: true,
+    prices: [
+      {
+        id: "starter-monthly",
+        amount: 2900,
+        currency: "usd",
+        interval: "month",
+      },
+    ],
+    features: [
+      "Unlimited drafts",
+      "Library of question types",
+      "Automatic scoring rules",
+    ],
+  },
+  {
+    id: "scale",
+    name: "Scale",
+    description: "Advanced workflows for cross-functional teams.",
+    isRecurring: true,
+    prices: [
+      {
+        id: "scale-monthly",
+        amount: 7900,
+        currency: "usd",
+        interval: "month",
+      },
+    ],
+    features: [
+      "Collaboration spaces",
+      "API + webhooks",
+      "Adaptive scoring engine",
+      "Priority support",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    description: "Custom governance, controls, and onboarding.",
+    isRecurring: true,
+    prices: [
+      {
+        id: "enterprise-yearly",
+        amount: 24900,
+        currency: "usd",
+        interval: "month",
+      },
+    ],
+    features: [
+      "Dedicated CSM",
+      "Security reviews & SLAs",
+      "Custom data retention",
+      "SSO & provisioning",
+    ],
+  },
+];
+
+export default function PricingSection({ loaderData }: PricingSectionProps) {
+  const normalizedPlans = useMemo<NormalizedPlan[]>(() => {
+    const sourcePlans = loaderData?.plans?.items?.length
+      ? loaderData.plans.items
+      : FALLBACK_PLANS;
+
+    const currentAmount = loaderData?.subscription?.amount ?? 0;
+    const activeStatus = loaderData?.subscription?.status;
+
+    return sourcePlans.map((plan, index) => {
+      const price = plan.prices[0];
+      const amount = price?.amount ?? 0;
+      const currency = (price?.currency ?? "USD").toUpperCase();
+      const interval = price?.interval ?? (plan.isRecurring ? "month" : "");
+      const priceLabel =
+        amount > 0 ? `$${(amount / 100).toFixed(0)}` : "Custom";
+
+      const badge =
+        amount === 0
+          ? "Free forever"
+          : index === 1
+          ? "Most popular"
+          : undefined;
+
+      const isCurrent =
+        Boolean(currentAmount) &&
+        amount > 0 &&
+        amount === currentAmount &&
+        activeStatus === "active";
+
+      return {
+        id: plan.id,
+        name: plan.name,
+        description: plan.description,
+        priceLabel,
+        currencyLabel: currency,
+        badge,
+        features: plan.features ?? [],
+        buttonLabel: isCurrent ? "Current plan" : "Choose plan",
+        intervalLabel: interval ? `/${interval}` : undefined,
+        isPopular: badge === "Most popular",
+        isCurrent,
+      };
+    });
+  }, [loaderData]);
+
+  const isLoading = !loaderData?.plans && loaderData !== undefined;
 
   return (
-    <section id="pricing" className="py-16 md:py-32">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="mx-auto max-w-2xl space-y-6 text-center">
-          <h1 className="text-center text-4xl font-semibold lg:text-5xl">
-            Pricing that Scales with You
-          </h1>
-          <p>
-            Choose the plan that fits your needs. All plans include full access
-            to our platform.
+    <section id="pricing" className="py-24">
+      <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 sm:px-6 lg:px-8">
+        <header className="space-y-4 text-center md:text-left">
+          <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+            Pricing
           </p>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              Transparent plans built for assessment teams.
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Start free, add collaboration when you need it, and scale to
+              enterprise governance without migrating tools.
+            </p>
+          </div>
+        </header>
+
+        {isLoading && (
+          <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading live plans…
+          </div>
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {normalizedPlans.map((plan) => (
+            <Card
+              key={plan.id}
+              className={`flex flex-col ${
+                plan.isPopular ? "border-primary" : ""
+              } ${plan.isCurrent ? "border-green-500 bg-green-50/40" : ""}`}
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>{plan.name}</CardTitle>
+                  {plan.badge && (
+                    <Badge variant="outline" className="text-primary">
+                      {plan.badge}
+                    </Badge>
+                  )}
+                  {plan.isCurrent && (
+                    <Badge variant="outline" className="text-green-600">
+                      Active
+                    </Badge>
+                  )}
+                </div>
+                <CardDescription>{plan.description}</CardDescription>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-4xl font-semibold">
+                    {plan.priceLabel}
+                  </span>
+                  {plan.intervalLabel && (
+                    <span className="text-sm text-muted-foreground">
+                      {plan.intervalLabel}
+                    </span>
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {plan.currencyLabel}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                {plan.features.length === 0 && (
+                  <p>Includes everything in the previous plan plus:</p>
+                )}
+                <ul className="space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter className="mt-auto flex flex-col gap-2">
+                <Button
+                  asChild
+                  variant={plan.isCurrent ? "secondary" : "default"}
+                  className="w-full"
+                >
+                  <Link to="/pricing" prefetch="viewport" className="gap-1.5">
+                    {plan.buttonLabel}
+                    {!plan.isCurrent && (
+                      <ArrowUpRight className="h-4 w-4" aria-hidden />
+                    )}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                >
+                  <Link to="/contact" prefetch="viewport">
+                    Talk to sales
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
-
-        {!loaderData?.plans ? (
-          <div className="mt-8 flex items-center justify-center">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading plans...</span>
-            </div>
-            {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-3">
-            {loaderData.plans.items
-              .sort((a: any, b: any) => {
-                const priceComparison = a.prices[0].amount - b.prices[0].amount;
-                return priceComparison !== 0
-                  ? priceComparison
-                  : a.name.localeCompare(b.name);
-              })
-              .map((plan: any, index: number) => {
-                const isPopular =
-                  loaderData.plans.items.length === 2
-                    ? index === 1
-                    : index === Math.floor(loaderData.plans.items.length / 2); // Mark middle/higher priced plan as popular
-                const price = plan.prices[0];
-                const isCurrentPlan =
-                  userSubscription?.status === "active" &&
-                  userSubscription?.amount === price.amount;
-
-                return (
-                  <Card
-                    key={plan.id}
-                    className={`relative ${isPopular ? "border-primary" : ""} ${
-                      isCurrentPlan ? "border-green-500 bg-green-50/50" : ""
-                    }`}
-                  >
-                    {isPopular && !isCurrentPlan && (
-                      <span className="bg-primary text-primary-foreground absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full px-3 py-1 text-xs font-medium">
-                        Popular
-                      </span>
-                    )}
-                    {isCurrentPlan && (
-                      <span className="bg-green-500 text-white absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full px-3 py-1 text-xs font-medium">
-                        Current Plan
-                      </span>
-                    )}
-
-                    <CardHeader>
-                      <CardTitle className="font-medium">{plan.name}</CardTitle>
-
-                      <span className="my-3 block text-2xl font-semibold">
-                        ${(price.amount / 100).toFixed(0)} /{" "}
-                        {price.interval || "mo"}
-                      </span>
-
-                      <CardDescription className="text-sm">
-                        {plan.description}
-                      </CardDescription>
-
-                      <Button
-                        className="mt-4 w-full"
-                        variant={
-                          isCurrentPlan
-                            ? "secondary"
-                            : isPopular
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={() => handleSubscribe(price.id)}
-                        disabled={loadingPriceId === price.id}
-                      >
-                        {loadingPriceId === price.id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Setting up checkout...
-                          </>
-                        ) : isCurrentPlan ? (
-                          "✓ Current Plan"
-                        ) : userSubscription?.status === "active" ? (
-                          (() => {
-                            const currentAmount = userSubscription.amount || 0;
-                            const newAmount = price.amount;
-
-                            if (newAmount > currentAmount) {
-                              return `Upgrade (+$${(
-                                (newAmount - currentAmount) /
-                                100
-                              ).toFixed(0)}/mo)`;
-                            } else if (newAmount < currentAmount) {
-                              return `Downgrade (-$${(
-                                (currentAmount - newAmount) /
-                                100
-                              ).toFixed(0)}/mo)`;
-                            } else {
-                              return "Manage Plan";
-                            }
-                          })()
-                        ) : (
-                          "Get Started (Demo)"
-                        )}
-                      </Button>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      <hr className="border-dashed" />
-
-                      <ul className="list-outside space-y-3 text-sm">
-                        <li className="flex items-center gap-2">
-                          <Check className="size-3" />
-                          All features included
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="size-3" />
-                          Priority support
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="size-3" />
-                          Cancel anytime
-                        </li>
-                        {plan.isRecurring && (
-                          <li className="flex items-center gap-2">
-                            <Check className="size-3" />
-                            Recurring billing
-                          </li>
-                        )}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-md max-w-md mx-auto">
-            <p className="text-red-800 text-center">{error}</p>
-          </div>
-        )}
-
-        {userSubscription &&
-          !loaderData.plans?.items.some(
-            (plan: any) => plan.prices[0].id === userSubscription.polarPriceId
-          ) && (
-            <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-md max-w-md mx-auto">
-              <p className="text-amber-800 text-center text-sm">
-                You have an active subscription that's not shown above. Contact
-                support for assistance.
-              </p>
-            </div>
-          )}
       </div>
     </section>
   );

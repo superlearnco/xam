@@ -1,6 +1,6 @@
-# React Starter Kit (RSK)
+# XAM by Superlearn
 
-A modern, production-ready SaaS starter template for building full-stack React applications using React Router v7, Convex, Clerk, and Polar.sh. Ready for Vercel deployment with built-in AI chat capabilities.
+AI-native assessment workspace for designing, versioning, and publishing credible assessments with collaborative tooling built for modern learning teams. Built with React Router v7, Convex, Clerk, and Polar.sh. Ready for Vercel deployment.
 
 ## Features
 
@@ -261,6 +261,6 @@ This project is licensed under the MIT License.
 
 ---
 
-**Stop rebuilding the same foundation over and over.** RSK eliminates months of integration work by providing a complete, production-ready SaaS template with authentication, payments, AI chat, and real-time data working seamlessly out of the box.
+**XAM by Superlearn** - Build credible assessments faster. Design question banks, rubrics, and delivery embeds from a single, auditable workspace with AI assistance.
 
-Built with ❤️ using React Router v7, Convex, Clerk, Polar.sh, and OpenAI.
+Built with care by Superlearn using React Router v7, Convex, Clerk, Polar.sh, and OpenAI.

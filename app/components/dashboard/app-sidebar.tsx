@@ -47,8 +47,11 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link to="/" prefetch="viewport">
-              <span className="text-base font-semibold">Ras Mic Inc.</span>
+            <Link to="/" prefetch="viewport" className="flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background font-bold text-sm text-primary">
+                X
+              </span>
+              <span className="text-base font-semibold">XAM</span>
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>

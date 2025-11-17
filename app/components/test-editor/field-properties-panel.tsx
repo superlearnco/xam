@@ -132,15 +132,16 @@ export function FieldPropertiesPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Field Properties</SheetTitle>
-          <SheetDescription>
-            Configure the properties for this field
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Field Properties</SheetTitle>
+            <SheetDescription>
+              Configure the properties for this field
+            </SheetDescription>
+          </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+          <div className="space-y-6 px-1">
           {/* Basic Properties */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Basic Properties</h3>
@@ -345,6 +346,7 @@ export function FieldPropertiesPanel({
               </div>
             </>
           )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

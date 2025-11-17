@@ -48,7 +48,7 @@ export const links: Route.LinksFunction = () => [
   {
     rel: "icon",
     type: "image/png",
-    href: "/favicon.png",
+    href: "/xam favicon.png",
   },
 ];
 
