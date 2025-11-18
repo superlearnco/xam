@@ -46,6 +46,7 @@ export default function TestPage() {
     maxScore?: number;
     percentage?: number;
   } | null>(null);
+  const [isFullscreenEnabled, setIsFullscreenEnabled] = useState(false);
 
   const test = useQuery(
     api.tests.getPublicTest,
@@ -58,9 +59,8 @@ export default function TestPage() {
     if (test?.password && password === test.password) {
       setIsPasswordVerified(true);
       setPasswordError("");
-      // If password is verified, skip name/email collection and go directly to test
-      setShowTest(true);
-      setTestStartedAt(Date.now());
+      // Don't set showTest here - let the flow logic determine what to show next
+      // (email screen, name screen, or test directly)
     } else {
       setPasswordError("Incorrect password. Please try again.");
     }
@@ -71,8 +71,13 @@ export default function TestPage() {
     e.preventDefault();
     if (userEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())) {
       setIsEmailProvided(true);
-      setShowTest(true);
-      setTestStartedAt(Date.now());
+      // Check if fullscreen is required before showing test
+      if (test?.requireFullScreen) {
+        // Don't set showTest yet - wait for fullscreen
+      } else {
+        setShowTest(true);
+        setTestStartedAt(Date.now());
+      }
     }
   };
 
@@ -80,10 +85,56 @@ export default function TestPage() {
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (userName.trim()) {
-      setShowTest(true);
-      setTestStartedAt(Date.now());
+      // Check if fullscreen is required before showing test
+      if (test?.requireFullScreen) {
+        // Don't set showTest yet - wait for fullscreen
+      } else {
+        setShowTest(true);
+        setTestStartedAt(Date.now());
+      }
     }
   };
+
+  // Check fullscreen status
+  useEffect(() => {
+    const checkFullscreen = () => {
+      const isFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      
+      setIsFullscreenEnabled((prevFullscreen) => {
+        // If fullscreen is required and just got enabled, show test
+        if (test?.requireFullScreen && isFullscreen && !prevFullscreen && !showTest) {
+          // Check if we have all prerequisites
+          const hasPassword = !test.password || isPasswordVerified;
+          const hasEmail = !test.requireAuth || isEmailProvided;
+          const hasName = test.requireAuth || userName.trim();
+
+          if (hasPassword && hasEmail && hasName) {
+            setShowTest(true);
+            setTestStartedAt(Date.now());
+          }
+        }
+        return isFullscreen;
+      });
+    };
+
+    checkFullscreen();
+    document.addEventListener("fullscreenchange", checkFullscreen);
+    document.addEventListener("webkitfullscreenchange", checkFullscreen);
+    document.addEventListener("mozfullscreenchange", checkFullscreen);
+    document.addEventListener("MSFullscreenChange", checkFullscreen);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", checkFullscreen);
+      document.removeEventListener("webkitfullscreenchange", checkFullscreen);
+      document.removeEventListener("mozfullscreenchange", checkFullscreen);
+      document.removeEventListener("MSFullscreenChange", checkFullscreen);
+    };
+  }, [test, showTest, isPasswordVerified, isEmailProvided, userName]);
 
   // Loading state
   if (!testId || test === undefined) {
@@ -197,6 +248,59 @@ export default function TestPage() {
     );
   }
 
+  // Fullscreen required screen (if fullscreen is required and not enabled yet)
+  if (test.requireFullScreen && !isFullscreenEnabled && (!test.password || isPasswordVerified) && 
+      (test.requireAuth ? isEmailProvided : userName.trim())) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/superlearn full.png" 
+                alt="Superlearn" 
+                className="h-16 object-contain"
+              />
+            </div>
+            <CardTitle>Fullscreen Required</CardTitle>
+            <CardDescription>
+              This test requires fullscreen mode. Please enable fullscreen to continue.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              className="w-full"
+              onClick={async () => {
+                try {
+                  const element = document.documentElement;
+                  if (element.requestFullscreen) {
+                    await element.requestFullscreen();
+                  } else if ((element as any).webkitRequestFullscreen) {
+                    await (element as any).webkitRequestFullscreen();
+                  } else if ((element as any).mozRequestFullScreen) {
+                    await (element as any).mozRequestFullScreen();
+                  } else if ((element as any).msRequestFullscreen) {
+                    await (element as any).msRequestFullscreen();
+                  } else {
+                    alert("Fullscreen is not supported in your browser. Please enable it manually using F11 or your browser's fullscreen option.");
+                  }
+                } catch (error) {
+                  console.warn("Fullscreen request failed:", error);
+                  alert("Please enable fullscreen mode manually using F11 or your browser's fullscreen option.");
+                }
+              }}
+            >
+              Enable Fullscreen
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              You can also press F11 to enable fullscreen mode
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Name collection screen (only if auth not required, password verified or no password, and test not shown)
   if (!test.requireAuth && !showTest && (!test.password || isPasswordVerified)) {
     return (
@@ -237,8 +341,8 @@ export default function TestPage() {
     );
   }
 
-  // Show test form or success screen
-  if (showTest && !submissionResult) {
+  // Show test form or success screen (only if fullscreen is enabled if required)
+  if (showTest && !submissionResult && (!test.requireFullScreen || isFullscreenEnabled)) {
     return (
       <TestForm 
         test={test} 
@@ -366,27 +470,6 @@ function TestForm({
       }
     };
 
-    // Fullscreen requirement
-    const requestFullscreen = async () => {
-      if (test.requireFullScreen) {
-        try {
-          const element = document.documentElement;
-          if (element.requestFullscreen) {
-            await element.requestFullscreen();
-          } else if ((element as any).webkitRequestFullscreen) {
-            await (element as any).webkitRequestFullscreen();
-          } else if ((element as any).mozRequestFullScreen) {
-            await (element as any).mozRequestFullScreen();
-          } else if ((element as any).msRequestFullscreen) {
-            await (element as any).msRequestFullscreen();
-          }
-        } catch (error) {
-          console.warn("Fullscreen request failed:", error);
-          alert("Please enable fullscreen mode for this test.");
-        }
-      }
-    };
-
     // Monitor fullscreen exit
     const handleFullscreenChange = () => {
       if (test.requireFullScreen) {
@@ -398,7 +481,6 @@ function TestForm({
         );
         if (!isFullscreen) {
           alert("Please return to fullscreen mode to continue the test.");
-          requestFullscreen();
         }
       }
     };
@@ -416,7 +498,6 @@ function TestForm({
     }
 
     if (test.requireFullScreen) {
-      requestFullscreen();
       document.addEventListener("fullscreenchange", handleFullscreenChange);
       document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
       document.addEventListener("mozfullscreenchange", handleFullscreenChange);
@@ -500,7 +581,9 @@ function TestForm({
   const currentPageFieldsToShow = pages[currentPage] || [];
   const isLastPage = currentPage === pages.length - 1;
 
-  const handleContinue = () => {
+  const handleContinue = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
       // Scroll to top when moving to next page
