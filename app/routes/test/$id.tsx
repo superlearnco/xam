@@ -40,6 +40,7 @@ export default function TestPage() {
   const [showTest, setShowTest] = useState(false);
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [isEmailProvided, setIsEmailProvided] = useState(false);
+  const [isNameProvided, setIsNameProvided] = useState(false);
   const [testStartedAt, setTestStartedAt] = useState<number | null>(null);
   const [submissionResult, setSubmissionResult] = useState<{
     score?: number;
@@ -85,6 +86,7 @@ export default function TestPage() {
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (userName.trim()) {
+      setIsNameProvided(true);
       // Check if fullscreen is required before showing test
       if (test?.requireFullScreen) {
         // Don't set showTest yet - wait for fullscreen
@@ -111,7 +113,7 @@ export default function TestPage() {
           // Check if we have all prerequisites
           const hasPassword = !test.password || isPasswordVerified;
           const hasEmail = !test.requireAuth || isEmailProvided;
-          const hasName = test.requireAuth || userName.trim();
+          const hasName = test.requireAuth || isNameProvided;
 
           if (hasPassword && hasEmail && hasName) {
             setShowTest(true);
@@ -134,7 +136,7 @@ export default function TestPage() {
       document.removeEventListener("mozfullscreenchange", checkFullscreen);
       document.removeEventListener("MSFullscreenChange", checkFullscreen);
     };
-  }, [test, showTest, isPasswordVerified, isEmailProvided, userName]);
+  }, [test, showTest, isPasswordVerified, isEmailProvided, isNameProvided]);
 
   // Loading state
   if (!testId || test === undefined) {
@@ -249,8 +251,9 @@ export default function TestPage() {
   }
 
   // Fullscreen required screen (if fullscreen is required and not enabled yet)
-  if (test.requireFullScreen && !isFullscreenEnabled && (!test.password || isPasswordVerified) && 
-      (test.requireAuth ? isEmailProvided : userName.trim())) {
+  // Only show after name/email has been collected, but not after submission
+  if (test.requireFullScreen && !isFullscreenEnabled && !submissionResult && (!test.password || isPasswordVerified) && 
+      (test.requireAuth ? isEmailProvided : isNameProvided)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
         <Card className="max-w-md w-full">
@@ -301,8 +304,8 @@ export default function TestPage() {
     );
   }
 
-  // Name collection screen (only if auth not required, password verified or no password, and test not shown)
-  if (!test.requireAuth && !showTest && (!test.password || isPasswordVerified)) {
+  // Name collection screen (only if auth not required, password verified or no password, and name not provided yet)
+  if (!test.requireAuth && !isNameProvided && (!test.password || isPasswordVerified)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
         <Card className="max-w-md w-full">
@@ -528,32 +531,6 @@ function TestForm({
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const result = await submitTest({
-        testId,
-        responses: formData,
-        respondentName: userName,
-        respondentEmail: userEmail,
-        startedAt,
-      });
-
-      onSubmissionComplete({
-        score: result.score,
-        maxScore: result.maxScore,
-        percentage: result.percentage,
-      });
-    } catch (error) {
-      console.error("Failed to submit test:", error);
-      alert("Failed to submit test. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Split fields into pages based on page breaks
   const fields = (test.fields || []) as TestField[];
   const sortedFields = fields.sort((a, b) => a.order - b.order);
@@ -581,9 +558,86 @@ function TestForm({
   const currentPageFieldsToShow = pages[currentPage] || [];
   const isLastPage = currentPage === pages.length - 1;
 
+  // Validate required fields
+  const validateRequiredFields = (fieldsToValidate: TestField[]): { isValid: boolean; missingFields: string[] } => {
+    const missingFields: string[] = [];
+    
+    for (const field of fieldsToValidate) {
+      if (field.required) {
+        const fieldValue = formData[field.id];
+        
+        // Check if field is empty or invalid
+        let isEmpty = false;
+        
+        if (field.type === "shortInput" || field.type === "longInput") {
+          isEmpty = !fieldValue || (typeof fieldValue === "string" && fieldValue.trim() === "");
+        } else if (field.type === "multipleChoice" || field.type === "dropdown") {
+          isEmpty = fieldValue === undefined || fieldValue === null || fieldValue === "";
+        } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+          isEmpty = !fieldValue || (Array.isArray(fieldValue) && fieldValue.length === 0);
+        } else if (field.type === "fileUpload") {
+          isEmpty = !fieldValue || fieldValue === "";
+        }
+        
+        if (isEmpty) {
+          missingFields.push(field.label || field.id);
+        }
+      }
+    }
+    
+    return {
+      isValid: missingFields.length === 0,
+      missingFields,
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate all required fields across all pages
+    const allFields = sortedFields.filter(f => f.type !== "pageBreak" && f.type !== "infoBlock");
+    const validation = validateRequiredFields(allFields);
+    
+    if (!validation.isValid) {
+      alert(`Please fill out all required fields before submitting:\n${validation.missingFields.join("\n")}`);
+      return;
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+      const result = await submitTest({
+        testId,
+        responses: formData,
+        respondentName: userName,
+        respondentEmail: userEmail,
+        startedAt,
+      });
+
+      onSubmissionComplete({
+        score: result.score,
+        maxScore: result.maxScore,
+        percentage: result.percentage,
+      });
+    } catch (error) {
+      console.error("Failed to submit test:", error);
+      alert("Failed to submit test. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleContinue = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Validate required fields on current page
+    const validation = validateRequiredFields(currentPageFieldsToShow);
+    if (!validation.isValid) {
+      alert(`Please fill out all required fields:\n${validation.missingFields.join("\n")}`);
+      return;
+    }
+    
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
       // Scroll to top when moving to next page
