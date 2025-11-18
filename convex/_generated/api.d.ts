@@ -9,6 +9,7 @@
  */
 
 import type * as credits from "../credits.js";
+import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as tests from "../tests.js";
@@ -30,6 +31,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   credits: typeof credits;
+  files: typeof files;
   http: typeof http;
   subscriptions: typeof subscriptions;
   tests: typeof tests;

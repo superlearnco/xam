@@ -373,3 +373,167 @@ export const submitTest = mutation({
   },
 });
 
+export const getTestSubmissions = query({
+  args: {
+    testId: v.id("tests"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify test ownership
+    const test = await ctx.db.get(args.testId);
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    // Get all submissions for this test
+    const submissions = await ctx.db
+      .query("testSubmissions")
+      .withIndex("testId", (q) => q.eq("testId", args.testId))
+      .collect();
+
+    // Calculate statistics
+    const total = submissions.length;
+    const marked = submissions.filter((s) => s.isMarked === true).length;
+    const unmarked = total - marked;
+
+    // Calculate mean percentage for marked submissions only
+    const markedSubmissions = submissions.filter((s) => s.isMarked === true && s.percentage !== undefined);
+    const meanPercentage = markedSubmissions.length > 0
+      ? Math.round(
+          markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / markedSubmissions.length
+        )
+      : 0;
+
+    return {
+      submissions: submissions.map((s) => ({
+        _id: s._id,
+        respondentName: s.respondentName,
+        respondentEmail: s.respondentEmail,
+        score: s.score,
+        maxScore: s.maxScore,
+        percentage: s.percentage,
+        submittedAt: s.submittedAt,
+        isMarked: s.isMarked || false,
+      })),
+      statistics: {
+        total,
+        marked,
+        unmarked,
+        meanPercentage,
+      },
+    };
+  },
+});
+
+export const getSubmissionForMarking = query({
+  args: {
+    submissionId: v.id("testSubmissions"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get submission
+    const submission = await ctx.db.get(args.submissionId);
+    if (!submission) {
+      throw new Error("Submission not found");
+    }
+
+    // Get test and verify ownership
+    const test = await ctx.db.get(submission.testId);
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    return {
+      submission: {
+        _id: submission._id,
+        respondentName: submission.respondentName,
+        respondentEmail: submission.respondentEmail,
+        responses: submission.responses,
+        score: submission.score,
+        maxScore: submission.maxScore,
+        percentage: submission.percentage,
+        submittedAt: submission.submittedAt,
+        isMarked: submission.isMarked || false,
+        fieldMarks: submission.fieldMarks || {},
+      },
+      test: {
+        _id: test._id,
+        name: test.name,
+        description: test.description,
+        fields: test.fields || [],
+      },
+    };
+  },
+});
+
+export const updateSubmissionMarks = mutation({
+  args: {
+    submissionId: v.id("testSubmissions"),
+    fieldMarks: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get submission
+    const submission = await ctx.db.get(args.submissionId);
+    if (!submission) {
+      throw new Error("Submission not found");
+    }
+
+    // Get test and verify ownership
+    const test = await ctx.db.get(submission.testId);
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    // Validate and calculate marks
+    const fields = test.fields || [];
+    let totalScore = 0;
+    let maxScore = 0;
+    const fieldMarksObj = args.fieldMarks as Record<string, number>;
+
+    for (const field of fields) {
+      if (field.marks && field.marks > 0) {
+        maxScore += field.marks;
+        const mark = fieldMarksObj[field.id];
+        if (mark !== undefined && mark !== null) {
+          // Validate mark doesn't exceed max marks
+          const validMark = Math.max(0, Math.min(mark, field.marks));
+          totalScore += validMark;
+        }
+      }
+    }
+
+    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
+    // Update submission
+    await ctx.db.patch(args.submissionId, {
+      isMarked: true,
+      score: totalScore,
+      maxScore: maxScore,
+      percentage: percentage,
+      fieldMarks: fieldMarksObj,
+    });
+
+    return {
+      score: totalScore,
+      maxScore: maxScore,
+      percentage: percentage,
+    };
+  },
+});
+

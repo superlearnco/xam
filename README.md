@@ -86,10 +86,6 @@ OPENAI_API_KEY=your_openai_api_key_here
 # Frontend URL for redirects
 FRONTEND_URL=http://localhost:5173
 
-# UploadThing Configuration
-# Note: UPLOADTHING_SECRET must be added to Convex dashboard environment variables (not here)
-# Get these from https://uploadthing.com/dashboard
-VITE_UPLOADTHING_APP_ID=your_uploadthing_app_id_here
 ```
 
 4. Initialize Convex:
@@ -98,13 +94,7 @@ VITE_UPLOADTHING_APP_ID=your_uploadthing_app_id_here
 npx convex dev
 ```
 
-5. Set up UploadThing:
-   - Sign up at https://uploadthing.com and create a new app
-   - Copy your App ID and add it to `.env.local` as `VITE_UPLOADTHING_APP_ID`
-   - Copy your Secret Key and add it to Convex dashboard environment variables as `UPLOADTHING_SECRET`
-   - The secret must be stored in Convex (not in `.env.local`) for security
-
-6. Set up your Polar.sh webhook endpoint:
+5. Set up your Polar.sh webhook endpoint:
    - URL: `{your_domain}/webhook/polar`
    - Events: All subscription events
 
@@ -223,8 +213,6 @@ Make sure to deploy the output of `npm run build`
 - `POLAR_WEBHOOK_SECRET` - Polar.sh webhook secret
 - `OPENAI_API_KEY` - OpenAI API key for chat features
 - `FRONTEND_URL` - Your production frontend URL
-- `VITE_UPLOADTHING_APP_ID` - UploadThing app ID (public, can be in frontend env)
-- `UPLOADTHING_SECRET` - UploadThing secret key (must be in Convex dashboard, not frontend env)
 
 ## Project Structure
 

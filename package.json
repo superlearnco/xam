@@ -33,7 +33,6 @@
     "@react-router/serve": "^7.5.3",
     "@tabler/icons-react": "^3.33.0",
     "@tanstack/react-table": "^8.21.3",
-    "@uploadthing/react": "^7.3.3",
     "@vercel/analytics": "^1.5.0",
     "@vercel/react-router": "^1.1.2",
     "ai": "^4.3.16",
@@ -51,7 +50,6 @@
     "recharts": "^2.15.3",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.3.0",
-    "uploadthing": "^7.7.4",
     "vaul": "^1.1.2",
     "zod": "^3.25.39"
   },

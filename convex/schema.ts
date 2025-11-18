@@ -124,6 +124,8 @@ export default defineSchema({
     percentage: v.optional(v.number()),
     submittedAt: v.number(),
     startedAt: v.number(),
+    isMarked: v.optional(v.boolean()),
+    fieldMarks: v.optional(v.any()),
   })
     .index("testId", ["testId"])
     .index("respondentEmail", ["respondentEmail"]),

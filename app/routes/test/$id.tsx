@@ -1141,6 +1141,7 @@ function TestForm({
               {(field.options || []).map((option, index) => {
                 const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
                 const isSelected = selectedValues.includes(String(index));
+                const imageUrl = option && option.startsWith("http") ? option : undefined;
                 return (
                   <button
                     key={index}
@@ -1157,15 +1158,30 @@ function TestForm({
                       }
                     }}
                     className={cn(
-                      "border-2 rounded-lg p-4 aspect-square flex flex-col items-center justify-center transition-all",
+                      "border-2 rounded-lg p-2 aspect-square overflow-hidden transition-all relative",
                       isSelected
-                        ? "border-primary bg-primary/10"
+                        ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2"
                         : "border-border hover:border-primary/50"
                     )}
                   >
-                    <div className="text-sm text-center">
-                      {option || `Image ${index + 1}`}
-                    </div>
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={`Choice ${index + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                        Image {index + 1}
+                      </div>
+                    )}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                          <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      </div>
+                    )}
                   </button>
                 );
               })}

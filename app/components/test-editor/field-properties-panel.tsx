@@ -49,7 +49,8 @@ export function FieldPropertiesPanel({
   const isQuestionType =
     localField.type === "multipleChoice" ||
     localField.type === "checkboxes" ||
-    localField.type === "dropdown";
+    localField.type === "dropdown" ||
+    localField.type === "imageChoice";
 
   const isTextInput = localField.type === "shortInput" || localField.type === "longInput";
 

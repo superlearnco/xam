@@ -23,6 +23,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Textarea } from "~/components/ui/textarea";
+import { FileUpload } from "~/components/ui/file-upload";
 import { cn } from "~/lib/utils";
 import type { FieldType } from "./field-types";
 
@@ -145,7 +146,7 @@ export function FieldRenderer({
 
   const isEditable = field.type !== "pageBreak" && field.type !== "infoBlock";
   
-  const isQuestionType = field.type === "multipleChoice" || field.type === "checkboxes" || field.type === "dropdown";
+  const isQuestionType = field.type === "multipleChoice" || field.type === "checkboxes" || field.type === "dropdown" || field.type === "imageChoice";
 
   const combinedRef = (el: HTMLDivElement | null) => {
     setNodeRef(el);
@@ -320,8 +321,9 @@ export function FieldRenderer({
               <div className="grid grid-cols-2 gap-4">
                 {field.options.map((option, index) => {
                   const isCorrect = (field.correctAnswers || []).includes(index);
+                  const imageUrl = option && option.startsWith("http") ? option : undefined;
                   return (
-                    <div key={index} className="relative">
+                    <div key={index} className="relative space-y-2">
                       <div className="absolute top-2 left-2 z-10">
                         <Checkbox
                           id={`image-correct-${field.id}-${index}`}
@@ -333,13 +335,50 @@ export function FieldRenderer({
                           className="bg-background"
                         />
                       </div>
-                      <div className="border-2 border-border rounded-lg p-4 aspect-square flex items-center justify-center bg-muted/30">
-                        {option ? (
-                          <span className="text-sm">{option}</span>
+                      <div className="border-2 border-border rounded-lg p-2 aspect-square bg-muted/30 overflow-hidden">
+                        {imageUrl ? (
+                          <div className="relative w-full h-full">
+                            <img
+                              src={imageUrl}
+                              alt={`Image choice ${index + 1}`}
+                              className="w-full h-full object-contain rounded"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                              onClick={() => handleOptionChange(index, "")}
+                              title="Remove image"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Image option {index + 1}
-                          </span>
+                          <div className="h-full flex items-center justify-center">
+                            <FileUpload
+                              endpoint="imageUploader"
+                              onUploadComplete={(url) => {
+                                console.log("[Field Renderer] Image upload complete:", {
+                                  fieldId: field.id,
+                                  optionIndex: index,
+                                  url,
+                                  timestamp: new Date().toISOString(),
+                                });
+                                handleOptionChange(index, url);
+                              }}
+                              onUploadError={(error) => {
+                                console.error("[Field Renderer] Image upload error:", {
+                                  fieldId: field.id,
+                                  optionIndex: index,
+                                  error: error.message,
+                                  errorStack: error.stack,
+                                  timestamp: new Date().toISOString(),
+                                });
+                              }}
+                              variant="dropzone"
+                              className="h-full w-full"
+                            />
+                          </div>
                         )}
                       </div>
                     </div>

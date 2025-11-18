@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
@@ -27,6 +27,10 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 
@@ -759,13 +763,8 @@ export default function TestEditorPage() {
           fields={fields}
         />
       )}
-      {activeTab === "marking" && (
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="text-center text-muted-foreground">
-            <p className="text-lg font-medium">Marking</p>
-            <p className="text-sm mt-2">Marking coming soon</p>
-          </div>
-        </div>
+      {activeTab === "marking" && testId && (
+        <MarkingPage testId={testId} />
       )}
       </div>
     </>
@@ -950,6 +949,7 @@ function TestPreview({
               {(field.options || []).map((option, index) => {
                 const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
                 const isSelected = selectedValues.includes(String(index));
+                const imageUrl = option && option.startsWith("http") ? option : undefined;
                 return (
                   <button
                     key={index}
@@ -966,15 +966,30 @@ function TestPreview({
                       }
                     }}
                     className={cn(
-                      "border-2 rounded-lg p-4 aspect-square flex flex-col items-center justify-center transition-all",
+                      "border-2 rounded-lg p-2 aspect-square overflow-hidden transition-all relative",
                       isSelected
-                        ? "border-primary bg-primary/10"
+                        ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2"
                         : "border-border hover:border-primary/50"
                     )}
                   >
-                    <div className="text-sm text-center">
-                      {option || `Image ${index + 1}`}
-                    </div>
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={`Choice ${index + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                        Image {index + 1}
+                      </div>
+                    )}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -1069,3 +1084,190 @@ function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(later, wait);
   };
 }
+
+// Marking Page Component
+function MarkingPage({
+  testId,
+}: {
+  testId: Id<"tests">;
+}) {
+  const navigate = useNavigate();
+  const submissionsData = useQuery(api.tests.getTestSubmissions, { testId });
+
+  if (submissionsData === undefined) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const { submissions, statistics } = submissionsData;
+
+  // Prepare data for pie charts
+  const accuracyChartConfig = {
+    correct: { label: "Correct", color: "hsl(142, 76%, 36%)" },
+    incorrect: { label: "Incorrect", color: "hsl(0, 84%, 60%)" },
+  };
+
+  const statusChartConfig = {
+    marked: { label: "Marked", color: "hsl(142, 76%, 36%)" },
+    awaiting: { label: "Awaiting", color: "hsl(221, 83%, 53%)" },
+  };
+
+  const accuracyData = [
+    { name: "Correct", value: statistics.meanPercentage },
+    { name: "Incorrect", value: 100 - statistics.meanPercentage },
+  ].filter((item) => item.value > 0);
+
+  const markingStatusData = [
+    { name: "Marked", value: statistics.marked },
+    { name: "Awaiting", value: statistics.unmarked },
+  ].filter((item) => item.value > 0);
+
+  const accuracyColors = [accuracyChartConfig.correct.color, accuracyChartConfig.incorrect.color];
+  const statusColors = [statusChartConfig.marked.color, statusChartConfig.awaiting.color];
+
+  return (
+    <div className="flex flex-1 flex-col overflow-auto p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-semibold">Marking</h2>
+        <p className="text-muted-foreground">Review and mark student submissions</p>
+      </div>
+
+      {/* Statistics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Class Accuracy Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Class Accuracy</CardTitle>
+            <CardDescription>Mean percentage: {statistics.meanPercentage}%</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {statistics.marked > 0 ? (
+              <ChartContainer config={accuracyChartConfig} className="h-[250px]">
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Pie
+                    data={accuracyData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
+                    {accuracyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={accuracyColors[index]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                No marked submissions yet
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Marking Status Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Marking Status</CardTitle>
+            <CardDescription>
+              {statistics.marked} marked, {statistics.unmarked} awaiting
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {statistics.total > 0 ? (
+              <ChartContainer config={statusChartConfig} className="h-[250px]">
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Pie
+                    data={markingStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
+                    {markingStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={statusColors[index]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                No submissions yet
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Submissions Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Submissions</CardTitle>
+          <CardDescription>Total: {statistics.total} submissions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {submissions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No submissions yet
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {submissions.map((submission) => (
+                  <TableRow key={submission._id}>
+                    <TableCell className="font-medium">
+                      {submission.respondentName || "Anonymous"}
+                    </TableCell>
+                    <TableCell>{submission.respondentEmail || "-"}</TableCell>
+                    <TableCell>
+                      {new Date(submission.submittedAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={submission.isMarked ? "default" : "secondary"}>
+                        {submission.isMarked ? "Marked" : "Submitted"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {submission.percentage !== undefined
+                        ? `${submission.percentage}%`
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant={submission.isMarked ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => navigate(`/dashboard/test/mark/${submission._id}`)}
+                      >
+                        {submission.isMarked ? "Review" : "Mark"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
