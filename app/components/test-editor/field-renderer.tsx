@@ -147,6 +147,8 @@ export function FieldRenderer({
   const isEditable = field.type !== "pageBreak" && field.type !== "infoBlock";
   
   const isQuestionType = field.type === "multipleChoice" || field.type === "checkboxes" || field.type === "dropdown" || field.type === "imageChoice";
+  
+  const isInputOrChoiceType = isQuestionType || field.type === "shortInput" || field.type === "longInput";
 
   const combinedRef = (el: HTMLDivElement | null) => {
     setNodeRef(el);
@@ -277,7 +279,7 @@ export function FieldRenderer({
             </div>
           )}
 
-          {isQuestionType && (
+          {isInputOrChoiceType && (
             <div className="space-y-3 pl-9 border-t pt-3">
               <div className="flex items-center gap-4">
                 <div className="space-y-1 flex-1">

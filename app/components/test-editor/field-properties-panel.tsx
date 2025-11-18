@@ -53,6 +53,8 @@ export function FieldPropertiesPanel({
     localField.type === "imageChoice";
 
   const isTextInput = localField.type === "shortInput" || localField.type === "longInput";
+  
+  const isInputOrChoiceType = isQuestionType || isTextInput;
 
   const handleUpdate = (updates: Partial<TestField>) => {
     const updated = { ...localField, ...updates };
@@ -348,7 +350,7 @@ export function FieldPropertiesPanel({
             )}
 
             {/* Marks */}
-            {isQuestionType && (
+            {isInputOrChoiceType && (
               <>
                 <Separator className="my-2" />
                 <section className="space-y-4">
