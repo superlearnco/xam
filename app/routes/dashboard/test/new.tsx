@@ -621,7 +621,7 @@ export default function TestEditorPage() {
                     onCheckedChange={(checked) => setRequireAuth(checked === true)}
                   />
                   <Label htmlFor="require-auth" className="font-normal cursor-pointer">
-                    Require authentication to sign in
+                    Require E-Mail
                   </Label>
                 </div>
                 <div className="space-y-2">

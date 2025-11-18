@@ -267,3 +267,105 @@ export const deleteTest = mutation({
   },
 });
 
+export const submitTest = mutation({
+  args: {
+    testId: v.id("tests"),
+    responses: v.any(),
+    respondentName: v.optional(v.string()),
+    respondentEmail: v.optional(v.string()),
+    startedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get the test
+    const test = await ctx.db.get(args.testId);
+
+    if (!test) {
+      throw new Error("Test not found");
+    }
+
+    let score: number | undefined;
+    let maxScore: number | undefined;
+    let percentage: number | undefined;
+
+    // Calculate score if instant feedback is enabled
+    if (test.instantFeedback && test.fields) {
+      let earnedMarks = 0;
+      let totalMarks = 0;
+
+      for (const field of test.fields) {
+        // Only calculate score for fields with correctAnswers defined
+        if (field.correctAnswers && field.correctAnswers.length > 0 && field.marks) {
+          totalMarks += field.marks;
+          const userResponse = args.responses[field.id];
+
+          if (userResponse !== undefined && userResponse !== null && userResponse !== "") {
+            let isCorrect = false;
+
+            // Handle different field types
+            if (field.type === "multipleChoice" || field.type === "dropdown") {
+              // Single answer - check if response matches any correct answer
+              const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+              isCorrect = field.correctAnswers.includes(responseIndex);
+            } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+              // Multiple answers - check if all correct answers are selected
+              const selectedIndices = Array.isArray(userResponse)
+                ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
+                : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+              
+              // Check if all correct answers are selected and no incorrect ones
+              const correctSet = new Set(field.correctAnswers);
+              const selectedSet = new Set(selectedIndices);
+              
+              // All correct answers must be selected
+              const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
+              // No extra incorrect answers
+              const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
+              
+              isCorrect = allCorrectSelected && noExtraAnswers;
+            } else if (field.type === "shortInput" || field.type === "longInput") {
+              // Text input - compare with correct answers (assuming correctAnswers contains indices to options array)
+              // For text inputs, we might need to compare text directly
+              // For now, if correctAnswers is defined, we'll check if response matches any option at those indices
+              if (field.options && field.options.length > 0) {
+                const responseText = String(userResponse).toLowerCase().trim();
+                isCorrect = field.correctAnswers.some((idx) => {
+                  const correctOption = field.options?.[idx];
+                  return correctOption && correctOption.toLowerCase().trim() === responseText;
+                });
+              }
+            }
+
+            if (isCorrect) {
+              earnedMarks += field.marks;
+            }
+          }
+        }
+      }
+
+      score = earnedMarks;
+      maxScore = totalMarks;
+      percentage = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
+    }
+
+    // Create submission
+    const submissionId = await ctx.db.insert("testSubmissions", {
+      testId: args.testId,
+      respondentName: args.respondentName,
+      respondentEmail: args.respondentEmail,
+      responses: args.responses,
+      score,
+      maxScore,
+      percentage,
+      submittedAt: Date.now(),
+      startedAt: args.startedAt,
+    });
+
+    return {
+      submissionId,
+      score,
+      maxScore,
+      percentage,
+    };
+  },
+});
+

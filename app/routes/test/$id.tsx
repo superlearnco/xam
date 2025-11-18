@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { useParams, useNavigate } from "react-router";
-import { useAuth } from "@clerk/react-router";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -11,7 +10,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 import { cn } from "~/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -31,33 +30,26 @@ type TestField = {
 export default function TestPage() {
   const params = useParams();
   const navigate = useNavigate();
-  const { isSignedIn, userId } = useAuth();
   const testId = params.id as Id<"tests"> | undefined;
 
   const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [showTest, setShowTest] = useState(false);
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [isEmailProvided, setIsEmailProvided] = useState(false);
+  const [testStartedAt, setTestStartedAt] = useState<number | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<{
+    score?: number;
+    maxScore?: number;
+    percentage?: number;
+  } | null>(null);
 
   const test = useQuery(
     api.tests.getPublicTest,
     testId ? { testId } : "skip"
-  );
-
-  // Handle authentication requirement
-  useEffect(() => {
-    if (test && test.requireAuth && !isSignedIn) {
-      const returnUrl = `/test/${testId}`;
-      navigate(`/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`);
-    }
-  }, [test, isSignedIn, testId, navigate]);
-
-  // If auth is required and user is signed in, or auth is not required, proceed
-  const canProceed = test && (
-    (test.requireAuth && isSignedIn) || 
-    (!test.requireAuth)
   );
 
   // Handle password verification
@@ -66,11 +58,21 @@ export default function TestPage() {
     if (test?.password && password === test.password) {
       setIsPasswordVerified(true);
       setPasswordError("");
-      if (!test.requireAuth) {
-        setShowTest(true);
-      }
+      // If password is verified, skip name/email collection and go directly to test
+      setShowTest(true);
+      setTestStartedAt(Date.now());
     } else {
       setPasswordError("Incorrect password. Please try again.");
+    }
+  };
+
+  // Handle email submission
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())) {
+      setIsEmailProvided(true);
+      setShowTest(true);
+      setTestStartedAt(Date.now());
     }
   };
 
@@ -79,6 +81,7 @@ export default function TestPage() {
     e.preventDefault();
     if (userName.trim()) {
       setShowTest(true);
+      setTestStartedAt(Date.now());
     }
   };
 
@@ -108,8 +111,8 @@ export default function TestPage() {
     );
   }
 
-  // Password protection screen
-  if (test.password && !isPasswordVerified && canProceed) {
+  // Password protection screen (only show if password exists and not verified)
+  if (test.password && !isPasswordVerified) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
         <Card className="max-w-md w-full">
@@ -154,7 +157,47 @@ export default function TestPage() {
     );
   }
 
-  // Name collection screen (only if auth not required and password verified or no password)
+  // Email collection screen (if requireAuth is enabled and email not provided, and password verified or no password)
+  if (test.requireAuth && !isEmailProvided && (!test.password || isPasswordVerified)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/superlearn full.png" 
+                alt="Superlearn" 
+                className="h-16 object-contain"
+              />
+            </div>
+            <CardTitle>Email Required</CardTitle>
+            <CardDescription>Please enter your email address to begin the test.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={!userEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())}>
+                Start Test
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Name collection screen (only if auth not required, password verified or no password, and test not shown)
   if (!test.requireAuth && !showTest && (!test.password || isPasswordVerified)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
@@ -194,15 +237,60 @@ export default function TestPage() {
     );
   }
 
-  // Show test form
-  if (showTest || (test.requireAuth && isSignedIn && (!test.password || isPasswordVerified))) {
+  // Show test form or success screen
+  if (showTest && !submissionResult) {
     return (
       <TestForm 
         test={test} 
         userName={test.requireAuth ? undefined : userName}
+        userEmail={test.requireAuth ? userEmail : undefined}
         formData={formData}
         setFormData={setFormData}
+        testId={testId!}
+        startedAt={testStartedAt || Date.now()}
+        onSubmissionComplete={setSubmissionResult}
       />
+    );
+  }
+
+  // Show success screen
+  if (submissionResult) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="h-16 w-16 text-green-500" />
+            </div>
+            <CardTitle>Test Submitted Successfully</CardTitle>
+            <CardDescription>
+              {test.instantFeedback && submissionResult.score !== undefined
+                ? `Your score: ${submissionResult.score}${submissionResult.maxScore ? `/${submissionResult.maxScore}` : ""}${submissionResult.percentage !== undefined ? ` (${submissionResult.percentage}%)` : ""}`
+                : "Thank you for completing the test."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {test.instantFeedback && submissionResult.score !== undefined && (
+              <div className="text-center py-4">
+                <div className="text-3xl font-bold text-primary">
+                  {submissionResult.percentage !== undefined ? `${submissionResult.percentage}%` : ""}
+                </div>
+                {submissionResult.maxScore && (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    {submissionResult.score} out of {submissionResult.maxScore} points
+                  </div>
+                )}
+              </div>
+            )}
+            <Button 
+              className="w-full" 
+              onClick={() => navigate("/")}
+            >
+              Return Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -212,25 +300,177 @@ export default function TestPage() {
 function TestForm({
   test,
   userName,
+  userEmail,
   formData,
   setFormData,
+  testId,
+  startedAt,
+  onSubmissionComplete,
 }: {
   test: NonNullable<ReturnType<typeof useQuery<typeof api.tests.getPublicTest>>>;
   userName?: string;
+  userEmail?: string;
   formData: Record<string, any>;
   setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  testId: Id<"tests">;
+  startedAt: number;
+  onSubmissionComplete: (result: { score?: number; maxScore?: number; percentage?: number }) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitTest = useMutation(api.tests.submitTest);
+
+  // Browser restrictions
+  useEffect(() => {
+    // Disable copy/paste
+    const handleCopy = (e: ClipboardEvent) => {
+      if (test.disableCopyPaste) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    const handleCut = (e: ClipboardEvent) => {
+      if (test.disableCopyPaste) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    const handlePaste = (e: ClipboardEvent) => {
+      if (test.disableCopyPaste) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    // Disable context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      if (test.disableCopyPaste) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    // Block tab switching
+    let tabSwitchWarningShown = false;
+    const handleVisibilityChange = () => {
+      if (test.blockTabSwitching && document.hidden) {
+        if (!tabSwitchWarningShown) {
+          alert("Please do not switch tabs during the test.");
+          tabSwitchWarningShown = true;
+        }
+      }
+    };
+
+    // Fullscreen requirement
+    const requestFullscreen = async () => {
+      if (test.requireFullScreen) {
+        try {
+          const element = document.documentElement;
+          if (element.requestFullscreen) {
+            await element.requestFullscreen();
+          } else if ((element as any).webkitRequestFullscreen) {
+            await (element as any).webkitRequestFullscreen();
+          } else if ((element as any).mozRequestFullScreen) {
+            await (element as any).mozRequestFullScreen();
+          } else if ((element as any).msRequestFullscreen) {
+            await (element as any).msRequestFullscreen();
+          }
+        } catch (error) {
+          console.warn("Fullscreen request failed:", error);
+          alert("Please enable fullscreen mode for this test.");
+        }
+      }
+    };
+
+    // Monitor fullscreen exit
+    const handleFullscreenChange = () => {
+      if (test.requireFullScreen) {
+        const isFullscreen = !!(
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement ||
+          (document as any).mozFullScreenElement ||
+          (document as any).msFullscreenElement
+        );
+        if (!isFullscreen) {
+          alert("Please return to fullscreen mode to continue the test.");
+          requestFullscreen();
+        }
+      }
+    };
+
+    // Apply restrictions
+    if (test.disableCopyPaste) {
+      document.addEventListener("copy", handleCopy);
+      document.addEventListener("cut", handleCut);
+      document.addEventListener("paste", handlePaste);
+      document.addEventListener("contextmenu", handleContextMenu);
+    }
+
+    if (test.blockTabSwitching) {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
+    if (test.requireFullScreen) {
+      requestFullscreen();
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+      document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+    }
+
+    // Cleanup
+    return () => {
+      if (test.disableCopyPaste) {
+        document.removeEventListener("copy", handleCopy);
+        document.removeEventListener("cut", handleCut);
+        document.removeEventListener("paste", handlePaste);
+        document.removeEventListener("contextmenu", handleContextMenu);
+      }
+      if (test.blockTabSwitching) {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+      if (test.requireFullScreen) {
+        document.removeEventListener("fullscreenchange", handleFullscreenChange);
+        document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+        document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+        document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+      }
+    };
+  }, [test.disableCopyPaste, test.blockTabSwitching, test.requireFullScreen]);
 
   const handleInputChange = (fieldId: string, value: any) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Submit test responses
-    console.log("Test submitted:", formData);
-    alert("Test submitted! (This is a placeholder - submission logic to be implemented)");
+    setIsSubmitting(true);
+
+    try {
+      const result = await submitTest({
+        testId,
+        responses: formData,
+        respondentName: userName,
+        respondentEmail: userEmail,
+        startedAt,
+      });
+
+      onSubmissionComplete({
+        score: result.score,
+        maxScore: result.maxScore,
+        percentage: result.percentage,
+      });
+    } catch (error) {
+      console.error("Failed to submit test:", error);
+      alert("Failed to submit test. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Split fields into pages based on page breaks
@@ -527,6 +767,9 @@ function TestForm({
           {userName && (
             <p className="text-sm text-muted-foreground">Name: {userName}</p>
           )}
+          {userEmail && (
+            <p className="text-sm text-muted-foreground">Email: {userEmail}</p>
+          )}
           {pages.length > 1 && (
             <p className="text-sm text-muted-foreground">
               Page {currentPage + 1} of {pages.length}
@@ -542,8 +785,15 @@ function TestForm({
           ))}
           <div className="pt-6">
             {isLastPage ? (
-              <Button type="submit" size="lg" className="w-full">
-                Submit Test
+              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Test"
+                )}
               </Button>
             ) : (
               <Button 
@@ -561,4 +811,3 @@ function TestForm({
     </div>
   );
 }
-

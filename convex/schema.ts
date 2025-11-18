@@ -114,4 +114,17 @@ export default defineSchema({
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),
   }).index("userId", ["userId"]),
+  testSubmissions: defineTable({
+    testId: v.id("tests"),
+    respondentName: v.optional(v.string()),
+    respondentEmail: v.optional(v.string()),
+    responses: v.any(),
+    score: v.optional(v.number()),
+    maxScore: v.optional(v.number()),
+    percentage: v.optional(v.number()),
+    submittedAt: v.number(),
+    startedAt: v.number(),
+  })
+    .index("testId", ["testId"])
+    .index("respondentEmail", ["respondentEmail"]),
 });
