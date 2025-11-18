@@ -69,6 +69,7 @@ export default function TestEditorPage() {
   const [disableCopyPaste, setDisableCopyPaste] = useState(false);
   const [requireFullScreen, setRequireFullScreen] = useState(false);
   const [blockTabSwitching, setBlockTabSwitching] = useState(false);
+  const [allowBackNavigation, setAllowBackNavigation] = useState(true);
   const [passingGrade, setPassingGrade] = useState<number | undefined>(undefined);
   const [instantFeedback, setInstantFeedback] = useState(false);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
@@ -126,6 +127,7 @@ export default function TestEditorPage() {
       setDisableCopyPaste(test.disableCopyPaste || false);
       setRequireFullScreen(test.requireFullScreen || false);
       setBlockTabSwitching(test.blockTabSwitching || false);
+      setAllowBackNavigation(test.allowBackNavigation !== undefined ? test.allowBackNavigation : true);
       setPassingGrade(test.passingGrade);
       setInstantFeedback(test.instantFeedback || false);
       setShowAnswerKey(test.showAnswerKey || false);
@@ -149,6 +151,7 @@ export default function TestEditorPage() {
           disableCopyPaste: boolean;
           requireFullScreen: boolean;
           blockTabSwitching: boolean;
+          allowBackNavigation: boolean;
           passingGrade?: number;
           instantFeedback: boolean;
           showAnswerKey: boolean;
@@ -170,6 +173,7 @@ export default function TestEditorPage() {
             disableCopyPaste: options.disableCopyPaste,
             requireFullScreen: options.requireFullScreen,
             blockTabSwitching: options.blockTabSwitching,
+            allowBackNavigation: options.allowBackNavigation,
             passingGrade: options.passingGrade,
             instantFeedback: options.instantFeedback,
             showAnswerKey: options.showAnswerKey,
@@ -195,6 +199,7 @@ export default function TestEditorPage() {
         disableCopyPaste,
         requireFullScreen,
         blockTabSwitching,
+        allowBackNavigation,
         passingGrade,
         instantFeedback,
         showAnswerKey,
@@ -213,6 +218,7 @@ export default function TestEditorPage() {
     disableCopyPaste,
     requireFullScreen,
     blockTabSwitching,
+    allowBackNavigation,
     passingGrade,
     instantFeedback,
     showAnswerKey,
@@ -684,6 +690,16 @@ export default function TestEditorPage() {
                       />
                       <Label htmlFor="block-tab-switching" className="font-normal cursor-pointer">
                         Block tab switching
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="allow-back-navigation"
+                        checked={allowBackNavigation}
+                        onCheckedChange={(checked) => setAllowBackNavigation(checked === true)}
+                      />
+                      <Label htmlFor="allow-back-navigation" className="font-normal cursor-pointer">
+                        Allow back navigation
                       </Label>
                     </div>
                   </div>

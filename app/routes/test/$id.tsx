@@ -12,6 +12,7 @@ import { Separator } from "~/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Loader2, CheckCircle } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type TestField = {
@@ -72,13 +73,8 @@ export default function TestPage() {
     e.preventDefault();
     if (userEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())) {
       setIsEmailProvided(true);
-      // Check if fullscreen is required before showing test
-      if (test?.requireFullScreen) {
-        // Don't set showTest yet - wait for fullscreen
-      } else {
-        setShowTest(true);
-        setTestStartedAt(Date.now());
-      }
+      // When requireAuth is true, we need both email and name, so don't show test yet
+      // The name screen will be shown next
     }
   };
 
@@ -113,7 +109,8 @@ export default function TestPage() {
           // Check if we have all prerequisites
           const hasPassword = !test.password || isPasswordVerified;
           const hasEmail = !test.requireAuth || isEmailProvided;
-          const hasName = test.requireAuth || isNameProvided;
+          // When requireAuth is true, we need both email and name
+          const hasName = isNameProvided;
 
           if (hasPassword && hasEmail && hasName) {
             setShowTest(true);
@@ -241,7 +238,7 @@ export default function TestPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={!userEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())}>
-                Start Test
+                Continue
               </Button>
             </form>
           </CardContent>
@@ -253,7 +250,7 @@ export default function TestPage() {
   // Fullscreen required screen (if fullscreen is required and not enabled yet)
   // Only show after name/email has been collected, but not after submission
   if (test.requireFullScreen && !isFullscreenEnabled && !submissionResult && (!test.password || isPasswordVerified) && 
-      (test.requireAuth ? isEmailProvided : isNameProvided)) {
+      (test.requireAuth ? (isEmailProvided && isNameProvided) : isNameProvided)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
         <Card className="max-w-md w-full">
@@ -285,11 +282,11 @@ export default function TestPage() {
                   } else if ((element as any).msRequestFullscreen) {
                     await (element as any).msRequestFullscreen();
                   } else {
-                    alert("Fullscreen is not supported in your browser. Please enable it manually using F11 or your browser's fullscreen option.");
+                    toast.error("Fullscreen is not supported in your browser. Please enable it manually using F11 or your browser's fullscreen option.");
                   }
                 } catch (error) {
                   console.warn("Fullscreen request failed:", error);
-                  alert("Please enable fullscreen mode manually using F11 or your browser's fullscreen option.");
+                  toast.error("Please enable fullscreen mode manually using F11 or your browser's fullscreen option.");
                 }
               }}
             >
@@ -304,8 +301,11 @@ export default function TestPage() {
     );
   }
 
-  // Name collection screen (only if auth not required, password verified or no password, and name not provided yet)
-  if (!test.requireAuth && !isNameProvided && (!test.password || isPasswordVerified)) {
+  // Name collection screen (show if name not provided yet)
+  // If requireAuth is true, show after email is provided
+  // If requireAuth is false, show after password (if any) is verified
+  if (!isNameProvided && (!test.password || isPasswordVerified) && 
+      (test.requireAuth ? isEmailProvided : true)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
         <Card className="max-w-md w-full">
@@ -349,7 +349,7 @@ export default function TestPage() {
     return (
       <TestForm 
         test={test} 
-        userName={test.requireAuth ? undefined : userName}
+        userName={userName}
         userEmail={test.requireAuth ? userEmail : undefined}
         formData={formData}
         setFormData={setFormData}
@@ -426,48 +426,43 @@ function TestForm({
   const [currentPage, setCurrentPage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitTest = useMutation(api.tests.submitTest);
+  
+  // Check if back navigation is allowed (default to true if not set)
+  const allowBackNavigation = test.allowBackNavigation !== undefined ? test.allowBackNavigation : true;
 
   // Browser restrictions
   useEffect(() => {
-    // Disable copy/paste
+    // Disable copy/paste handlers
     const handleCopy = (e: ClipboardEvent) => {
-      if (test.disableCopyPaste) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
     };
 
     const handleCut = (e: ClipboardEvent) => {
-      if (test.disableCopyPaste) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
     };
 
     const handlePaste = (e: ClipboardEvent) => {
-      if (test.disableCopyPaste) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
     };
 
-    // Disable context menu
+    // Disable context menu handler
     const handleContextMenu = (e: MouseEvent) => {
-      if (test.disableCopyPaste) {
-        e.preventDefault();
-        return false;
-      }
+      e.preventDefault();
+      return false;
     };
 
     // Block tab switching
     let tabSwitchWarningShown = false;
     const handleVisibilityChange = () => {
-      if (test.blockTabSwitching && document.hidden) {
+      if (document.hidden) {
         if (!tabSwitchWarningShown) {
-          alert("Please do not switch tabs during the test.");
+          toast.warning("Please do not switch tabs during the test.");
           tabSwitchWarningShown = true;
         }
       }
@@ -475,25 +470,23 @@ function TestForm({
 
     // Monitor fullscreen exit
     const handleFullscreenChange = () => {
-      if (test.requireFullScreen) {
-        const isFullscreen = !!(
-          document.fullscreenElement ||
-          (document as any).webkitFullscreenElement ||
-          (document as any).mozFullScreenElement ||
-          (document as any).msFullscreenElement
-        );
-        if (!isFullscreen) {
-          alert("Please return to fullscreen mode to continue the test.");
-        }
+      const isFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      if (!isFullscreen) {
+        toast.warning("Please return to fullscreen mode to continue the test.");
       }
     };
 
-    // Apply restrictions
+    // Apply restrictions only if enabled
     if (test.disableCopyPaste) {
-      document.addEventListener("copy", handleCopy);
-      document.addEventListener("cut", handleCut);
-      document.addEventListener("paste", handlePaste);
-      document.addEventListener("contextmenu", handleContextMenu);
+      document.addEventListener("copy", handleCopy, true);
+      document.addEventListener("cut", handleCut, true);
+      document.addEventListener("paste", handlePaste, true);
+      document.addEventListener("contextmenu", handleContextMenu, true);
     }
 
     if (test.blockTabSwitching) {
@@ -507,14 +500,14 @@ function TestForm({
       document.addEventListener("MSFullscreenChange", handleFullscreenChange);
     }
 
-    // Cleanup
+    // Cleanup - always remove handlers to prevent stale closures
     return () => {
-      if (test.disableCopyPaste) {
-        document.removeEventListener("copy", handleCopy);
-        document.removeEventListener("cut", handleCut);
-        document.removeEventListener("paste", handlePaste);
-        document.removeEventListener("contextmenu", handleContextMenu);
-      }
+      // Always remove copy/paste handlers if they were added
+      document.removeEventListener("copy", handleCopy, true);
+      document.removeEventListener("cut", handleCut, true);
+      document.removeEventListener("paste", handlePaste, true);
+      document.removeEventListener("contextmenu", handleContextMenu, true);
+      
       if (test.blockTabSwitching) {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
@@ -599,7 +592,10 @@ function TestForm({
     const validation = validateRequiredFields(allFields);
     
     if (!validation.isValid) {
-      alert(`Please fill out all required fields before submitting:\n${validation.missingFields.join("\n")}`);
+      toast.error(
+        `Please fill out all required fields before submitting: ${validation.missingFields.join(", ")}`,
+        { duration: 5000 }
+      );
       return;
     }
     
@@ -621,7 +617,7 @@ function TestForm({
       });
     } catch (error) {
       console.error("Failed to submit test:", error);
-      alert("Failed to submit test. Please try again.");
+      toast.error("Failed to submit test. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -634,13 +630,27 @@ function TestForm({
     // Validate required fields on current page
     const validation = validateRequiredFields(currentPageFieldsToShow);
     if (!validation.isValid) {
-      alert(`Please fill out all required fields:\n${validation.missingFields.join("\n")}`);
+      toast.error(
+        `Please fill out all required fields: ${validation.missingFields.join(", ")}`,
+        { duration: 5000 }
+      );
       return;
     }
     
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
       // Scroll to top when moving to next page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleBack = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+      // Scroll to top when moving to previous page
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -920,9 +930,20 @@ function TestForm({
               {renderField(field)}
             </div>
           ))}
-          <div className="pt-6">
+          <div className="pt-6 flex gap-3">
+            {allowBackNavigation && currentPage > 0 && (
+              <Button 
+                type="button" 
+                size="lg" 
+                variant="outline"
+                className="flex-1"
+                onClick={handleBack}
+              >
+                Back
+              </Button>
+            )}
             {isLastPage ? (
-              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" size="lg" className={allowBackNavigation && currentPage > 0 ? "flex-1" : "w-full"} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -936,7 +957,7 @@ function TestForm({
               <Button 
                 type="button" 
                 size="lg" 
-                className="w-full"
+                className={allowBackNavigation && currentPage > 0 ? "flex-1" : "w-full"}
                 onClick={handleContinue}
               >
                 Continue

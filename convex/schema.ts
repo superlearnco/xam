@@ -110,6 +110,7 @@ export default defineSchema({
     disableCopyPaste: v.optional(v.boolean()),
     requireFullScreen: v.optional(v.boolean()),
     blockTabSwitching: v.optional(v.boolean()),
+    allowBackNavigation: v.optional(v.boolean()),
     passingGrade: v.optional(v.number()),
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),

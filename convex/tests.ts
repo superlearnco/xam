@@ -152,6 +152,7 @@ export const updateTest = mutation({
     disableCopyPaste: v.optional(v.boolean()),
     requireFullScreen: v.optional(v.boolean()),
     blockTabSwitching: v.optional(v.boolean()),
+    allowBackNavigation: v.optional(v.boolean()),
     passingGrade: v.optional(v.number()),
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),
@@ -195,6 +196,7 @@ export const updateTest = mutation({
       disableCopyPaste?: boolean;
       requireFullScreen?: boolean;
       blockTabSwitching?: boolean;
+      allowBackNavigation?: boolean;
       passingGrade?: number;
       instantFeedback?: boolean;
       showAnswerKey?: boolean;
@@ -229,6 +231,9 @@ export const updateTest = mutation({
     }
     if (args.blockTabSwitching !== undefined) {
       updates.blockTabSwitching = args.blockTabSwitching;
+    }
+    if (args.allowBackNavigation !== undefined) {
+      updates.allowBackNavigation = args.allowBackNavigation;
     }
     if (args.passingGrade !== undefined) {
       updates.passingGrade = args.passingGrade;
