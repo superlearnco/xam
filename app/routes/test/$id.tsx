@@ -220,6 +220,8 @@ function TestForm({
   formData: Record<string, any>;
   setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 }) {
+  const [currentPage, setCurrentPage] = useState(0);
+
   const handleInputChange = (fieldId: string, value: any) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
   };
@@ -229,6 +231,41 @@ function TestForm({
     // TODO: Submit test responses
     console.log("Test submitted:", formData);
     alert("Test submitted! (This is a placeholder - submission logic to be implemented)");
+  };
+
+  // Split fields into pages based on page breaks
+  const fields = (test.fields || []) as TestField[];
+  const sortedFields = fields.sort((a, b) => a.order - b.order);
+  
+  const pages: TestField[][] = [];
+  let currentPageFields: TestField[] = [];
+  
+  sortedFields.forEach((field) => {
+    if (field.type === "pageBreak") {
+      // End current page and start a new one
+      if (currentPageFields.length > 0) {
+        pages.push(currentPageFields);
+        currentPageFields = [];
+      }
+    } else {
+      currentPageFields.push(field);
+    }
+  });
+  
+  // Add the last page if it has fields
+  if (currentPageFields.length > 0) {
+    pages.push(currentPageFields);
+  }
+
+  const currentPageFieldsToShow = pages[currentPage] || [];
+  const isLastPage = currentPage === pages.length - 1;
+
+  const handleContinue = () => {
+    if (currentPage < pages.length - 1) {
+      setCurrentPage(currentPage + 1);
+      // Scroll to top when moving to next page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const renderField = (field: TestField) => {
@@ -464,23 +501,8 @@ function TestForm({
         );
 
       case "pageBreak":
-        return (
-          <div 
-            key={field.id} 
-            className="py-8"
-            style={{
-              pageBreakAfter: 'always',
-              breakAfter: 'page',
-            }}
-          >
-            <Separator />
-            <div className="text-center -mt-3">
-              <span className="bg-background px-2 text-xs text-muted-foreground">
-                Page Break
-              </span>
-            </div>
-          </div>
-        );
+        // Page breaks are handled by page splitting logic, not rendered
+        return null;
 
       case "infoBlock":
         return (
@@ -494,8 +516,6 @@ function TestForm({
     }
   };
 
-  const fields = (test.fields || []) as TestField[];
-
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-3xl mx-auto">
@@ -507,31 +527,34 @@ function TestForm({
           {userName && (
             <p className="text-sm text-muted-foreground">Name: {userName}</p>
           )}
+          {pages.length > 1 && (
+            <p className="text-sm text-muted-foreground">
+              Page {currentPage + 1} of {pages.length}
+            </p>
+          )}
         </div>
         <Separator className="mb-6" />
         <form onSubmit={handleSubmit} className="space-y-6">
-          {fields
-            .sort((a, b) => a.order - b.order)
-            .map((field, index, sortedFields) => {
-              const prevField = index > 0 ? sortedFields[index - 1] : null;
-              const shouldBreakBefore = prevField?.type === "pageBreak";
-              
-              return (
-                <div
-                  key={field.id}
-                  style={shouldBreakBefore ? {
-                    pageBreakBefore: 'always',
-                    breakBefore: 'page',
-                  } : undefined}
-                >
-                  {renderField(field)}
-                </div>
-              );
-            })}
+          {currentPageFieldsToShow.map((field) => (
+            <div key={field.id}>
+              {renderField(field)}
+            </div>
+          ))}
           <div className="pt-6">
-            <Button type="submit" size="lg" className="w-full">
-              Submit Test
-            </Button>
+            {isLastPage ? (
+              <Button type="submit" size="lg" className="w-full">
+                Submit Test
+              </Button>
+            ) : (
+              <Button 
+                type="button" 
+                size="lg" 
+                className="w-full"
+                onClick={handleContinue}
+              >
+                Continue
+              </Button>
+            )}
           </div>
         </form>
       </div>
