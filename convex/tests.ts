@@ -295,8 +295,10 @@ export const submitTest = mutation({
     if (test.instantFeedback && test.fields) {
       let earnedMarks = 0;
       let totalMarks = 0;
+      // Only count fields that are actually markable (exclude pageBreak and infoBlock)
+      const markableFields = test.fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
 
-      for (const field of test.fields) {
+      for (const field of markableFields) {
         // Only calculate score for fields with correctAnswers defined
         if (field.correctAnswers && field.correctAnswers.length > 0 && field.marks) {
           totalMarks += field.marks;
@@ -502,11 +504,13 @@ export const updateSubmissionMarks = mutation({
 
     // Validate and calculate marks
     const fields = test.fields || [];
+    // Only count fields that are actually markable (exclude pageBreak and infoBlock)
+    const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
     let totalScore = 0;
     let maxScore = 0;
     const fieldMarksObj = args.fieldMarks as Record<string, number>;
 
-    for (const field of fields) {
+    for (const field of markableFields) {
       if (field.marks && field.marks > 0) {
         maxScore += field.marks;
         const mark = fieldMarksObj[field.id];

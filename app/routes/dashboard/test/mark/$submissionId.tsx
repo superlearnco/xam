@@ -59,9 +59,11 @@ export default function MarkingPage() {
   const fields = test.fields || [];
 
   // Calculate current score and max score
+  // Only count fields that are actually displayed (exclude pageBreak and infoBlock)
+  const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
   let currentScore = 0;
   let maxScore = 0;
-  fields.forEach((field) => {
+  markableFields.forEach((field) => {
     // Include all field types that can have marks (including imageChoice)
     if (field.marks && field.marks > 0) {
       maxScore += field.marks;
@@ -278,9 +280,7 @@ export default function MarkingPage() {
         {/* Left side - Fields with enhanced focus */}
         <div className="flex-1 overflow-y-auto bg-gradient-to-b from-background to-muted/20">
           <div className="max-w-4xl mx-auto p-8 space-y-8">
-            {fields
-              .filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock")
-              .map((field) => {
+            {markableFields.map((field) => {
                 const maxMark = field.marks || 0;
                 const currentMark = fieldMarks[field.id] || 0;
 
