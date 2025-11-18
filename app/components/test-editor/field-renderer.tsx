@@ -24,6 +24,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Textarea } from "~/components/ui/textarea";
+import { UploadThing } from "~/components/ui/uploadthing";
 import { cn } from "~/lib/utils";
 import type { FieldType } from "./field-types";
 
@@ -42,6 +43,7 @@ export interface TestField {
   maxLength?: number;
   pattern?: string;
   width?: string;
+  fileUrl?: string;
 }
 
 interface FieldRendererProps {
@@ -318,12 +320,26 @@ export function FieldRenderer({
 
           {field.type === "fileUpload" && (
             <div className="pl-9">
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  File upload field (UploadThing integration coming soon)
+              <UploadThing
+                endpoint="fileUploader"
+                value={field.fileUrl}
+                onUploadComplete={(url) => {
+                  onUpdate({ ...field, fileUrl: url });
+                }}
+                onUploadError={(error) => {
+                  console.error("Upload error:", error);
+                }}
+                onRemove={() => {
+                  onUpdate({ ...field, fileUrl: undefined });
+                }}
+                variant="dropzone"
+                disabled={true}
+              />
+              {field.helpText && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {field.helpText}
                 </p>
-              </div>
+              )}
             </div>
           )}
 

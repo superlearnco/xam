@@ -11,6 +11,7 @@ import { ClerkProvider, useAuth } from "@clerk/react-router";
 import { rootAuthLoader } from "@clerk/react-router/ssr.server";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { Toaster } from "sonner";
 import type { Route } from "./+types/root";
 import "./app.css";
 import { Analytics } from "@vercel/analytics/react";
@@ -80,6 +81,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
     >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <Outlet />
+        <Toaster />
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );

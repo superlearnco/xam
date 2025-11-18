@@ -19,13 +19,15 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, Copy, Check } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 
 function generateFieldId(): string {
@@ -57,6 +59,20 @@ export default function TestEditorPage() {
   const [selectedFieldForProperties, setSelectedFieldForProperties] = useState<TestField | null>(null);
   const [propertiesPanelOpen, setPropertiesPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("editor");
+  
+  // Options state
+  const [maxAttempts, setMaxAttempts] = useState<number | undefined>(undefined);
+  const [estimatedDuration, setEstimatedDuration] = useState<number | undefined>(undefined);
+  const [requireAuth, setRequireAuth] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordProtectionEnabled, setPasswordProtectionEnabled] = useState(false);
+  const [disableCopyPaste, setDisableCopyPaste] = useState(false);
+  const [requireFullScreen, setRequireFullScreen] = useState(false);
+  const [blockTabSwitching, setBlockTabSwitching] = useState(false);
+  const [passingGrade, setPassingGrade] = useState<number | undefined>(undefined);
+  const [instantFeedback, setInstantFeedback] = useState(false);
+  const [showAnswerKey, setShowAnswerKey] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const createTest = useMutation(api.tests.createTest);
   const updateTest = useMutation(api.tests.updateTest);
@@ -102,6 +118,17 @@ export default function TestEditorPage() {
       setFields(
         (test.fields || []).sort((a, b) => a.order - b.order) as TestField[]
       );
+      setMaxAttempts(test.maxAttempts);
+      setEstimatedDuration(test.estimatedDuration);
+      setRequireAuth(test.requireAuth || false);
+      setPassword(test.password || "");
+      setPasswordProtectionEnabled(!!test.password);
+      setDisableCopyPaste(test.disableCopyPaste || false);
+      setRequireFullScreen(test.requireFullScreen || false);
+      setBlockTabSwitching(test.blockTabSwitching || false);
+      setPassingGrade(test.passingGrade);
+      setInstantFeedback(test.instantFeedback || false);
+      setShowAnswerKey(test.showAnswerKey || false);
     }
   }, [test, testId]);
 
@@ -112,7 +139,20 @@ export default function TestEditorPage() {
         id: Id<"tests">,
         name: string,
         description: string,
-        fields: TestField[]
+        fields: TestField[],
+        options: {
+          maxAttempts?: number;
+          estimatedDuration?: number;
+          requireAuth: boolean;
+          password: string;
+          passwordProtectionEnabled: boolean;
+          disableCopyPaste: boolean;
+          requireFullScreen: boolean;
+          blockTabSwitching: boolean;
+          passingGrade?: number;
+          instantFeedback: boolean;
+          showAnswerKey: boolean;
+        }
       ) => {
         try {
           await updateTest({
@@ -123,6 +163,16 @@ export default function TestEditorPage() {
               ...f,
               order: index,
             })),
+            maxAttempts: options.maxAttempts,
+            estimatedDuration: options.estimatedDuration,
+            requireAuth: options.requireAuth,
+            password: options.passwordProtectionEnabled ? (options.password || undefined) : "",
+            disableCopyPaste: options.disableCopyPaste,
+            requireFullScreen: options.requireFullScreen,
+            blockTabSwitching: options.blockTabSwitching,
+            passingGrade: options.passingGrade,
+            instantFeedback: options.instantFeedback,
+            showAnswerKey: options.showAnswerKey,
           });
         } catch (error) {
           console.error("Failed to update test:", error);
@@ -136,9 +186,39 @@ export default function TestEditorPage() {
   // Auto-save when test data changes
   useEffect(() => {
     if (testId && test) {
-      debouncedUpdate(testId, testName, testDescription, fields);
+      debouncedUpdate(testId, testName, testDescription, fields, {
+        maxAttempts,
+        estimatedDuration,
+        requireAuth,
+        password,
+        passwordProtectionEnabled,
+        disableCopyPaste,
+        requireFullScreen,
+        blockTabSwitching,
+        passingGrade,
+        instantFeedback,
+        showAnswerKey,
+      });
     }
-  }, [testId, testName, testDescription, fields, debouncedUpdate, test]);
+  }, [
+    testId,
+    testName,
+    testDescription,
+    fields,
+    maxAttempts,
+    estimatedDuration,
+    requireAuth,
+    password,
+    passwordProtectionEnabled,
+    disableCopyPaste,
+    requireFullScreen,
+    blockTabSwitching,
+    passingGrade,
+    instantFeedback,
+    showAnswerKey,
+    debouncedUpdate,
+    test,
+  ]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -255,6 +335,21 @@ export default function TestEditorPage() {
     setSelectedFieldForProperties(updatedField);
   };
 
+  const handleCopyLink = async () => {
+    if (!testId) return;
+    
+    const testUrl = `${window.location.origin}/test/${testId}`;
+    
+    try {
+      await navigator.clipboard.writeText(testUrl);
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link");
+    }
+  };
+
   const tabs = [
     {
       value: "editor",
@@ -275,10 +370,10 @@ export default function TestEditorPage() {
       onClick: () => setActiveTab("options"),
     },
     {
-      value: "publish",
-      label: "Publish",
-      active: activeTab === "publish",
-      onClick: () => setActiveTab("publish"),
+      value: "marking",
+      label: "Marking",
+      active: activeTab === "marking",
+      onClick: () => setActiveTab("marking"),
     },
   ];
 
@@ -378,10 +473,266 @@ export default function TestEditorPage() {
         </DndContext>
       )}
       {activeTab === "options" && (
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="text-center text-muted-foreground">
-            <p className="text-lg font-medium">Options</p>
-            <p className="text-sm mt-2">Options coming soon</p>
+        <div className="flex flex-1 overflow-auto">
+          <div className="flex-1 max-w-4xl mx-auto w-full p-6 space-y-6">
+            {/* Share Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Share</CardTitle>
+                <CardDescription>Share this test with others using the link below</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <div className="flex-1 flex items-center gap-3 px-4 py-2 border rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground flex-shrink-0">Link:</span>
+                    {testId ? (
+                      <Link
+                        to={`/test/${testId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-mono text-primary hover:underline truncate"
+                      >
+                        {`${window.location.origin}/test/${testId}`}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-mono text-foreground truncate">
+                        Loading...
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleCopyLink}
+                    variant="outline"
+                    size="icon"
+                    className="flex-shrink-0"
+                    disabled={!testId}
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Test Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Information</CardTitle>
+                <CardDescription>Basic information about your test</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="test-name">Test Name</Label>
+                  <Input
+                    id="test-name"
+                    value={testName}
+                    onChange={(e) => setTestName(e.target.value)}
+                    placeholder="Enter test name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="test-description">Description</Label>
+                  <Textarea
+                    id="test-description"
+                    value={testDescription}
+                    onChange={(e) => setTestDescription(e.target.value)}
+                    placeholder="Enter test description"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="max-attempts">Max Attempts</Label>
+                    <Input
+                      id="max-attempts"
+                      type="number"
+                      min="1"
+                      value={maxAttempts ?? ""}
+                      onChange={(e) => setMaxAttempts(e.target.value ? parseInt(e.target.value) : undefined)}
+                      placeholder="Unlimited"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="estimated-duration">Estimated Duration</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="estimated-duration"
+                        type="number"
+                        min="1"
+                        value={
+                          estimatedDuration
+                            ? estimatedDuration >= 60
+                              ? Math.round(estimatedDuration / 60)
+                              : estimatedDuration
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value ? parseInt(e.target.value) : undefined;
+                          if (value !== undefined) {
+                            const currentUnit = estimatedDuration && estimatedDuration >= 60 ? "hours" : "minutes";
+                            setEstimatedDuration(currentUnit === "hours" ? value * 60 : value);
+                          } else {
+                            setEstimatedDuration(undefined);
+                          }
+                        }}
+                        placeholder="Duration"
+                        className="flex-1"
+                      />
+                      <Select
+                        value={estimatedDuration ? (estimatedDuration >= 60 ? "hours" : "minutes") : "minutes"}
+                        onValueChange={(value) => {
+                          if (estimatedDuration) {
+                            if (value === "hours" && estimatedDuration < 60) {
+                              setEstimatedDuration(estimatedDuration * 60);
+                            } else if (value === "minutes" && estimatedDuration >= 60) {
+                              setEstimatedDuration(Math.round(estimatedDuration / 60));
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="minutes">Minutes</SelectItem>
+                          <SelectItem value="hours">Hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Access Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Access</CardTitle>
+                <CardDescription>Control who can access and how they interact with the test</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="require-auth"
+                    checked={requireAuth}
+                    onCheckedChange={(checked) => setRequireAuth(checked === true)}
+                  />
+                  <Label htmlFor="require-auth" className="font-normal cursor-pointer">
+                    Require authentication to sign in
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="password-protection"
+                      checked={passwordProtectionEnabled}
+                      onCheckedChange={(checked) => {
+                        setPasswordProtectionEnabled(checked === true);
+                        if (!checked) {
+                          setPassword("");
+                        }
+                      }}
+                    />
+                    <Label htmlFor="password-protection" className="font-normal cursor-pointer">
+                      Password protection
+                    </Label>
+                  </div>
+                  {passwordProtectionEnabled && (
+                    <div className="ml-6">
+                      <Input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password"
+                        className="max-w-md"
+                      />
+                    </div>
+                  )}
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Browser Restrictions</Label>
+                  <div className="space-y-3 ml-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="disable-copy-paste"
+                        checked={disableCopyPaste}
+                        onCheckedChange={(checked) => setDisableCopyPaste(checked === true)}
+                      />
+                      <Label htmlFor="disable-copy-paste" className="font-normal cursor-pointer">
+                        Disable copy/paste
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="require-fullscreen"
+                        checked={requireFullScreen}
+                        onCheckedChange={(checked) => setRequireFullScreen(checked === true)}
+                      />
+                      <Label htmlFor="require-fullscreen" className="font-normal cursor-pointer">
+                        Full screen mode required
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="block-tab-switching"
+                        checked={blockTabSwitching}
+                        onCheckedChange={(checked) => setBlockTabSwitching(checked === true)}
+                      />
+                      <Label htmlFor="block-tab-switching" className="font-normal cursor-pointer">
+                        Block tab switching
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Marking Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Marking</CardTitle>
+                <CardDescription>Configure how the test is graded and feedback is provided</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="passing-grade">Passing Grade (%)</Label>
+                  <Input
+                    id="passing-grade"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={passingGrade ?? ""}
+                    onChange={(e) => setPassingGrade(e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="e.g., 70"
+                    className="max-w-md"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="instant-feedback"
+                    checked={instantFeedback}
+                    onCheckedChange={(checked) => setInstantFeedback(checked === true)}
+                  />
+                  <Label htmlFor="instant-feedback" className="font-normal cursor-pointer">
+                    Instant feedback (after test)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="show-answer-key"
+                    checked={showAnswerKey}
+                    onCheckedChange={(checked) => setShowAnswerKey(checked === true)}
+                  />
+                  <Label htmlFor="show-answer-key" className="font-normal cursor-pointer">
+                    Show answer key
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
@@ -392,11 +743,11 @@ export default function TestEditorPage() {
           fields={fields}
         />
       )}
-      {activeTab === "publish" && (
+      {activeTab === "marking" && (
         <div className="flex flex-1 items-center justify-center p-6">
           <div className="text-center text-muted-foreground">
-            <p className="text-lg font-medium">Publish</p>
-            <p className="text-sm mt-2">Publish coming soon</p>
+            <p className="text-lg font-medium">Marking</p>
+            <p className="text-sm mt-2">Marking coming soon</p>
           </div>
         </div>
       )}

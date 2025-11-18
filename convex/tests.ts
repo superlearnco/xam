@@ -68,6 +68,22 @@ export const getTest = query({
   },
 });
 
+export const getPublicTest = query({
+  args: {
+    testId: v.id("tests"),
+  },
+  handler: async (ctx, args) => {
+    // Public query - no authentication required
+    const test = await ctx.db.get(args.testId);
+    
+    if (!test) {
+      return null;
+    }
+
+    return test;
+  },
+});
+
 export const createTest = mutation({
   args: {
     name: v.string(),
@@ -129,6 +145,16 @@ export const updateTest = mutation({
         })
       )
     ),
+    maxAttempts: v.optional(v.number()),
+    estimatedDuration: v.optional(v.number()),
+    requireAuth: v.optional(v.boolean()),
+    password: v.optional(v.string()),
+    disableCopyPaste: v.optional(v.boolean()),
+    requireFullScreen: v.optional(v.boolean()),
+    blockTabSwitching: v.optional(v.boolean()),
+    passingGrade: v.optional(v.number()),
+    instantFeedback: v.optional(v.boolean()),
+    showAnswerKey: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -162,6 +188,16 @@ export const updateTest = mutation({
         pattern?: string;
         width?: string;
       }>;
+      maxAttempts?: number;
+      estimatedDuration?: number;
+      requireAuth?: boolean;
+      password?: string;
+      disableCopyPaste?: boolean;
+      requireFullScreen?: boolean;
+      blockTabSwitching?: boolean;
+      passingGrade?: number;
+      instantFeedback?: boolean;
+      showAnswerKey?: boolean;
     } = {};
 
     if (args.name !== undefined) {
@@ -172,6 +208,36 @@ export const updateTest = mutation({
     }
     if (args.fields !== undefined) {
       updates.fields = args.fields;
+    }
+    if (args.maxAttempts !== undefined) {
+      updates.maxAttempts = args.maxAttempts;
+    }
+    if (args.estimatedDuration !== undefined) {
+      updates.estimatedDuration = args.estimatedDuration;
+    }
+    if (args.requireAuth !== undefined) {
+      updates.requireAuth = args.requireAuth;
+    }
+    if (args.password !== undefined) {
+      updates.password = args.password;
+    }
+    if (args.disableCopyPaste !== undefined) {
+      updates.disableCopyPaste = args.disableCopyPaste;
+    }
+    if (args.requireFullScreen !== undefined) {
+      updates.requireFullScreen = args.requireFullScreen;
+    }
+    if (args.blockTabSwitching !== undefined) {
+      updates.blockTabSwitching = args.blockTabSwitching;
+    }
+    if (args.passingGrade !== undefined) {
+      updates.passingGrade = args.passingGrade;
+    }
+    if (args.instantFeedback !== undefined) {
+      updates.instantFeedback = args.instantFeedback;
+    }
+    if (args.showAnswerKey !== undefined) {
+      updates.showAnswerKey = args.showAnswerKey;
     }
 
     await ctx.db.patch(args.testId, updates);

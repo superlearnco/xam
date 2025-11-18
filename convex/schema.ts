@@ -98,9 +98,20 @@ export default defineSchema({
           maxLength: v.optional(v.number()),
           pattern: v.optional(v.string()),
           width: v.optional(v.string()),
+          fileUrl: v.optional(v.string()),
         })
       )
     ),
     createdAt: v.number(),
+    maxAttempts: v.optional(v.number()),
+    estimatedDuration: v.optional(v.number()),
+    requireAuth: v.optional(v.boolean()),
+    password: v.optional(v.string()),
+    disableCopyPaste: v.optional(v.boolean()),
+    requireFullScreen: v.optional(v.boolean()),
+    blockTabSwitching: v.optional(v.boolean()),
+    passingGrade: v.optional(v.number()),
+    instantFeedback: v.optional(v.boolean()),
+    showAnswerKey: v.optional(v.boolean()),
   }).index("userId", ["userId"]),
 });
