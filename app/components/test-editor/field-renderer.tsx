@@ -12,7 +12,6 @@ import {
   CheckSquare,
   ChevronDown,
   Image,
-  Upload,
   FileX,
   Info,
   Plus,
@@ -24,7 +23,6 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Textarea } from "~/components/ui/textarea";
-import { UploadThing } from "~/components/ui/uploadthing";
 import { cn } from "~/lib/utils";
 import type { FieldType } from "./field-types";
 
@@ -61,7 +59,6 @@ const FieldIcons: Record<FieldType, React.ComponentType<{ className?: string }>>
   checkboxes: CheckSquare,
   dropdown: ChevronDown,
   imageChoice: Image,
-  fileUpload: Upload,
   pageBreak: FileX,
   infoBlock: Info,
 };
@@ -315,31 +312,6 @@ export function FieldRenderer({
                 placeholder="Enter information to display"
                 className="resize-none"
               />
-            </div>
-          )}
-
-          {field.type === "fileUpload" && (
-            <div className="pl-9">
-              <UploadThing
-                endpoint="fileUploader"
-                value={field.fileUrl}
-                onUploadComplete={(url) => {
-                  onUpdate({ ...field, fileUrl: url });
-                }}
-                onUploadError={(error) => {
-                  console.error("Upload error:", error);
-                }}
-                onRemove={() => {
-                  onUpdate({ ...field, fileUrl: undefined });
-                }}
-                variant="dropzone"
-                disabled={true}
-              />
-              {field.helpText && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {field.helpText}
-                </p>
-              )}
             </div>
           )}
 

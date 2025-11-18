@@ -126,7 +126,6 @@ export const updateTest = mutation({
             v.literal("checkboxes"),
             v.literal("dropdown"),
             v.literal("imageChoice"),
-            v.literal("fileUpload"),
             v.literal("pageBreak"),
             v.literal("infoBlock")
           ),
@@ -175,7 +174,7 @@ export const updateTest = mutation({
       description?: string;
       fields?: Array<{
         id: string;
-        type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "fileUpload" | "pageBreak" | "infoBlock";
+        type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "pageBreak" | "infoBlock";
         label: string;
         required?: boolean;
         options?: string[];

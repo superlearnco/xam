@@ -17,7 +17,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 
 type TestField = {
   id: string;
-  type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "fileUpload" | "pageBreak" | "infoBlock";
+  type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "pageBreak" | "infoBlock";
   label: string;
   required?: boolean;
   options?: string[];
@@ -891,8 +891,6 @@ function TestForm({
           isEmpty = fieldValue === undefined || fieldValue === null || fieldValue === "";
         } else if (field.type === "checkboxes" || field.type === "imageChoice") {
           isEmpty = !fieldValue || (Array.isArray(fieldValue) && fieldValue.length === 0);
-        } else if (field.type === "fileUpload") {
-          isEmpty = !fieldValue || fieldValue === "";
         }
         
         if (isEmpty) {
@@ -1171,41 +1169,6 @@ function TestForm({
                   </button>
                 );
               })}
-            </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
-        );
-
-      case "fileUpload":
-        return (
-          <div key={field.id} className="space-y-2">
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                Click to upload or drag and drop
-              </p>
-              <input
-                type="file"
-                id={field.id}
-                onChange={(e) => handleInputChange(field.id, e.target.files?.[0]?.name || "")}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById(field.id)?.click()}
-              >
-                Choose File
-              </Button>
-              {fieldValue && (
-                <p className="text-sm text-muted-foreground mt-2">Selected: {fieldValue}</p>
-              )}
             </div>
             {field.helpText && (
               <p className="text-sm text-muted-foreground">{field.helpText}</p>

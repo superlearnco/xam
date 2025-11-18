@@ -19,7 +19,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Upload, Copy, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -985,38 +985,6 @@ function TestPreview({
           </div>
         );
 
-      case "fileUpload":
-        return (
-          <div key={field.id} className="space-y-2">
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Click to upload or drag and drop
-              </p>
-              <input
-                type="file"
-                id={field.id}
-                onChange={(e) => handleInputChange(field.id, e.target.files?.[0])}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById(field.id)?.click()}
-              >
-                Choose File
-              </Button>
-            </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
-        );
 
       case "pageBreak":
         return (

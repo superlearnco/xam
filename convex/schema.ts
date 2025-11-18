@@ -82,7 +82,6 @@ export default defineSchema({
             v.literal("checkboxes"),
             v.literal("dropdown"),
             v.literal("imageChoice"),
-            v.literal("fileUpload"),
             v.literal("pageBreak"),
             v.literal("infoBlock")
           ),

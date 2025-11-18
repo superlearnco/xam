@@ -8,7 +8,6 @@ import {
   CheckSquare,
   ChevronDown,
   Image,
-  Upload,
   FileX,
   Info,
 } from "lucide-react";
@@ -21,7 +20,6 @@ export type FieldType =
   | "checkboxes"
   | "dropdown"
   | "imageChoice"
-  | "fileUpload"
   | "pageBreak"
   | "infoBlock";
 
@@ -68,12 +66,6 @@ export const FIELD_TYPES: FieldTypeConfig[] = [
     label: "Image Choice",
     icon: Image,
     description: "Select from images",
-  },
-  {
-    type: "fileUpload",
-    label: "File Upload",
-    icon: Upload,
-    description: "Upload files",
   },
   {
     type: "pageBreak",
