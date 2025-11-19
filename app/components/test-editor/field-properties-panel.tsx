@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Separator } from "~/components/ui/separator";
 import { Button } from "~/components/ui/button";
 import { Plus, X } from "lucide-react";
+import { FileUpload } from "~/components/ui/file-upload";
+import { LatexEditor } from "./latex-editor";
 import type { TestField } from "./field-renderer";
 import type { FieldType } from "./field-types";
 
@@ -76,6 +78,14 @@ export function FieldPropertiesPanel({
 
   const handleHelpTextChange = (helpText: string) => {
     handleUpdate({ helpText });
+  };
+
+  const handleFileUrlChange = (fileUrl: string | undefined) => {
+    handleUpdate({ fileUrl });
+  };
+
+  const handleLatexContentChange = (latexContent: string) => {
+    handleUpdate({ latexContent });
   };
 
   const handleMinLengthChange = (minLength: number) => {
@@ -202,6 +212,30 @@ export function FieldPropertiesPanel({
                     />
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm">Image Attachment</Label>
+                  <FileUpload
+                    endpoint="imageUploader"
+                    value={localField.fileUrl}
+                    onUploadComplete={(url) => handleFileUrlChange(url)}
+                    onRemove={() => handleFileUrlChange(undefined)}
+                    variant="button"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Attach an image to this question (optional)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <LatexEditor
+                    label="Math Content (LaTeX)"
+                    value={localField.latexContent || ""}
+                    onChange={handleLatexContentChange}
+                    placeholder="e.g. x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}"
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="field-help-text" className="font-medium text-sm">Help Text</Label>

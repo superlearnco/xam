@@ -98,6 +98,7 @@ export default defineSchema({
           pattern: v.optional(v.string()),
           width: v.optional(v.string()),
           fileUrl: v.optional(v.string()),
+          latexContent: v.optional(v.string()),
         })
       )
     ),

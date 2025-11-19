@@ -26,6 +26,8 @@ import { Textarea } from "~/components/ui/textarea";
 import { FileUpload } from "~/components/ui/file-upload";
 import { cn } from "~/lib/utils";
 import type { FieldType } from "./field-types";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 export interface TestField {
   id: string;
@@ -43,6 +45,7 @@ export interface TestField {
   pattern?: string;
   width?: string;
   fileUrl?: string;
+  latexContent?: string;
 }
 
 interface FieldRendererProps {
@@ -231,6 +234,41 @@ export function FieldRenderer({
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
+
+          {field.fileUrl && (
+            <div className="pl-9">
+              <div className="relative inline-block border rounded-lg overflow-hidden bg-muted/30 max-w-full">
+                <img 
+                  src={field.fileUrl} 
+                  alt="Question attachment" 
+                  className="max-h-64 object-contain"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                  onClick={() => onUpdate({ ...field, fileUrl: undefined })}
+                  title="Remove image"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {field.latexContent && (
+            <div className="pl-9">
+              <div 
+                className="p-3 rounded-md bg-muted/50 border border-border overflow-x-auto"
+                dangerouslySetInnerHTML={{ 
+                  __html: katex.renderToString(field.latexContent, { 
+                    throwOnError: false,
+                    displayMode: true 
+                  }) 
+                }}
+              />
+            </div>
+          )}
 
           {needsOptions && (
             <div className="space-y-2 pl-9">

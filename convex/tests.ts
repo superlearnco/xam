@@ -141,6 +141,8 @@ export const updateTest = mutation({
           maxLength: v.optional(v.number()),
           pattern: v.optional(v.string()),
           width: v.optional(v.string()),
+          fileUrl: v.optional(v.string()),
+          latexContent: v.optional(v.string()),
         })
       )
     ),
@@ -190,6 +192,8 @@ export const updateTest = mutation({
         maxLength?: number;
         pattern?: string;
         width?: string;
+        fileUrl?: string;
+        latexContent?: string;
       }>;
       maxAttempts?: number;
       estimatedDuration?: number;

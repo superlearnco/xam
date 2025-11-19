@@ -33,6 +33,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/
 import { PieChart, Pie, Cell } from "recharts";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 function generateFieldId(): string {
   return `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -63,6 +65,7 @@ export default function TestEditorPage() {
   const [fields, setFields] = useState<TestField[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const fieldRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selectedFieldForProperties, setSelectedFieldForProperties] = useState<TestField | null>(null);
   const [propertiesPanelOpen, setPropertiesPanelOpen] = useState(false);
@@ -122,9 +125,14 @@ export default function TestEditorPage() {
     }
   }, [testId, testNameParam, testTypeParam, createTest, isCreating]);
 
+  // Reset isLoaded when testId changes
+  useEffect(() => {
+    setIsLoaded(false);
+  }, [testId]);
+
   // Load test data when testId is available
   useEffect(() => {
-    if (test && testId) {
+    if (test && testId && !isLoaded) {
       setTestName(test.name);
       setTestDescription(test.description || "");
       setFields(
@@ -145,8 +153,9 @@ export default function TestEditorPage() {
       setTimeLimitMinutes(test.timeLimitMinutes);
       setRandomizeQuestions(test.randomizeQuestions || false);
       setShuffleOptions(test.shuffleOptions || false);
+      setIsLoaded(true);
     }
-  }, [test, testId]);
+  }, [test, testId, isLoaded]);
 
   // Debounced auto-save
   const debouncedUpdate = useCallback(
@@ -1216,10 +1225,34 @@ function TestPreview({
   const renderField = (field: TestField) => {
     const fieldValue = formData[field.id] || "";
 
+    const imageElement = field.fileUrl ? (
+      <div className="mb-4">
+        <img 
+          src={field.fileUrl} 
+          alt="Question attachment" 
+          className="max-h-96 max-w-full rounded-lg border object-contain"
+        />
+      </div>
+    ) : null;
+
+    const latexElement = field.latexContent ? (
+      <div 
+        className="mb-4 overflow-x-auto"
+        dangerouslySetInnerHTML={{ 
+          __html: katex.renderToString(field.latexContent, { 
+            throwOnError: false,
+            displayMode: true 
+          }) 
+        }}
+      />
+    ) : null;
+
     switch (field.type) {
       case "shortInput":
         return (
           <div key={field.id} className="space-y-2">
+            {imageElement}
+            {latexElement}
             <Label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1242,6 +1275,8 @@ function TestPreview({
       case "longInput":
         return (
           <div key={field.id} className="space-y-2">
+            {imageElement}
+            {latexElement}
             <Label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1265,6 +1300,8 @@ function TestPreview({
       case "multipleChoice":
         return (
           <div key={field.id} className="space-y-2">
+            {imageElement}
+            {latexElement}
             <Label>
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1297,6 +1334,8 @@ function TestPreview({
       case "checkboxes":
         return (
           <div key={field.id} className="space-y-2">
+            {imageElement}
+            {latexElement}
             <Label>
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1338,6 +1377,8 @@ function TestPreview({
       case "dropdown":
         return (
           <div key={field.id} className="space-y-2">
+            {imageElement}
+            {latexElement}
             <Label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1367,6 +1408,8 @@ function TestPreview({
       case "imageChoice":
         return (
           <div key={field.id} className="space-y-2">
+            {imageElement}
+            {latexElement}
             <Label>
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1449,6 +1492,8 @@ function TestPreview({
       case "infoBlock":
         return (
           <div key={field.id} className="p-4 bg-muted rounded-lg">
+            {imageElement}
+            {latexElement}
             <p className="text-sm whitespace-pre-wrap">{field.label}</p>
           </div>
         );

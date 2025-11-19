@@ -14,6 +14,8 @@ import { Loader2, CheckCircle } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 type TestField = {
   id: string;
@@ -26,6 +28,8 @@ type TestField = {
   helpText?: string;
   minLength?: number;
   maxLength?: number;
+  fileUrl?: string;
+  latexContent?: string;
 };
 
 // localStorage utility functions for test progress
@@ -893,7 +897,21 @@ function TestForm({
   };
 
   // Split fields into pages based on page breaks
-  const fields = (test.fields || []) as TestField[];
+  // Ensure all field properties are preserved, including fileUrl and latexContent
+  const fields = ((test.fields || []) as any[]).map((f): TestField => ({
+    id: f.id,
+    type: f.type,
+    label: f.label,
+    required: f.required,
+    options: f.options,
+    order: f.order,
+    placeholder: f.placeholder,
+    helpText: f.helpText,
+    minLength: f.minLength,
+    maxLength: f.maxLength,
+    fileUrl: f.fileUrl,
+    latexContent: f.latexContent,
+  })) as TestField[];
   
   // Use shuffled order if available, otherwise sort by order
   let sortedFields: TestField[];
@@ -1052,101 +1070,155 @@ function TestForm({
       return options.map((_, i) => i);
     };
 
+    // Access fileUrl and latexContent from the field
+    const fileUrl = field.fileUrl;
+    const latexContent = field.latexContent;
+
+    const imageElement = fileUrl ? (
+      <div className="mb-6 rounded-lg overflow-hidden border bg-muted/30 flex justify-center p-4">
+        <img 
+          src={fileUrl} 
+          alt="Question attachment" 
+          className="max-h-[500px] max-w-full object-contain shadow-sm rounded"
+        />
+      </div>
+    ) : null;
+
+    const latexElement = latexContent ? (
+      <div 
+        className="mb-6 overflow-x-auto p-4 bg-muted/30 rounded-lg border"
+        dangerouslySetInnerHTML={{ 
+          __html: katex.renderToString(latexContent, { 
+            throwOnError: false,
+            displayMode: true 
+          }) 
+        }}
+      />
+    ) : null;
+
+    // Helper to wrap questions in a consistent card style
+    const QuestionWrapper = ({ children, labelFor }: { children: React.ReactNode; labelFor?: string }) => (
+      <Card className="mb-8 shadow-sm border-border/60 hover:border-border transition-all duration-200 group">
+        <CardHeader className="bg-muted/5 pb-4 space-y-4 border-b border-border/40">
+          {imageElement}
+          {latexElement}
+          <div className="flex gap-2">
+             <div className="flex-1 space-y-1.5">
+              <Label 
+                htmlFor={labelFor} 
+                className={cn(
+                  "text-lg font-semibold leading-snug block text-foreground/90 group-hover:text-foreground transition-colors",
+                  labelFor ? "cursor-pointer" : ""
+                )}
+              >
+                {field.label}
+                {field.required && <span className="text-destructive ml-1" title="Required field">*</span>}
+              </Label>
+              {field.helpText && (
+                <p className="text-sm text-muted-foreground font-normal leading-relaxed">{field.helpText}</p>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6 pb-6">
+          {children}
+        </CardContent>
+      </Card>
+    );
+
     switch (field.type) {
       case "shortInput":
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
+          <QuestionWrapper labelFor={field.id}>
             <Input
               id={field.id}
               value={fieldValue}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={field.placeholder || "Your answer..."}
               required={field.required}
               minLength={field.minLength}
               maxLength={field.maxLength}
+              className="max-w-md h-11"
             />
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </QuestionWrapper>
         );
 
       case "longInput":
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
+          <QuestionWrapper labelFor={field.id}>
             <Textarea
               id={field.id}
               value={fieldValue}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={field.placeholder || "Type your answer here..."}
               required={field.required}
               minLength={field.minLength}
               maxLength={field.maxLength}
-              className="resize-none"
+              className="min-h-[140px] resize-y text-base leading-relaxed p-4"
             />
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </QuestionWrapper>
         );
 
       case "multipleChoice":
         return (
-          <div key={field.id} className="space-y-2">
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="space-y-2">
+          <QuestionWrapper>
+            <div className="grid gap-3">
               {getOptionDisplayOrder(field.options).map((originalIndex) => {
                 const option = field.options?.[originalIndex];
+                const isSelected = fieldValue === String(originalIndex);
                 return (
-                  <div key={originalIndex} className="flex items-center space-x-2 py-3">
-                    <input
-                      type="radio"
-                      id={`${field.id}-${originalIndex}`}
-                      name={field.id}
-                      value={String(originalIndex)}
-                      checked={fieldValue === String(originalIndex)}
-                      onChange={(e) => handleInputChange(field.id, e.target.value)}
-                      required={field.required}
-                      className="h-4 w-4 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    />
-                    <Label htmlFor={`${field.id}-${originalIndex}`} className="font-normal cursor-pointer">
+                  <label
+                    key={originalIndex}
+                    className={cn(
+                      "flex items-center space-x-3 p-4 rounded-lg border transition-all cursor-pointer relative overflow-hidden",
+                      isSelected 
+                        ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20" 
+                        : "border-input hover:bg-accent/50 hover:border-accent-foreground/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-center shrink-0">
+                      <input
+                        type="radio"
+                        id={`${field.id}-${originalIndex}`}
+                        name={field.id}
+                        value={String(originalIndex)}
+                        checked={isSelected}
+                        onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        required={field.required}
+                        className="peer h-4 w-4 border-primary text-primary shadow focus:ring-2 focus:ring-primary focus:ring-offset-2 accent-primary"
+                      />
+                    </div>
+                    <span className={cn(
+                      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1",
+                      isSelected ? "text-foreground" : "text-foreground/80"
+                    )}>
                       {option || `Option ${originalIndex + 1}`}
-                    </Label>
-                  </div>
+                    </span>
+                  </label>
                 );
               })}
             </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </QuestionWrapper>
         );
 
       case "checkboxes":
         return (
-          <div key={field.id} className="space-y-2">
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="space-y-2">
+          <QuestionWrapper>
+            <div className="grid gap-3">
               {getOptionDisplayOrder(field.options).map((originalIndex) => {
                 const option = field.options?.[originalIndex];
                 const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
                 const isChecked = checkedValues.includes(String(originalIndex));
                 return (
-                  <div key={originalIndex} className="flex items-center space-x-2 py-3">
+                  <label
+                    key={originalIndex}
+                    className={cn(
+                      "flex items-center space-x-3 p-4 rounded-lg border transition-all cursor-pointer select-none",
+                      isChecked 
+                        ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20" 
+                        : "border-input hover:bg-accent/50 hover:border-accent-foreground/30"
+                    )}
+                  >
                     <Checkbox
                       id={`${field.id}-${originalIndex}`}
                       checked={isChecked}
@@ -1161,33 +1233,30 @@ function TestForm({
                           );
                         }
                       }}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                     />
-                    <Label htmlFor={`${field.id}-${originalIndex}`} className="font-normal cursor-pointer">
+                    <span className={cn(
+                      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1",
+                      isChecked ? "text-foreground" : "text-foreground/80"
+                    )}>
                       {option || `Option ${originalIndex + 1}`}
-                    </Label>
-                  </div>
+                    </span>
+                  </label>
                 );
               })}
             </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </QuestionWrapper>
         );
 
       case "dropdown":
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
+          <QuestionWrapper labelFor={field.id}>
             <Select
               value={fieldValue}
               onValueChange={(value) => handleInputChange(field.id, value)}
               required={field.required}
             >
-              <SelectTrigger id={field.id}>
+              <SelectTrigger id={field.id} className="h-11">
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent>
@@ -1201,19 +1270,12 @@ function TestForm({
                 })}
               </SelectContent>
             </Select>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </QuestionWrapper>
         );
 
       case "imageChoice":
         return (
-          <div key={field.id} className="space-y-2">
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
+          <QuestionWrapper>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {getOptionDisplayOrder(field.options).map((originalIndex) => {
                 const option = field.options?.[originalIndex];
@@ -1236,38 +1298,45 @@ function TestForm({
                       }
                     }}
                     className={cn(
-                      "border-2 rounded-lg p-2 aspect-square overflow-hidden transition-all relative",
+                      "group relative border-2 rounded-xl p-1 overflow-hidden transition-all duration-200 text-left",
                       isSelected
-                        ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2"
-                        : "border-border hover:border-primary/50"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20 ring-offset-0"
+                        : "border-muted hover:border-primary/50 hover:bg-accent/50"
                     )}
                   >
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={`Choice ${originalIndex + 1}`}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-                        Image {originalIndex + 1}
-                      </div>
-                    )}
-                    {isSelected && (
-                      <div className="absolute top-2 right-2">
-                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                          <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                    <div className="aspect-video sm:aspect-square rounded-lg overflow-hidden bg-muted/20 relative">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={`Choice ${originalIndex + 1}`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground bg-muted/30">
+                            Image {originalIndex + 1}
+                          </div>
+                        )}
+                        
+                        {/* Selection indicator overlay */}
+                        <div className={cn(
+                            "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-200",
+                            isSelected ? "opacity-100" : "opacity-0"
+                        )}>
+                            <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg transform scale-100">
+                                <CheckCircle className="h-6 w-6" />
+                            </div>
                         </div>
-                      </div>
+                    </div>
+                    {!imageUrl && (
+                        <div className="p-3 text-center font-medium text-sm">
+                            {option || `Option ${originalIndex + 1}`}
+                        </div>
                     )}
                   </button>
                 );
               })}
             </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </QuestionWrapper>
         );
 
       case "pageBreak":
@@ -1276,9 +1345,15 @@ function TestForm({
 
       case "infoBlock":
         return (
-          <div key={field.id} className="p-4 bg-muted rounded-lg">
-            <p className="text-sm whitespace-pre-wrap">{field.label}</p>
-          </div>
+          <Card className="mb-8 shadow-sm border-l-4 border-l-primary bg-muted/10">
+            <CardContent className="pt-6 pb-6">
+                {imageElement}
+                {latexElement}
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                   <h3 className="text-lg font-semibold mb-2">{field.label}</h3>
+                </div>
+            </CardContent>
+          </Card>
         );
 
       default:
@@ -1287,94 +1362,135 @@ function TestForm({
   };
 
   return (
-    <div className="min-h-screen bg-background py-4 px-4 md:py-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="space-y-2 mb-6">
-          <h1 className="text-xl md:text-2xl font-bold">{test.name || "Untitled Test"}</h1>
-          {test.description && (
-            <p className="text-muted-foreground">{test.description}</p>
-          )}
-          {userName && (
-            <p className="text-sm text-muted-foreground">Name: {userName}</p>
-          )}
-          {userEmail && (
-            <p className="text-sm text-muted-foreground">Email: {userEmail}</p>
-          )}
-          {pages.length > 1 && (
-            <p className="text-sm text-muted-foreground">
-              Page {currentPage + 1} of {pages.length}
-            </p>
-          )}
-        </div>
-        <Separator className="mb-6" />
-        {/* Countdown Timer */}
-        {test.timeLimitMinutes && timeRemaining !== null && (
-          <div className="mb-6 sticky top-4 z-10">
-            <Card className={cn(
-              "border-2",
-              timeRemaining > 300 ? "border-green-500 bg-green-50 dark:bg-green-950" : 
-              timeRemaining > 60 ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950" : 
-              "border-red-500 bg-red-50 dark:bg-red-950"
-            )}>
-              <CardContent className="py-3 px-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    Time Remaining:
+    <div className="min-h-screen bg-background flex flex-col font-sans">
+      {/* Sticky Header with Progress */}
+      <div className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b shadow-sm transition-all">
+           <div className="max-w-3xl mx-auto px-4 md:px-6 py-3">
+               <div className="flex items-center justify-between mb-2">
+                   <h1 className="text-sm font-semibold truncate pr-4 max-w-[200px] sm:max-w-md text-foreground/80">
+                     {test.name || "Test"}
+                   </h1>
+                   <span className="text-xs text-muted-foreground font-medium whitespace-nowrap bg-secondary px-2 py-0.5 rounded-full">
+                     Page {currentPage + 1} of {pages.length}
+                   </span>
+               </div>
+               <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                 <div 
+                    className="h-full bg-primary transition-all duration-500 ease-out rounded-full shadow-[0_0_10px_rgba(var(--primary),0.3)]" 
+                    style={{ width: `${((currentPage + 1) / pages.length) * 100}%` }}
+                 />
+               </div>
+           </div>
+       </div>
+
+      <div className="flex-1 py-8 px-4 md:px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="space-y-2 mb-10 animate-in fade-in slide-in-from-top-2 duration-500">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">{test.name || "Untitled Test"}</h1>
+            {test.description && (
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">{test.description}</p>
+            )}
+            
+            {(userName || userEmail) && (
+              <div className="flex flex-wrap gap-4 pt-3 text-sm text-muted-foreground/80 border-t mt-4 w-fit pr-8">
+                  {userName && (
+                      <div className="flex items-center gap-1.5">
+                           <span className="font-medium text-foreground">Name:</span> {userName}
+                      </div>
+                  )}
+                  {userEmail && (
+                      <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-foreground">Email:</span> {userEmail}
+                      </div>
+                  )}
+              </div>
+            )}
+          </div>
+
+          {/* Countdown Timer */}
+          {test.timeLimitMinutes && timeRemaining !== null && (
+            <div className="mb-8 sticky top-20 z-30 pointer-events-none">
+              <Card className={cn(
+                "border shadow-md inline-block pointer-events-auto transition-colors duration-300",
+                timeRemaining > 300 ? "border-green-500/20 bg-green-50/90 dark:bg-green-950/90" : 
+                timeRemaining > 60 ? "border-yellow-500/20 bg-yellow-50/90 dark:bg-yellow-950/90" : 
+                "border-red-500/20 bg-red-50/90 dark:bg-red-950/90 animate-pulse"
+              )}>
+                <CardContent className="py-2 px-4 flex items-center gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                    Time Left
                   </span>
                   <span className={cn(
-                    "text-2xl font-bold tabular-nums",
+                    "text-xl font-bold tabular-nums font-mono",
                     timeRemaining > 300 ? "text-green-700 dark:text-green-400" : 
                     timeRemaining > 60 ? "text-yellow-700 dark:text-yellow-400" : 
                     "text-red-700 dark:text-red-400"
                   )}>
                     {Math.floor(timeRemaining / 60).toString().padStart(2, '0')}:{(timeRemaining % 60).toString().padStart(2, '0')}
                   </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {currentPageFieldsToShow.map((field) => (
-            <div key={field.id}>
-              {renderField(field)}
+                </CardContent>
+              </Card>
             </div>
-          ))}
-          <div className="pt-6 flex gap-3">
-            {allowBackNavigation && currentPage > 0 && (
-              <Button 
-                type="button" 
-                size="lg" 
-                variant="outline"
-                className="flex-1"
-                onClick={handleBack}
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-8 pb-24">
+            {currentPageFieldsToShow.map((field, index) => (
+              <div 
+                key={field.id} 
+                className="animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-backwards" 
+                style={{ animationDelay: `${index * 100}ms` }}
               >
-                Back
-              </Button>
-            )}
-            {isLastPage ? (
-              <Button type="submit" size="lg" className={allowBackNavigation && currentPage > 0 ? "flex-1" : "w-full"} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Test"
-                )}
-              </Button>
-            ) : (
-              <Button 
-                type="button" 
-                size="lg" 
-                className={allowBackNavigation && currentPage > 0 ? "flex-1" : "w-full"}
-                onClick={handleContinue}
-              >
-                Continue
-              </Button>
-            )}
-          </div>
-        </form>
+                {renderField(field)}
+              </div>
+            ))}
+            
+            <div className="pt-8 flex gap-4 border-t mt-8 sticky bottom-0 bg-background/95 backdrop-blur p-4 -mx-4 md:-mx-6 md:px-6 border-t-border/50 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-30">
+              {allowBackNavigation && currentPage > 0 && (
+                <Button 
+                  type="button" 
+                  size="lg" 
+                  variant="outline"
+                  className="flex-1 md:flex-none min-w-[120px] h-12 text-base shadow-sm"
+                  onClick={handleBack}
+                >
+                  Back
+                </Button>
+              )}
+              {isLastPage ? (
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className={cn(
+                    "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all h-12 text-base font-semibold",
+                    allowBackNavigation && currentPage > 0 ? "flex-1" : "w-full"
+                  )}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Submitting Test...
+                    </>
+                  ) : (
+                    "Submit Test"
+                  )}
+                </Button>
+              ) : (
+                <Button 
+                  type="button" 
+                  size="lg" 
+                  className={cn(
+                    "flex-1 md:flex-none min-w-[120px] h-12 text-base shadow-md ml-auto",
+                    allowBackNavigation && currentPage > 0 ? "" : "w-full"
+                  )}
+                  onClick={handleContinue}
+                >
+                  Continue
+                </Button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
