@@ -20,5 +20,6 @@ export default [
     route("dashboard/credits", "routes/dashboard/credits.tsx"),
     route("dashboard/test/new", "routes/dashboard/test/new.tsx"),
     route("dashboard/test/mark/:submissionId", "routes/dashboard/test/mark/$submissionId.tsx"),
+    route("dashboard/test/analysis/:testId", "routes/dashboard/test/analysis/$testId.tsx"),
   ]),
 ] satisfies RouteConfig;
