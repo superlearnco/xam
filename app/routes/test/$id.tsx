@@ -919,7 +919,7 @@ function TestForm({
             </Label>
             <div className="space-y-2">
               {(field.options || []).map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
+                <div key={index} className="flex items-center space-x-2 py-3">
                   <input
                     type="radio"
                     id={`${field.id}-${index}`}
@@ -954,7 +954,7 @@ function TestForm({
                 const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
                 const isChecked = checkedValues.includes(String(index));
                 return (
-                  <div key={index} className="flex items-center space-x-2">
+                  <div key={index} className="flex items-center space-x-2 py-3">
                     <Checkbox
                       id={`${field.id}-${index}`}
                       checked={isChecked}
@@ -1019,7 +1019,7 @@ function TestForm({
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(field.options || []).map((option, index) => {
                 const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
                 const isSelected = selectedValues.includes(String(index));
@@ -1091,10 +1091,10 @@ function TestForm({
   };
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-background py-4 px-4 md:py-8">
       <div className="max-w-3xl mx-auto">
         <div className="space-y-2 mb-6">
-          <h1 className="text-2xl font-bold">{test.name || "Untitled Test"}</h1>
+          <h1 className="text-xl md:text-2xl font-bold">{test.name || "Untitled Test"}</h1>
           {test.description && (
             <p className="text-muted-foreground">{test.description}</p>
           )}
