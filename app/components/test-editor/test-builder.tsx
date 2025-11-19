@@ -9,6 +9,9 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { FieldRenderer, type TestField } from "./field-renderer";
+
+// Re-export TestField so it can be imported from this module
+export type { TestField };
 import { cn } from "~/lib/utils";
 import type { RefObject } from "react";
 

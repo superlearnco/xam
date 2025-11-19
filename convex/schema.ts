@@ -113,6 +113,7 @@ export default defineSchema({
     passingGrade: v.optional(v.number()),
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),
+    timeLimitMinutes: v.optional(v.number()),
   }).index("userId", ["userId"]),
   testSubmissions: defineTable({
     testId: v.id("tests"),

@@ -75,7 +75,7 @@ export const getPublicTest = query({
   handler: async (ctx, args) => {
     // Public query - no authentication required
     const test = await ctx.db.get(args.testId);
-    
+
     if (!test) {
       return null;
     }
@@ -155,6 +155,7 @@ export const updateTest = mutation({
     passingGrade: v.optional(v.number()),
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),
+    timeLimitMinutes: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -199,6 +200,7 @@ export const updateTest = mutation({
       passingGrade?: number;
       instantFeedback?: boolean;
       showAnswerKey?: boolean;
+      timeLimitMinutes?: number;
     } = {};
 
     if (args.name !== undefined) {
@@ -242,6 +244,9 @@ export const updateTest = mutation({
     }
     if (args.showAnswerKey !== undefined) {
       updates.showAnswerKey = args.showAnswerKey;
+    }
+    if (args.timeLimitMinutes !== undefined) {
+      updates.timeLimitMinutes = args.timeLimitMinutes;
     }
 
     await ctx.db.patch(args.testId, updates);
@@ -317,16 +322,16 @@ export const submitTest = mutation({
               const selectedIndices = Array.isArray(userResponse)
                 ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
                 : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
-              
+
               // Check if all correct answers are selected and no incorrect ones
               const correctSet = new Set(field.correctAnswers);
               const selectedSet = new Set(selectedIndices);
-              
+
               // All correct answers must be selected
               const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
               // No extra incorrect answers
               const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
-              
+
               isCorrect = allCorrectSelected && noExtraAnswers;
             } else if (field.type === "shortInput" || field.type === "longInput") {
               // Text input - compare with correct answers (assuming correctAnswers contains indices to options array)
@@ -407,8 +412,8 @@ export const getTestSubmissions = query({
     const markedSubmissions = submissions.filter((s) => s.isMarked === true && s.percentage !== undefined);
     const meanPercentage = markedSubmissions.length > 0
       ? Math.round(
-          markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / markedSubmissions.length
-        )
+        markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / markedSubmissions.length
+      )
       : 0;
 
     return {

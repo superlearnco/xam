@@ -81,6 +81,7 @@ export default function TestEditorPage() {
   const [passingGrade, setPassingGrade] = useState<number | undefined>(undefined);
   const [instantFeedback, setInstantFeedback] = useState(false);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | undefined>(undefined);
   const [copied, setCopied] = useState(false);
 
   const createTest = useMutation(api.tests.createTest);
@@ -139,6 +140,7 @@ export default function TestEditorPage() {
       setPassingGrade(test.passingGrade);
       setInstantFeedback(test.instantFeedback || false);
       setShowAnswerKey(test.showAnswerKey || false);
+      setTimeLimitMinutes(test.timeLimitMinutes);
     }
   }, [test, testId]);
 
@@ -163,6 +165,7 @@ export default function TestEditorPage() {
           passingGrade?: number;
           instantFeedback: boolean;
           showAnswerKey: boolean;
+          timeLimitMinutes?: number;
         }
       ) => {
         try {
@@ -185,6 +188,7 @@ export default function TestEditorPage() {
             passingGrade: options.passingGrade,
             instantFeedback: options.instantFeedback,
             showAnswerKey: options.showAnswerKey,
+            timeLimitMinutes: options.timeLimitMinutes,
           });
         } catch (error) {
           console.error("Failed to update test:", error);
@@ -211,6 +215,7 @@ export default function TestEditorPage() {
         passingGrade,
         instantFeedback,
         showAnswerKey,
+        timeLimitMinutes,
       });
     }
   }, [
@@ -230,6 +235,7 @@ export default function TestEditorPage() {
     passingGrade,
     instantFeedback,
     showAnswerKey,
+    timeLimitMinutes,
     debouncedUpdate,
     test,
   ]);
@@ -976,6 +982,20 @@ export default function TestEditorPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="time-limit">Enforced Time Limit (minutes)</Label>
+                    <Input
+                      id="time-limit"
+                      type="number"
+                      min="1"
+                      value={timeLimitMinutes ?? ""}
+                      onChange={(e) => setTimeLimitMinutes(e.target.value ? parseInt(e.target.value) : undefined)}
+                      placeholder="No time limit"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Test will auto-submit when time expires. Leave empty for no time limit.
+                    </p>
                   </div>
                 </div>
               </CardContent>

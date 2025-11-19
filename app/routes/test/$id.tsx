@@ -570,9 +570,12 @@ function TestForm({
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // in seconds
   const submitTest = useMutation(api.tests.submitTest);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoSubmittedRef = useRef(false);
   
   // Check if back navigation is allowed (default to true if not set)
   const allowBackNavigation = test.allowBackNavigation !== undefined ? test.allowBackNavigation : true;
@@ -634,6 +637,51 @@ function TestForm({
       }
     };
   }, [formData, testId, currentPage]);
+
+  // Countdown timer for enforced time limits
+  useEffect(() => {
+    // Only run if test has a time limit
+    if (!test.timeLimitMinutes || isSubmitting) {
+      return;
+    }
+
+    // Calculate time remaining
+    const updateTimeRemaining = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startedAt) / 1000); // elapsed in seconds
+      const totalSeconds = test.timeLimitMinutes! * 60;
+      const remaining = Math.max(0, totalSeconds - elapsed);
+      
+      setTimeRemaining(remaining);
+      
+      // Auto-submit when time expires
+      if (remaining === 0 && !hasAutoSubmittedRef.current && !isSubmitting) {
+        hasAutoSubmittedRef.current = true;
+        toast.error("Time's up! Auto-submitting your test...");
+        // Trigger form submission after a brief delay
+        setTimeout(() => {
+          const form = document.querySelector('form');
+          if (form) {
+            form.requestSubmit();
+          }
+        }, 500);
+      }
+    };
+
+    // Initial calculation
+    updateTimeRemaining();
+
+    // Update every second
+    timerIntervalRef.current = setInterval(updateTimeRemaining, 1000);
+
+    // Cleanup
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [test.timeLimitMinutes, startedAt, isSubmitting]);
 
   // Browser restrictions
   useEffect(() => {
@@ -1111,6 +1159,33 @@ function TestForm({
           )}
         </div>
         <Separator className="mb-6" />
+        {/* Countdown Timer */}
+        {test.timeLimitMinutes && timeRemaining !== null && (
+          <div className="mb-6 sticky top-4 z-10">
+            <Card className={cn(
+              "border-2",
+              timeRemaining > 300 ? "border-green-500 bg-green-50 dark:bg-green-950" : 
+              timeRemaining > 60 ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950" : 
+              "border-red-500 bg-red-50 dark:bg-red-950"
+            )}>
+              <CardContent className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    Time Remaining:
+                  </span>
+                  <span className={cn(
+                    "text-2xl font-bold tabular-nums",
+                    timeRemaining > 300 ? "text-green-700 dark:text-green-400" : 
+                    timeRemaining > 60 ? "text-yellow-700 dark:text-yellow-400" : 
+                    "text-red-700 dark:text-red-400"
+                  )}>
+                    {Math.floor(timeRemaining / 60).toString().padStart(2, '0')}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           {currentPageFieldsToShow.map((field) => (
             <div key={field.id}>
