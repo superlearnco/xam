@@ -30,8 +30,8 @@ type TestField = {
 
 // localStorage utility functions for test progress
 type TestProgressData = {
-  formData: Record<string, any>;
-  currentPage: number;
+  formData?: Record<string, any>;
+  currentPage?: number;
   // Authentication/flow state
   isPasswordVerified?: boolean;
   isEmailProvided?: boolean;
