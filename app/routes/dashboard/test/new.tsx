@@ -19,7 +19,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -51,6 +51,10 @@ export default function TestEditorPage() {
     }
     setTestNameParam(params.get("name") || "");
     setTestTypeParam(params.get("type") || "test");
+    const tabParam = params.get("tab");
+    if (tabParam && ["editor", "preview", "options", "marking"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
   }, []);
 
   const [testId, setTestId] = useState<Id<"tests"> | null>(null);
@@ -360,6 +364,356 @@ export default function TestEditorPage() {
     }
   };
 
+  const escapeHtml = (text: string) => {
+    if (!text) return "";
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  const handlePrint = () => {
+    // Create a new window for printing
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow popups to print the worksheet");
+      return;
+    }
+
+    // Write the print content
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${escapeHtml(testName || "Test Worksheet")}</title>
+          <style>
+            @media print {
+              @page {
+                margin: 1in;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                color: #000;
+                background: #fff;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+            body {
+              margin: 0;
+              padding: 20px;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              color: #000;
+              background: #fff;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .worksheet-header {
+              margin-bottom: 30px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 15px;
+            }
+            .worksheet-title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            .worksheet-description {
+              font-size: 14px;
+              color: #333;
+              margin-top: 10px;
+            }
+            .worksheet-field {
+              margin-bottom: 25px;
+              page-break-inside: avoid;
+            }
+            .field-label {
+              font-size: 16px;
+              font-weight: 600;
+              margin-bottom: 8px;
+            }
+            .field-label .required {
+              color: #d32f2f;
+              margin-left: 4px;
+            }
+            .answer-space {
+              border-bottom: 2px solid #000;
+              min-height: 24px;
+              margin-top: 8px;
+              padding-bottom: 2px;
+            }
+            .answer-space-long {
+              border-bottom: 1px solid #000;
+              min-height: 60px;
+              margin-top: 8px;
+              padding-bottom: 2px;
+            }
+            .option-list {
+              margin-top: 10px;
+              margin-left: 20px;
+            }
+            .option-item {
+              margin-bottom: 8px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .radio-circle {
+              width: 18px;
+              height: 18px;
+              border: 2px solid #000;
+              border-radius: 50%;
+              display: inline-block;
+              flex-shrink: 0;
+            }
+            .checkbox-square {
+              width: 18px;
+              height: 18px;
+              border: 2px solid #000;
+              display: inline-block;
+              flex-shrink: 0;
+            }
+            .dropdown-indicator {
+              border-bottom: 2px solid #000;
+              min-width: 200px;
+              min-height: 24px;
+              margin-top: 8px;
+              position: relative;
+              padding-right: 30px;
+            }
+            .dropdown-indicator::after {
+              content: "▼";
+              position: absolute;
+              right: 8px;
+              top: 2px;
+              font-size: 12px;
+            }
+            .dropdown-note {
+              font-size: 12px;
+              color: #555;
+              margin-top: 6px;
+              margin-bottom: 4px;
+            }
+            .image-choice-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 15px;
+              margin-top: 10px;
+            }
+            .image-choice-item {
+              border: 2px solid #000;
+              aspect-ratio: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: relative;
+            }
+            .image-choice-checkbox {
+              position: absolute;
+              top: 8px;
+              left: 8px;
+              width: 18px;
+              height: 18px;
+              border: 2px solid #000;
+            }
+            .info-block {
+              background: #f5f5f5;
+              border: 1px solid #ddd;
+              padding: 15px;
+              margin-top: 10px;
+              border-radius: 4px;
+              white-space: pre-wrap;
+            }
+            .worksheet-footer {
+              margin-top: 60px;
+              padding-top: 20px;
+              border-top: 1px solid #ddd;
+              text-align: center;
+            }
+            .worksheet-logo {
+              max-width: 120px;
+              height: auto;
+              margin: 0 auto;
+            }
+            .help-text {
+              font-size: 12px;
+              color: #666;
+              font-style: italic;
+              margin-top: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          ${renderPrintWorksheet()}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        // Close window after printing (optional)
+        // printWindow.close();
+      }, 250);
+    };
+  };
+
+  const renderPrintWorksheet = () => {
+    const sortedFields = [...fields].sort((a, b) => a.order - b.order);
+    
+    let html = `
+      <div class="worksheet-header">
+        <div class="worksheet-title">${escapeHtml(testName || "Untitled Test")}</div>
+        ${testDescription ? `<div class="worksheet-description">${escapeHtml(testDescription)}</div>` : ""}
+      </div>
+    `;
+
+    let questionNumber = 0;
+    sortedFields.forEach((field) => {
+      const isQuestion = field.type !== "pageBreak" && field.type !== "infoBlock";
+      if (isQuestion) {
+        questionNumber++;
+      }
+      
+      html += `<div class="worksheet-field">`;
+      
+      switch (field.type) {
+        case "shortInput":
+          html += `
+            <div class="field-label">
+              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${field.required ? '<span class="required">*</span>' : ""}
+            </div>
+            <div class="answer-space"></div>
+            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
+          `;
+          break;
+
+        case "longInput":
+          html += `
+            <div class="field-label">
+              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${field.required ? '<span class="required">*</span>' : ""}
+            </div>
+            <div class="answer-space-long"></div>
+            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
+          `;
+          break;
+
+        case "multipleChoice":
+          html += `
+            <div class="field-label">
+              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${field.required ? '<span class="required">*</span>' : ""}
+            </div>
+            <div class="option-list">
+              ${(field.options || []).map((option, optIndex) => `
+                <div class="option-item">
+                  <span class="radio-circle"></span>
+                  <span>${escapeHtml(option || `Option ${optIndex + 1}`)}</span>
+                </div>
+              `).join("")}
+            </div>
+            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
+          `;
+          break;
+
+        case "checkboxes":
+          html += `
+            <div class="field-label">
+              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${field.required ? '<span class="required">*</span>' : ""}
+            </div>
+            <div class="option-list">
+              ${(field.options || []).map((option, optIndex) => `
+                <div class="option-item">
+                  <span class="checkbox-square"></span>
+                  <span>${escapeHtml(option || `Option ${optIndex + 1}`)}</span>
+                </div>
+              `).join("")}
+            </div>
+            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
+          `;
+          break;
+
+        case "dropdown":
+          html += `
+            <div class="field-label">
+              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${field.required ? '<span class="required">*</span>' : ""}
+            </div>
+            <div class="dropdown-indicator"></div>
+            <div class="dropdown-note">Select one option:</div>
+            <div class="option-list">
+              ${(field.options || []).map((option, optIndex) => `
+                <div class="option-item">
+                  <span class="radio-circle"></span>
+                  <span>${escapeHtml(option || `Option ${optIndex + 1}`)}</span>
+                </div>
+              `).join("")}
+            </div>
+            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
+          `;
+          break;
+
+        case "imageChoice":
+          html += `
+            <div class="field-label">
+              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${field.required ? '<span class="required">*</span>' : ""}
+            </div>
+            <div class="image-choice-grid">
+              ${(field.options || []).map((option, optIndex) => {
+                const imageUrl = option && option.startsWith("http") ? option : null;
+                return `
+                  <div class="image-choice-item">
+                    <span class="image-choice-checkbox"></span>
+                    ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="Choice ${optIndex + 1}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />` : `<span>Image ${optIndex + 1}</span>`}
+                  </div>
+                `;
+              }).join("")}
+            </div>
+            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
+          `;
+          break;
+
+        case "infoBlock":
+          html += `
+            <div class="info-block">
+              ${escapeHtml(field.label || "")}
+            </div>
+          `;
+          break;
+
+        case "pageBreak":
+          // User said don't worry about page breaks, so we'll just add some spacing
+          html += `<div style="margin: 30px 0; border-top: 1px dashed #ccc;"></div>`;
+          break;
+
+        default:
+          break;
+      }
+      
+      html += `</div>`;
+    });
+
+    html += `
+      <div class="worksheet-footer">
+        <img src="/superlearn full.png" alt="Superlearn" class="worksheet-logo" />
+      </div>
+    `;
+
+    return html;
+  };
+
   const tabs = [
     {
       value: "editor",
@@ -436,6 +790,16 @@ export default function TestEditorPage() {
             </Link>
           </Button>
           <h1 className="text-xl font-semibold">Test Editor</h1>
+          {testId && (
+            <Button
+              variant="outline"
+              onClick={handlePrint}
+              className="ml-auto"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Worksheet
+            </Button>
+          )}
         </div>
       </div>
       {activeTab === "editor" && (

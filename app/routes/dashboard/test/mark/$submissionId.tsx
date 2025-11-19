@@ -31,16 +31,66 @@ export default function MarkingPage() {
 
   // Initialize field marks when data loads
   useEffect(() => {
-    if (submissionData?.submission.fieldMarks) {
-      setFieldMarks(submissionData.submission.fieldMarks);
-    } else if (submissionData?.test.fields) {
-      // Initialize with zeros for all fields that can have marks (including imageChoice)
-      const initialMarks: Record<string, number> = {};
+    if (submissionData?.test.fields && submissionData?.submission.responses) {
+      // Start with existing fieldMarks if they exist, otherwise start with empty object
+      const existingMarks = submissionData.submission.fieldMarks || {};
+      const initialMarks: Record<string, number> = { ...existingMarks };
+      const responses = submissionData.submission.responses;
+      
       submissionData.test.fields.forEach((field) => {
         // Include all field types that support marks: shortInput, longInput, multipleChoice, 
         // checkboxes, dropdown, and imageChoice
         if (field.marks && field.marks > 0) {
-          initialMarks[field.id] = 0;
+          // Only auto-fill if mark is not already set (or is 0)
+          const existingMark = initialMarks[field.id];
+          if (existingMark === undefined || existingMark === 0 || existingMark === null) {
+            let mark = 0;
+            
+            // Auto-mark correct answers for multiple choice, dropdown, and checkboxes
+            if (field.correctAnswers && field.correctAnswers.length > 0) {
+              const userResponse = responses[field.id];
+              
+              if (userResponse !== undefined && userResponse !== null && userResponse !== "") {
+                let isCorrect = false;
+                
+                if (field.type === "multipleChoice" || field.type === "dropdown") {
+                  // Single answer - check if response matches any correct answer
+                  const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+                  isCorrect = field.correctAnswers.includes(responseIndex);
+                } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+                  // Multiple answers - check if all correct answers are selected
+                  const selectedIndices = Array.isArray(userResponse)
+                    ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
+                    : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+                  
+                  const correctSet = new Set(field.correctAnswers);
+                  const selectedSet = new Set(selectedIndices);
+                  
+                  // All correct answers must be selected
+                  const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
+                  // No extra incorrect answers
+                  const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
+                  
+                  isCorrect = allCorrectSelected && noExtraAnswers;
+                } else if (field.type === "shortInput" || field.type === "longInput") {
+                  // Text input - compare with correct answers
+                  if (field.options && field.options.length > 0) {
+                    const responseText = String(userResponse).toLowerCase().trim();
+                    isCorrect = field.correctAnswers.some((idx) => {
+                      const correctOption = field.options?.[idx];
+                      return correctOption && correctOption.toLowerCase().trim() === responseText;
+                    });
+                  }
+                }
+                
+                if (isCorrect) {
+                  mark = field.marks;
+                }
+              }
+            }
+            
+            initialMarks[field.id] = mark;
+          }
         }
       });
       setFieldMarks(initialMarks);
@@ -91,7 +141,12 @@ export default function MarkingPage() {
         fieldMarks,
       });
       toast.success("Marks saved successfully");
-      navigate(-1);
+      // Navigate back to the marking view (test editor with marking tab)
+      if (submissionData?.test._id) {
+        navigate(`/dashboard/test/new?testId=${submissionData.test._id}&tab=marking`);
+      } else {
+        navigate(-1);
+      }
     } catch (error) {
       console.error("Failed to save marks:", error);
       toast.error("Failed to save marks");

@@ -14,7 +14,6 @@ export const chat = httpAction(async (ctx, req) => {
     async onFinish({ text }) {
       // implement your own logic here, e.g. for storing messages
       // or recording token usage
-      console.log(text);
     },
   });
 
@@ -98,8 +97,7 @@ http.route({
   handler: paymentWebhook,
 });
 
-// Log that routes are configured
-console.log("HTTP routes configured");
+// HTTP routes configured
 
 // Convex expects the router to be the default export of `convex/http.js`.
 export default http;

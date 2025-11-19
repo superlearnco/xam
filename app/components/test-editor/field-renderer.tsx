@@ -360,22 +360,10 @@ export function FieldRenderer({
                             <FileUpload
                               endpoint="imageUploader"
                               onUploadComplete={(url) => {
-                                console.log("[Field Renderer] Image upload complete:", {
-                                  fieldId: field.id,
-                                  optionIndex: index,
-                                  url,
-                                  timestamp: new Date().toISOString(),
-                                });
                                 handleOptionChange(index, url);
                               }}
                               onUploadError={(error) => {
-                                console.error("[Field Renderer] Image upload error:", {
-                                  fieldId: field.id,
-                                  optionIndex: index,
-                                  error: error.message,
-                                  errorStack: error.stack,
-                                  timestamp: new Date().toISOString(),
-                                });
+                                // Error handling is done by FileUpload component
                               }}
                               variant="dropzone"
                               className="h-full w-full"

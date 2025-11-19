@@ -101,14 +101,11 @@ export function FileUpload({
 
       const { storageId } = await result.json();
 
-      console.log("[FileUpload] Upload successful, storageId:", storageId);
-
       // Try to get the file URL using Convex storage API
       // Note: getUrl can return null if the file isn't immediately available
       let fileUrl: string | null = null;
       try {
         fileUrl = await getFileUrlMutation({ storageId });
-        console.log("[FileUpload] File URL from Convex:", fileUrl);
       } catch (error) {
         console.warn("[FileUpload] Failed to get file URL immediately:", error);
       }
@@ -214,10 +211,7 @@ export function FileUpload({
                 alt="Uploaded"
                 className="max-w-full max-h-48 rounded-lg object-contain"
                 onError={(e) => {
-                  console.error("[FileUpload] Image load error:", {
-                    src: displayUrl,
-                    error: e,
-                  });
+                  // Image failed to load
                 }}
               />
             </div>

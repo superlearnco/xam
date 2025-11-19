@@ -55,10 +55,6 @@ const createCheckout = async ({
     },
   };
 
-  console.log(
-    "Creating checkout with data:",
-    JSON.stringify(checkoutData, null, 2)
-  );
 
   const result = await polar.checkouts.create(checkoutData);
   return result;
@@ -311,13 +307,6 @@ export const handleWebhookEvent = mutation({
     // Extract event type from webhook payload
     const eventType = args.body.type;
 
-    // Log all incoming webhook events for debugging
-    console.log(`[WEBHOOK] Received event type: ${eventType}`);
-    console.log(
-      `[WEBHOOK] Full webhook payload:`,
-      JSON.stringify(args.body, null, 2)
-    );
-
     // Store webhook event
     await ctx.db.insert("webhookEvents", {
       type: eventType,
@@ -463,11 +452,6 @@ export const handleWebhookEvent = mutation({
       case "checkout.created":
       case "checkout.succeeded":
         // Checkout events might have metadata we need
-        console.log(`[WEBHOOK] Received ${eventType} event`);
-        console.log(
-          `[WEBHOOK] Checkout data:`,
-          JSON.stringify(args.body.data, null, 2)
-        );
         // Don't process credits here, wait for order.created
         break;
 
@@ -476,15 +460,6 @@ export const handleWebhookEvent = mutation({
         // $1 = 10 credits
         try {
           const orderData = args.body.data;
-          console.log("[WEBHOOK] Processing order.created webhook");
-          console.log(
-            "[WEBHOOK] Order data:",
-            JSON.stringify(orderData, null, 2)
-          );
-          console.log(
-            "[WEBHOOK] Order metadata:",
-            JSON.stringify(orderData.metadata, null, 2)
-          );
 
           // Try multiple ways to get userId from metadata
           // Check both order metadata and checkout metadata (if present)
@@ -495,40 +470,19 @@ export const handleWebhookEvent = mutation({
             orderData.checkout?.metadata?.userId ||
             orderData.checkout_metadata?.userId;
 
-          console.log("[WEBHOOK] userId from metadata:", userId);
-
           // If userId not in metadata, try to find user by customer email
           if (!userId && orderData.customer_email) {
-            console.log(
-              "[WEBHOOK] Looking up user by email:",
-              orderData.customer_email
-            );
             const userByEmail = await ctx.db
               .query("users")
               .filter((q) => q.eq(q.field("email"), orderData.customer_email))
               .first();
             if (userByEmail) {
               userId = userByEmail.tokenIdentifier;
-              console.log(
-                "[WEBHOOK] Found user by email:",
-                userByEmail.email,
-                "tokenIdentifier:",
-                userId
-              );
-            } else {
-              console.log(
-                "[WEBHOOK] No user found with email:",
-                orderData.customer_email
-              );
             }
           }
 
           // Also try customer_id if available
           if (!userId && orderData.customer_id) {
-            console.log(
-              "[WEBHOOK] Looking up user by customer_id:",
-              orderData.customer_id
-            );
             // Note: customer_id might not directly map to our user, but worth trying
           }
 
@@ -557,7 +511,6 @@ export const handleWebhookEvent = mutation({
             .first();
 
           if (existingTransaction) {
-            console.log("Order already processed, skipping:", orderData.id);
             break;
           }
 
@@ -566,7 +519,6 @@ export const handleWebhookEvent = mutation({
           const orderItems = orderData.items || [];
 
           if (orderItems.length === 0) {
-            console.log("Order has no items, skipping credit addition");
             break;
           }
 
@@ -575,10 +527,6 @@ export const handleWebhookEvent = mutation({
           // $1 = 10 credits, amount is in cents
           const amountInDollars = (orderData.amount || 0) / 100;
           const creditsToAdd = Math.floor(amountInDollars * 10);
-
-          console.log(
-            `Order amount: $${amountInDollars}, Credits to add: ${creditsToAdd}`
-          );
 
           if (creditsToAdd > 0) {
             // Find the user and add credits directly (mutations can't call other mutations)
@@ -610,11 +558,6 @@ export const handleWebhookEvent = mutation({
               createdAt: Date.now(),
             });
 
-            console.log(
-              `Successfully added ${creditsToAdd} credits to user ${userId}. New balance: ${newCredits}`
-            );
-          } else {
-            console.log("No credits to add (amount is 0 or negative)");
           }
         } catch (error) {
           console.error("Error processing order.created webhook:", error);
@@ -623,11 +566,7 @@ export const handleWebhookEvent = mutation({
         break;
 
       default:
-        console.log(`[WEBHOOK] Unhandled event type: ${eventType}`);
-        console.log(
-          `[WEBHOOK] Event data:`,
-          JSON.stringify(args.body.data, null, 2)
-        );
+        // Unhandled event type
         break;
     }
   },
@@ -742,14 +681,8 @@ export const testAddCreditsToUser = mutation({
       throw new Error(`User not found with email: ${args.email}`);
     }
 
-    console.log("Found user:", JSON.stringify(user, null, 2));
-
     const currentCredits = user.credits || 0;
     const newCredits = currentCredits + args.amount;
-
-    console.log(
-      `Current credits: ${currentCredits}, Adding: ${args.amount}, New total: ${newCredits}`
-    );
 
     // Update user credits
     await ctx.db.patch(user._id, {
@@ -765,9 +698,6 @@ export const testAddCreditsToUser = mutation({
       createdAt: Date.now(),
     });
 
-    console.log(
-      `Successfully added ${args.amount} credits to user ${user.email}. New balance: ${newCredits}`
-    );
 
     return {
       success: true,
@@ -796,12 +726,6 @@ export const testOrderCreatedWebhook = mutation({
     }
 
     const orderData = orderWebhook.data;
-    console.log("[TEST] Processing order.created webhook");
-    console.log("[TEST] Order data:", JSON.stringify(orderData, null, 2));
-    console.log(
-      "[TEST] Order metadata:",
-      JSON.stringify(orderData.metadata, null, 2)
-    );
 
     // Try multiple ways to get userId from metadata
     let userId =
@@ -811,28 +735,14 @@ export const testOrderCreatedWebhook = mutation({
       orderData.checkout?.metadata?.userId ||
       orderData.checkout_metadata?.userId;
 
-    console.log("[TEST] userId from metadata:", userId);
-
     // If userId not in metadata, try to find user by customer email
     if (!userId && orderData.customer_email) {
-      console.log("[TEST] Looking up user by email:", orderData.customer_email);
       const userByEmail = await ctx.db
         .query("users")
         .filter((q) => q.eq(q.field("email"), orderData.customer_email))
         .first();
       if (userByEmail) {
         userId = userByEmail.tokenIdentifier;
-        console.log(
-          "[TEST] Found user by email:",
-          userByEmail.email,
-          "tokenIdentifier:",
-          userId
-        );
-      } else {
-        console.log(
-          "[TEST] No user found with email:",
-          orderData.customer_email
-        );
       }
     }
 
@@ -848,7 +758,6 @@ export const testOrderCreatedWebhook = mutation({
       .first();
 
     if (existingTransaction) {
-      console.log("[TEST] Order already processed, skipping:", orderData.id);
       return { success: false, error: "Order already processed" };
     }
 
@@ -856,15 +765,7 @@ export const testOrderCreatedWebhook = mutation({
     const amountInDollars = (orderData.amount || 0) / 100;
     const creditsToAdd = Math.floor(amountInDollars * 10);
 
-    console.log(
-      "[TEST] Order amount: $" +
-        amountInDollars +
-        ", Credits to add: " +
-        creditsToAdd
-    );
-
     if (creditsToAdd <= 0) {
-      console.log("[TEST] No credits to add");
       return { success: false, error: "No credits to add" };
     }
 
@@ -879,7 +780,6 @@ export const testOrderCreatedWebhook = mutation({
       return { success: false, error: "User not found" };
     }
 
-    console.log("[TEST] Found user:", user.email);
 
     const currentCredits = user.credits || 0;
     const newCredits = currentCredits + creditsToAdd;
@@ -899,14 +799,6 @@ export const testOrderCreatedWebhook = mutation({
       createdAt: Date.now(),
     });
 
-    console.log(
-      "[TEST] Successfully added " +
-        creditsToAdd +
-        " credits to user " +
-        userId +
-        ". New balance: " +
-        newCredits
-    );
 
     return {
       success: true,
@@ -927,7 +819,6 @@ export const reprocessAllOrders = mutation({
       .withIndex("type", (q) => q.eq("type", "order.created"))
       .collect();
 
-    console.log(`[REPROCESS] Found ${orderWebhooks.length} order webhooks`);
 
     const results = {
       total: orderWebhooks.length,
@@ -960,7 +851,6 @@ export const reprocessAllOrders = mutation({
         }
 
         if (!userId) {
-          console.log(`[REPROCESS] No userId for order ${orderData.id}`);
           results.skipped++;
           continue;
         }
@@ -972,7 +862,6 @@ export const reprocessAllOrders = mutation({
           .first();
 
         if (existingTransaction) {
-          console.log(`[REPROCESS] Order ${orderData.id} already processed`);
           results.skipped++;
           continue;
         }
@@ -982,7 +871,6 @@ export const reprocessAllOrders = mutation({
         const creditsToAdd = Math.floor(amountInDollars * 10);
 
         if (creditsToAdd <= 0) {
-          console.log(`[REPROCESS] No credits for order ${orderData.id}`);
           results.skipped++;
           continue;
         }
@@ -994,7 +882,6 @@ export const reprocessAllOrders = mutation({
           .unique();
 
         if (!user) {
-          console.log(`[REPROCESS] User not found for order ${orderData.id}`);
           results.errors.push(`User not found: ${userId}`);
           continue;
         }
@@ -1016,9 +903,6 @@ export const reprocessAllOrders = mutation({
           createdAt: Date.now(),
         });
 
-        console.log(
-          `[REPROCESS] Added ${creditsToAdd} credits to ${user.email}. New balance: ${newCredits}`
-        );
         results.processed++;
       } catch (error) {
         console.error(
@@ -1029,9 +913,6 @@ export const reprocessAllOrders = mutation({
       }
     }
 
-    console.log(
-      `[REPROCESS] Complete. Processed: ${results.processed}, Skipped: ${results.skipped}, Errors: ${results.errors.length}`
-    );
     return results;
   },
 });
