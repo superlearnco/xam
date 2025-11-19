@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useQuery } from "convex/react";
+import { api } from "convex/_generated/api";
+import type { Id } from "convex/_generated/dataModel";
 import {
   GripVertical,
   Trash2,
@@ -26,6 +29,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { FileUpload } from "~/components/ui/file-upload";
 import { cn } from "~/lib/utils";
 import type { FieldType } from "./field-types";
+import { FIELD_TYPES } from "./field-types";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
@@ -89,6 +93,23 @@ export function FieldRenderer({
   };
 
   const Icon = FieldIcons[field.type];
+  
+  // Get field type label
+  const fieldTypeConfig = FIELD_TYPES.find(ft => ft.type === field.type);
+  const fieldTypeLabel = fieldTypeConfig?.label || field.type;
+
+  // Handle file URL - check if it's a storage ID and convert to URL
+  const isStorageId = field.fileUrl?.startsWith("k") && field.fileUrl.length > 10;
+  const storageId = isStorageId ? (field.fileUrl as Id<"_storage">) : undefined;
+  const fileUrlFromQuery = useQuery(
+    api.files.getFileUrl,
+    storageId ? { storageId } : "skip"
+  );
+  
+  // Use query result if we have a storage ID, otherwise use fileUrl directly
+  const displayFileUrl = storageId 
+    ? (fileUrlFromQuery || (isStorageId ? undefined : field.fileUrl))
+    : field.fileUrl;
 
   const handleLabelChange = (label: string) => {
     onUpdate({ ...field, label });
@@ -189,11 +210,17 @@ export function FieldRenderer({
                   placeholder="Field label"
                   className="font-medium"
                 />
+                <div className="text-xs text-muted-foreground/70 mt-0.5">
+                  {fieldTypeLabel}
+                </div>
               </div>
             ) : (
               <div className="flex-1">
                 <div className="font-medium text-sm text-muted-foreground">
                   {field.type === "pageBreak" ? "Page Break" : "Info Block"}
+                </div>
+                <div className="text-xs text-muted-foreground/70 mt-0.5">
+                  {fieldTypeLabel}
                 </div>
               </div>
             )}
@@ -235,13 +262,17 @@ export function FieldRenderer({
             </Button>
           </div>
 
-          {field.fileUrl && (
+          {displayFileUrl && (
             <div className="pl-9">
               <div className="relative inline-block border rounded-lg overflow-hidden bg-muted/30 max-w-full">
                 <img 
-                  src={field.fileUrl} 
+                  src={displayFileUrl} 
                   alt="Question attachment" 
                   className="max-h-64 object-contain"
+                  onError={(e) => {
+                    // If image fails to load and we have a storage ID, it might still be processing
+                    console.warn("Image failed to load:", displayFileUrl);
+                  }}
                 />
                 <Button
                   variant="ghost"
@@ -252,6 +283,13 @@ export function FieldRenderer({
                 >
                   <X className="h-3 w-3" />
                 </Button>
+              </div>
+            </div>
+          )}
+          {field.fileUrl && !displayFileUrl && storageId && (
+            <div className="pl-9">
+              <div className="border rounded-lg p-4 bg-muted/30 max-w-full">
+                <p className="text-sm text-muted-foreground">Loading image...</p>
               </div>
             </div>
           )}

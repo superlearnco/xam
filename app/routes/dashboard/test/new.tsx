@@ -19,7 +19,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -35,6 +35,15 @@ import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 
 function generateFieldId(): string {
   return `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -88,6 +97,7 @@ export default function TestEditorPage() {
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
   const createTest = useMutation(api.tests.createTest);
   const updateTest = useMutation(api.tests.updateTest);
@@ -914,9 +924,59 @@ export default function TestEditorPage() {
                       <Copy className="h-4 w-4" />
                     )}
                   </Button>
+                  <Button
+                    onClick={() => setQrCodeOpen(true)}
+                    variant="outline"
+                    size="icon"
+                    className="flex-shrink-0"
+                    disabled={!testId}
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* QR Code Modal */}
+            <Dialog open={qrCodeOpen} onOpenChange={setQrCodeOpen}>
+              <DialogContent className="max-w-none w-screen h-screen m-0 p-0 rounded-none border-0 bg-background fixed inset-0 translate-x-0 translate-y-0">
+                <div className="flex flex-col items-center justify-center h-full w-full gap-8 p-8">
+                  <div className="flex flex-col items-center gap-6">
+                    <h2 className="text-3xl font-bold">Scan QR Code</h2>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      Scan this QR code to access the test link on your mobile device
+                    </p>
+                    {testId && (
+                      <div className="bg-white p-8 rounded-lg shadow-lg">
+                        <QRCodeSVG
+                          value={`${window.location.origin}/test/${testId}`}
+                          size={400}
+                          level="H"
+                          includeMargin={true}
+                        />
+                      </div>
+                    )}
+                    {testId && (
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground mb-2">Or copy the link:</p>
+                        <p className="text-sm font-mono text-primary break-all max-w-md">
+                          {`${window.location.origin}/test/${testId}`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => setQrCodeOpen(false)}
+                    variant="outline"
+                    size="lg"
+                    className="mt-4"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Close
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Test Information Section */}
             <Card>
@@ -1564,6 +1624,9 @@ function MarkingPage({
 }) {
   const navigate = useNavigate();
   const submissionsData = useQuery(api.tests.getTestSubmissions, { testId });
+  const deleteSubmission = useMutation(api.tests.deleteSubmission);
+  const [submissionToDelete, setSubmissionToDelete] = useState<Id<"testSubmissions"> | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (submissionsData === undefined) {
     return (
@@ -1574,6 +1637,84 @@ function MarkingPage({
   }
 
   const { submissions, statistics } = submissionsData;
+
+  const handleExportCSV = () => {
+    if (!submissions || submissions.length === 0) return;
+
+    // Create CSV headers
+    const headers = [
+      "Name",
+      "Email",
+      "Submitted At",
+      "Score",
+      "Max Score",
+      "Percentage",
+      "Status"
+    ];
+
+    // Add question columns
+    const questionMap = new Map();
+    if (submissionsData.questionAnalytics) {
+      submissionsData.questionAnalytics.forEach((q) => {
+        headers.push(`"${q.label.replace(/"/g, '""')}"`); // Escape quotes in label
+        questionMap.set(q.fieldId, q.label);
+      });
+    }
+
+    // Create CSV rows
+    const csvRows = [headers.join(",")];
+
+    submissions.forEach((submission) => {
+      const row = [
+        `"${(submission.respondentName || "Anonymous").replace(/"/g, '""')}"`,
+        `"${(submission.respondentEmail || "").replace(/"/g, '""')}"`,
+        `"${new Date(submission.submittedAt).toLocaleString()}"`,
+        submission.score ?? 0,
+        submission.maxScore ?? 0,
+        `${submission.percentage ?? 0}%`,
+        submission.isMarked ? "Marked" : "Submitted"
+      ];
+
+      // Add field marks
+      if (submissionsData.questionAnalytics) {
+        const fieldMarks = submission.fieldMarks as Record<string, number> | undefined;
+        submissionsData.questionAnalytics.forEach((q) => {
+          const mark = fieldMarks?.[q.fieldId];
+          row.push(mark !== undefined ? mark.toString() : "-");
+        });
+      }
+
+      csvRows.push(row.join(","));
+    });
+
+    // Create and download file
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `submissions-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleDeleteSubmission = async (submissionId: Id<"testSubmissions">) => {
+    setIsDeleting(true);
+    try {
+      await deleteSubmission({ submissionId });
+      toast.success("Submission deleted");
+      setSubmissionToDelete(null);
+    } catch (error) {
+      toast.error("Failed to delete submission");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Prepare data for pie charts
   const accuracyChartConfig = {
@@ -1606,13 +1747,19 @@ function MarkingPage({
           <h2 className="text-2xl font-semibold">Submissions</h2>
           <p className="text-muted-foreground">Review and mark student submissions</p>
         </div>
-        {statistics.marked > 0 && (
-          <Button variant="outline" asChild>
-            <Link to={`/dashboard/test/analysis/${testId}`}>
-              View Question Analysis
-            </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV} disabled={submissions.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
           </Button>
-        )}
+          {statistics.marked > 0 && (
+            <Button variant="outline" asChild>
+              <Link to={`/dashboard/test/analysis/${testId}`}>
+                View Question Analysis
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Statistics Section */}
@@ -1732,13 +1879,23 @@ function MarkingPage({
                         : "-"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant={submission.isMarked ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => navigate(`/dashboard/test/mark/${submission._id}`)}
-                      >
-                        {submission.isMarked ? "Review" : "Mark"}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant={submission.isMarked ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => navigate(`/dashboard/test/mark/${submission._id}`)}
+                        >
+                          {submission.isMarked ? "Review" : "Mark"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setSubmissionToDelete(submission._id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1747,6 +1904,27 @@ function MarkingPage({
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!submissionToDelete} onOpenChange={(open) => !open && setSubmissionToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Submission</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this submission? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmissionToDelete(null)}>Cancel</Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => submissionToDelete && handleDeleteSubmission(submissionToDelete)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

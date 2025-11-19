@@ -491,6 +491,7 @@ export const getTestSubmissions = query({
         percentage: s.percentage,
         submittedAt: s.submittedAt,
         isMarked: s.isMarked || false,
+        fieldMarks: s.fieldMarks,
       })),
       statistics: {
         total,
@@ -609,6 +610,33 @@ export const updateSubmissionMarks = mutation({
       maxScore: maxScore,
       percentage: percentage,
     };
+  },
+});
+
+export const deleteSubmission = mutation({
+  args: {
+    submissionId: v.id("testSubmissions"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get submission
+    const submission = await ctx.db.get(args.submissionId);
+    if (!submission) {
+      throw new Error("Submission not found");
+    }
+
+    // Get test and verify ownership
+    const test = await ctx.db.get(submission.testId);
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    await ctx.db.delete(args.submissionId);
   },
 });
 
