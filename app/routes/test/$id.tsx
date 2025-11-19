@@ -40,6 +40,8 @@ type TestProgressData = {
   userEmail?: string;
   showTest?: boolean;
   testStartedAt?: number | null;
+  shuffledFieldIds?: string[];
+  shuffledOptionsMapping?: Record<string, number[]>;
 };
 
 function getTestProgressKey(testId: Id<"tests">): string {
@@ -105,6 +107,8 @@ export default function TestPage() {
   } | null>(null);
   const [isFullscreenEnabled, setIsFullscreenEnabled] = useState(false);
   const [isLoadingSavedState, setIsLoadingSavedState] = useState(true);
+  const [shuffledFieldIds, setShuffledFieldIds] = useState<string[] | undefined>(undefined);
+  const [shuffledOptionsMapping, setShuffledOptionsMapping] = useState<Record<string, number[]> | undefined>(undefined);
   const hasInitialLoadCompletedRef = useRef(false);
 
   const test = useQuery(
@@ -150,6 +154,12 @@ export default function TestPage() {
       if (savedProgress.testStartedAt !== undefined) {
         setTestStartedAt(savedProgress.testStartedAt);
       }
+      if (savedProgress.shuffledFieldIds) {
+        setShuffledFieldIds(savedProgress.shuffledFieldIds);
+      }
+      if (savedProgress.shuffledOptionsMapping) {
+        setShuffledOptionsMapping(savedProgress.shuffledOptionsMapping);
+      }
     }
     
     setIsLoadingSavedState(false);
@@ -178,9 +188,108 @@ export default function TestPage() {
       userEmail,
       showTest,
       testStartedAt,
+      shuffledFieldIds,
+      shuffledOptionsMapping,
     };
     saveTestProgress(testId, dataToSave);
-  }, [testId, isLoadingSavedState, isPasswordVerified, isEmailProvided, isNameProvided, userName, userEmail, showTest, testStartedAt, formData, test]);
+  }, [testId, isLoadingSavedState, isPasswordVerified, isEmailProvided, isNameProvided, userName, userEmail, showTest, testStartedAt, formData, test, shuffledFieldIds, shuffledOptionsMapping]);
+
+  // Initialize randomization if needed
+  useEffect(() => {
+    if (!test || isLoadingSavedState) return;
+
+    let newShuffledFieldIds = shuffledFieldIds;
+    let newShuffledOptionsMapping = shuffledOptionsMapping;
+    let hasChanges = false;
+
+    // Randomize questions if enabled and not yet randomized
+    if (test.randomizeQuestions && !shuffledFieldIds && test.fields) {
+      const fields = [...test.fields] as TestField[];
+      const sortedFields = fields.sort((a, b) => a.order - b.order);
+      
+      // Split into pages
+      const pages: TestField[][] = [];
+      let currentPageFields: TestField[] = [];
+      
+      sortedFields.forEach((field) => {
+        if (field.type === "pageBreak") {
+          if (currentPageFields.length > 0) {
+            pages.push(currentPageFields);
+            currentPageFields = [];
+          }
+          // Keep page break as a separate "page" containing just itself to preserve structure
+          pages.push([field]);
+        } else {
+          currentPageFields.push(field);
+        }
+      });
+      
+      if (currentPageFields.length > 0) {
+        pages.push(currentPageFields);
+      }
+
+      // Shuffle questions within pages (excluding page breaks)
+      const shuffledIds: string[] = [];
+      
+      pages.forEach(page => {
+        if (page.length === 1 && page[0].type === "pageBreak") {
+          shuffledIds.push(page[0].id);
+        } else {
+          // Shuffle fields in this page
+          const pageFields = [...page];
+          for (let i = pageFields.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pageFields[i], pageFields[j]] = [pageFields[j], pageFields[i]];
+          }
+          pageFields.forEach(f => shuffledIds.push(f.id));
+        }
+      });
+
+      newShuffledFieldIds = shuffledIds;
+      setShuffledFieldIds(shuffledIds);
+      hasChanges = true;
+    }
+
+    // Shuffle options if enabled and not yet shuffled
+    if (test.shuffleOptions && !shuffledOptionsMapping && test.fields) {
+      const mapping: Record<string, number[]> = {};
+      
+      test.fields.forEach((field) => {
+        if (
+          (field.type === "multipleChoice" || 
+           field.type === "checkboxes" || 
+           field.type === "dropdown" || 
+           field.type === "imageChoice") && 
+          field.options && 
+          field.options.length > 0
+        ) {
+          const indices = field.options.map((_, i) => i);
+          // Fisher-Yates shuffle
+          for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+          }
+          mapping[field.id] = indices;
+        }
+      });
+
+      if (Object.keys(mapping).length > 0) {
+        newShuffledOptionsMapping = mapping;
+        setShuffledOptionsMapping(mapping);
+        hasChanges = true;
+      }
+    }
+
+    // Save immediately if we generated new randomizations
+    if (hasChanges) {
+      const existing = loadTestProgress(testId!) || {};
+      saveTestProgress(testId!, {
+        ...existing,
+        shuffledFieldIds: newShuffledFieldIds,
+        shuffledOptionsMapping: newShuffledOptionsMapping,
+      });
+    }
+  }, [test, testId, isLoadingSavedState, shuffledFieldIds, shuffledOptionsMapping]);
 
   // Clear formData when testId changes (navigating to a different test)
   useEffect(() => {
@@ -501,6 +610,8 @@ export default function TestPage() {
         testId={testId!}
         startedAt={testStartedAt || Date.now()}
         onSubmissionComplete={setSubmissionResult}
+        shuffledFieldIds={shuffledFieldIds}
+        shuffledOptionsMapping={shuffledOptionsMapping}
       />
     );
   }
@@ -558,6 +669,8 @@ function TestForm({
   testId,
   startedAt,
   onSubmissionComplete,
+  shuffledFieldIds,
+  shuffledOptionsMapping,
 }: {
   test: NonNullable<ReturnType<typeof useQuery<typeof api.tests.getPublicTest>>>;
   userName?: string;
@@ -567,6 +680,8 @@ function TestForm({
   testId: Id<"tests">;
   startedAt: number;
   onSubmissionComplete: (result: { score?: number; maxScore?: number; percentage?: number }) => void;
+  shuffledFieldIds?: string[];
+  shuffledOptionsMapping?: Record<string, number[]>;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -779,7 +894,24 @@ function TestForm({
 
   // Split fields into pages based on page breaks
   const fields = (test.fields || []) as TestField[];
-  const sortedFields = fields.sort((a, b) => a.order - b.order);
+  
+  // Use shuffled order if available, otherwise sort by order
+  let sortedFields: TestField[];
+  if (shuffledFieldIds) {
+    // Create a map for O(1) lookup
+    const fieldMap = new Map(fields.map(f => [f.id, f]));
+    // Map shuffled IDs to fields, filtering out any that might be missing (shouldn't happen)
+    sortedFields = shuffledFieldIds
+      .map(id => fieldMap.get(id))
+      .filter((f): f is TestField => f !== undefined);
+      
+    // If for some reason shuffledFields is empty or missing fields (e.g. schema change), fall back to default sort
+    if (sortedFields.length === 0 && fields.length > 0) {
+      sortedFields = fields.sort((a, b) => a.order - b.order);
+    }
+  } else {
+    sortedFields = fields.sort((a, b) => a.order - b.order);
+  }
   
   const pages: TestField[][] = [];
   let currentPageFields: TestField[] = [];
@@ -911,6 +1043,14 @@ function TestForm({
 
   const renderField = (field: TestField) => {
     const fieldValue = formData[field.id] || "";
+    
+    // Get display order for options if shuffled
+    const getOptionDisplayOrder = (options: string[] = []) => {
+      if (shuffledOptionsMapping && shuffledOptionsMapping[field.id]) {
+        return shuffledOptionsMapping[field.id];
+      }
+      return options.map((_, i) => i);
+    };
 
     switch (field.type) {
       case "shortInput":
@@ -966,23 +1106,26 @@ function TestForm({
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
             <div className="space-y-2">
-              {(field.options || []).map((option, index) => (
-                <div key={index} className="flex items-center space-x-2 py-3">
-                  <input
-                    type="radio"
-                    id={`${field.id}-${index}`}
-                    name={field.id}
-                    value={String(index)}
-                    checked={fieldValue === String(index)}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    required={field.required}
-                    className="h-4 w-4 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  />
-                  <Label htmlFor={`${field.id}-${index}`} className="font-normal cursor-pointer">
-                    {option || `Option ${index + 1}`}
-                  </Label>
-                </div>
-              ))}
+              {getOptionDisplayOrder(field.options).map((originalIndex) => {
+                const option = field.options?.[originalIndex];
+                return (
+                  <div key={originalIndex} className="flex items-center space-x-2 py-3">
+                    <input
+                      type="radio"
+                      id={`${field.id}-${originalIndex}`}
+                      name={field.id}
+                      value={String(originalIndex)}
+                      checked={fieldValue === String(originalIndex)}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      required={field.required}
+                      className="h-4 w-4 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    />
+                    <Label htmlFor={`${field.id}-${originalIndex}`} className="font-normal cursor-pointer">
+                      {option || `Option ${originalIndex + 1}`}
+                    </Label>
+                  </div>
+                );
+              })}
             </div>
             {field.helpText && (
               <p className="text-sm text-muted-foreground">{field.helpText}</p>
@@ -998,28 +1141,29 @@ function TestForm({
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
             <div className="space-y-2">
-              {(field.options || []).map((option, index) => {
+              {getOptionDisplayOrder(field.options).map((originalIndex) => {
+                const option = field.options?.[originalIndex];
                 const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
-                const isChecked = checkedValues.includes(String(index));
+                const isChecked = checkedValues.includes(String(originalIndex));
                 return (
-                  <div key={index} className="flex items-center space-x-2 py-3">
+                  <div key={originalIndex} className="flex items-center space-x-2 py-3">
                     <Checkbox
-                      id={`${field.id}-${index}`}
+                      id={`${field.id}-${originalIndex}`}
                       checked={isChecked}
                       onCheckedChange={(checked) => {
                         const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
                         if (checked) {
-                          handleInputChange(field.id, [...currentValues, String(index)]);
+                          handleInputChange(field.id, [...currentValues, String(originalIndex)]);
                         } else {
                           handleInputChange(
                             field.id,
-                            currentValues.filter((v) => v !== String(index))
+                            currentValues.filter((v) => v !== String(originalIndex))
                           );
                         }
                       }}
                     />
-                    <Label htmlFor={`${field.id}-${index}`} className="font-normal cursor-pointer">
-                      {option || `Option ${index + 1}`}
+                    <Label htmlFor={`${field.id}-${originalIndex}`} className="font-normal cursor-pointer">
+                      {option || `Option ${originalIndex + 1}`}
                     </Label>
                   </div>
                 );
@@ -1047,11 +1191,14 @@ function TestForm({
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent>
-                {(field.options || []).map((option, index) => (
-                  <SelectItem key={index} value={String(index)}>
-                    {option || `Option ${index + 1}`}
-                  </SelectItem>
-                ))}
+                {getOptionDisplayOrder(field.options).map((originalIndex) => {
+                  const option = field.options?.[originalIndex];
+                  return (
+                    <SelectItem key={originalIndex} value={String(originalIndex)}>
+                      {option || `Option ${originalIndex + 1}`}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {field.helpText && (
@@ -1068,23 +1215,24 @@ function TestForm({
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(field.options || []).map((option, index) => {
+              {getOptionDisplayOrder(field.options).map((originalIndex) => {
+                const option = field.options?.[originalIndex];
                 const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
-                const isSelected = selectedValues.includes(String(index));
+                const isSelected = selectedValues.includes(String(originalIndex));
                 const imageUrl = option && option.startsWith("http") ? option : undefined;
                 return (
                   <button
-                    key={index}
+                    key={originalIndex}
                     type="button"
                     onClick={() => {
                       const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
                       if (isSelected) {
                         handleInputChange(
                           field.id,
-                          currentValues.filter((v) => v !== String(index))
+                          currentValues.filter((v) => v !== String(originalIndex))
                         );
                       } else {
-                        handleInputChange(field.id, [...currentValues, String(index)]);
+                        handleInputChange(field.id, [...currentValues, String(originalIndex)]);
                       }
                     }}
                     className={cn(
@@ -1097,12 +1245,12 @@ function TestForm({
                     {imageUrl ? (
                       <img
                         src={imageUrl}
-                        alt={`Choice ${index + 1}`}
+                        alt={`Choice ${originalIndex + 1}`}
                         className="w-full h-full object-contain"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-                        Image {index + 1}
+                        Image {originalIndex + 1}
                       </div>
                     )}
                     {isSelected && (

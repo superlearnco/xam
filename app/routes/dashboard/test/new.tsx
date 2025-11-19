@@ -82,6 +82,8 @@ export default function TestEditorPage() {
   const [instantFeedback, setInstantFeedback] = useState(false);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | undefined>(undefined);
+  const [randomizeQuestions, setRandomizeQuestions] = useState(false);
+  const [shuffleOptions, setShuffleOptions] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const createTest = useMutation(api.tests.createTest);
@@ -141,6 +143,8 @@ export default function TestEditorPage() {
       setInstantFeedback(test.instantFeedback || false);
       setShowAnswerKey(test.showAnswerKey || false);
       setTimeLimitMinutes(test.timeLimitMinutes);
+      setRandomizeQuestions(test.randomizeQuestions || false);
+      setShuffleOptions(test.shuffleOptions || false);
     }
   }, [test, testId]);
 
@@ -166,6 +170,8 @@ export default function TestEditorPage() {
           instantFeedback: boolean;
           showAnswerKey: boolean;
           timeLimitMinutes?: number;
+          randomizeQuestions: boolean;
+          shuffleOptions: boolean;
         }
       ) => {
         try {
@@ -189,6 +195,8 @@ export default function TestEditorPage() {
             instantFeedback: options.instantFeedback,
             showAnswerKey: options.showAnswerKey,
             timeLimitMinutes: options.timeLimitMinutes,
+            randomizeQuestions: options.randomizeQuestions,
+            shuffleOptions: options.shuffleOptions,
           });
         } catch (error) {
           console.error("Failed to update test:", error);
@@ -216,6 +224,8 @@ export default function TestEditorPage() {
         instantFeedback,
         showAnswerKey,
         timeLimitMinutes,
+        randomizeQuestions,
+        shuffleOptions,
       });
     }
   }, [
@@ -236,6 +246,8 @@ export default function TestEditorPage() {
     instantFeedback,
     showAnswerKey,
     timeLimitMinutes,
+    randomizeQuestions,
+    shuffleOptions,
     debouncedUpdate,
     test,
   ]);
@@ -1091,6 +1103,36 @@ export default function TestEditorPage() {
                       </Label>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Presentation Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Presentation</CardTitle>
+                <CardDescription>Configure how questions and options are displayed</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="randomize-questions"
+                    checked={randomizeQuestions}
+                    onCheckedChange={(checked) => setRandomizeQuestions(checked === true)}
+                  />
+                  <Label htmlFor="randomize-questions" className="font-normal cursor-pointer">
+                    Randomize question order per student
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="shuffle-options"
+                    checked={shuffleOptions}
+                    onCheckedChange={(checked) => setShuffleOptions(checked === true)}
+                  />
+                  <Label htmlFor="shuffle-options" className="font-normal cursor-pointer">
+                    Shuffle answer options (Multiple Choice, Checkboxes, etc.)
+                  </Label>
                 </div>
               </CardContent>
             </Card>

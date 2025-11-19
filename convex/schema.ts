@@ -114,6 +114,8 @@ export default defineSchema({
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),
     timeLimitMinutes: v.optional(v.number()),
+    randomizeQuestions: v.optional(v.boolean()),
+    shuffleOptions: v.optional(v.boolean()),
   }).index("userId", ["userId"]),
   testSubmissions: defineTable({
     testId: v.id("tests"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -11,11 +11,13 @@ import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
-import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, AlertCircle, Zap, X, Keyboard } from "lucide-react";
 import { toast } from "sonner";
 import type { TestField } from "~/components/test-editor/test-builder";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { cn } from "~/lib/utils";
+import { Toggle } from "~/components/ui/toggle";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 
 export default function MarkingPage() {
   const params = useParams();
@@ -31,6 +33,7 @@ export default function MarkingPage() {
   const [fieldMarks, setFieldMarks] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [isAdvancedMarking, setIsAdvancedMarking] = useState(false);
 
   // Initialize field marks when data loads
   useEffect(() => {
@@ -111,6 +114,70 @@ export default function MarkingPage() {
     }
   }, [markableFields, selectedFieldId]);
 
+  const selectedField = markableFields.find(f => f.id === selectedFieldId);
+  const selectedFieldIndex = markableFields.findIndex(f => f.id === selectedFieldId);
+
+  const handleMarkChange = useCallback((fieldId: string, value: number) => {
+    const field = markableFields.find((f) => f.id === fieldId);
+    if (!field || !field.marks) return;
+
+    const maxMark = field.marks;
+    const validValue = Math.max(0, Math.min(value, maxMark));
+    setFieldMarks((prev) => ({ ...prev, [fieldId]: validValue }));
+  }, [markableFields]);
+
+  const handleNext = useCallback(() => {
+    if (selectedFieldIndex < markableFields.length - 1) {
+      setSelectedFieldId(markableFields[selectedFieldIndex + 1].id);
+    }
+  }, [selectedFieldIndex, markableFields]);
+
+  const handlePrevious = useCallback(() => {
+    if (selectedFieldIndex > 0) {
+      setSelectedFieldId(markableFields[selectedFieldIndex - 1].id);
+    }
+  }, [selectedFieldIndex, markableFields]);
+
+  // Keyboard shortcuts for Advanced Marking
+  useEffect(() => {
+    if (!isAdvancedMarking) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input (unless it's a modifier key combo, but let's keep it simple)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowRight":
+        case "ArrowDown":
+          e.preventDefault();
+          handleNext();
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          e.preventDefault();
+          handlePrevious();
+          break;
+        case "c":
+        case "C":
+          if (selectedField && selectedField.marks) {
+            handleMarkChange(selectedField.id, selectedField.marks);
+          }
+          break;
+        case "x":
+        case "X":
+          if (selectedField && selectedField.marks) {
+            handleMarkChange(selectedField.id, 0);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAdvancedMarking, selectedField, handleNext, handlePrevious, handleMarkChange]);
+
   if (!submissionData) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
@@ -132,15 +199,6 @@ export default function MarkingPage() {
     }
   });
   const percentage = maxScore > 0 ? Math.round((currentScore / maxScore) * 100) : 0;
-
-  const handleMarkChange = (fieldId: string, value: number) => {
-    const field = markableFields.find((f) => f.id === fieldId);
-    if (!field || !field.marks) return;
-
-    const maxMark = field.marks;
-    const validValue = Math.max(0, Math.min(value, maxMark));
-    setFieldMarks((prev) => ({ ...prev, [fieldId]: validValue }));
-  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -276,7 +334,7 @@ export default function MarkingPage() {
                       src={imageUrl}
                       alt={`Choice ${index + 1}`}
                       className="w-full h-full object-contain"
-                    />
+                      />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
                       Image {index + 1}
@@ -305,21 +363,6 @@ export default function MarkingPage() {
     }
   };
 
-  const selectedField = markableFields.find(f => f.id === selectedFieldId);
-  const selectedFieldIndex = markableFields.findIndex(f => f.id === selectedFieldId);
-
-  const handleNext = () => {
-    if (selectedFieldIndex < markableFields.length - 1) {
-      setSelectedFieldId(markableFields[selectedFieldIndex + 1].id);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (selectedFieldIndex > 0) {
-      setSelectedFieldId(markableFields[selectedFieldIndex - 1].id);
-    }
-  };
-
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Header */}
@@ -340,6 +383,33 @@ export default function MarkingPage() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 mr-4 border-r pr-4">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Toggle
+                    pressed={isAdvancedMarking}
+                    onPressedChange={setIsAdvancedMarking}
+                    aria-label="Toggle advanced marking"
+                    className={cn("gap-2", isAdvancedMarking && "bg-primary/10 text-primary")}
+                  >
+                    <Zap className="h-4 w-4" />
+                    <span className="hidden sm:inline">Advanced Marking</span>
+                  </Toggle>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-semibold mb-2">Keyboard Shortcuts:</p>
+                  <ul className="text-xs space-y-1">
+                    <li><kbd className="bg-muted px-1 rounded">Arrow Right/Down</kbd> Next Question</li>
+                    <li><kbd className="bg-muted px-1 rounded">Arrow Left/Up</kbd> Previous Question</li>
+                    <li><kbd className="bg-muted px-1 rounded">C</kbd> Mark Correct (Full Marks)</li>
+                    <li><kbd className="bg-muted px-1 rounded">X</kbd> Mark Incorrect (0 Marks)</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
           <div className="text-right mr-4 hidden md:block">
             <div className="text-sm font-medium">
               Score: {currentScore} / {maxScore}
@@ -457,9 +527,35 @@ export default function MarkingPage() {
                           <Label htmlFor={`mark-${selectedField.id}`} className="text-base font-semibold text-foreground">
                             Awarded Marks
                           </Label>
-                          <span className="text-sm text-muted-foreground">
-                            Enter a value between 0 and {selectedField.marks}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {isAdvancedMarking && (
+                              <div className="flex gap-2 mr-4">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 h-8"
+                                  onClick={() => handleMarkChange(selectedField.id, selectedField.marks || 0)}
+                                  title="Mark Correct (C)"
+                                >
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Correct
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8"
+                                  onClick={() => handleMarkChange(selectedField.id, 0)}
+                                  title="Mark Incorrect (X)"
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  Incorrect
+                                </Button>
+                              </div>
+                            )}
+                            <span className="text-sm text-muted-foreground">
+                              Enter a value between 0 and {selectedField.marks}
+                            </span>
+                          </div>
                         </div>
                         
                         <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border">
@@ -498,6 +594,7 @@ export default function MarkingPage() {
                 onClick={handlePrevious}
                 disabled={selectedFieldIndex <= 0}
                 className="w-[120px]"
+                title={isAdvancedMarking ? "Previous (Arrow Left)" : undefined}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
@@ -511,6 +608,7 @@ export default function MarkingPage() {
                 onClick={handleNext}
                 disabled={selectedFieldIndex >= markableFields.length - 1}
                 className="w-[120px]"
+                title={isAdvancedMarking ? "Next (Arrow Right)" : undefined}
               >
                 Next
                 <ChevronRight className="ml-2 h-4 w-4" />

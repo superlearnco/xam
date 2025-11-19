@@ -156,6 +156,8 @@ export const updateTest = mutation({
     instantFeedback: v.optional(v.boolean()),
     showAnswerKey: v.optional(v.boolean()),
     timeLimitMinutes: v.optional(v.number()),
+    randomizeQuestions: v.optional(v.boolean()),
+    shuffleOptions: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -201,6 +203,8 @@ export const updateTest = mutation({
       instantFeedback?: boolean;
       showAnswerKey?: boolean;
       timeLimitMinutes?: number;
+      randomizeQuestions?: boolean;
+      shuffleOptions?: boolean;
     } = {};
 
     if (args.name !== undefined) {
@@ -247,6 +251,12 @@ export const updateTest = mutation({
     }
     if (args.timeLimitMinutes !== undefined) {
       updates.timeLimitMinutes = args.timeLimitMinutes;
+    }
+    if (args.randomizeQuestions !== undefined) {
+      updates.randomizeQuestions = args.randomizeQuestions;
+    }
+    if (args.shuffleOptions !== undefined) {
+      updates.shuffleOptions = args.shuffleOptions;
     }
 
     await ctx.db.patch(args.testId, updates);
