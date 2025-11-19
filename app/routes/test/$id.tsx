@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
+import type { ReactNode } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useParams, useNavigate } from "react-router";
 import { api } from "../../../convex/_generated/api";
@@ -10,12 +11,13 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, Trophy, Home } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { motion } from "motion/react";
 
 type TestField = {
   id: string;
@@ -408,13 +410,13 @@ export default function TestPage() {
   // Test not found
   if (test === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle>Test Not Found</CardTitle>
-            <CardDescription>The test you're looking for doesn't exist or has been removed.</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen bg-slate-100 px-4">
+        <div className="max-w-md w-full bg-white p-8 shadow-xl rounded-sm border-t-4 border-red-900">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold font-serif text-slate-900 mb-2">Worksheet Not Found</h2>
+            <p className="text-slate-500 font-serif italic">The worksheet you're looking for doesn't exist or has been removed.</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -422,85 +424,85 @@ export default function TestPage() {
   // Password protection screen (only show if password exists and not verified)
   if (test.password && !isPasswordVerified) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-slate-100 px-4">
+        <div className="max-w-md w-full bg-white p-8 shadow-xl rounded-sm border-t-4 border-slate-900">
+          <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
                 src="/superlearn full.png" 
                 alt="Superlearn" 
-                className="h-16 object-contain"
+                className="h-12 object-contain grayscale opacity-80"
               />
             </div>
-            <CardTitle>Password Required</CardTitle>
-            <CardDescription>This test is password protected. Please enter the password to continue.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setPasswordError("");
-                  }}
-                  placeholder="Enter password"
-                  required
-                  autoFocus
-                />
-                {passwordError && (
-                  <p className="text-sm text-destructive">{passwordError}</p>
-                )}
-              </div>
-              <Button type="submit" className="w-full">
-                Continue
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+            <h2 className="text-2xl font-bold font-serif text-slate-900 mb-2">Password Required</h2>
+            <p className="text-slate-500 font-serif italic">This worksheet is password protected.</p>
+          </div>
+          
+          <form onSubmit={handlePasswordSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="font-serif font-bold text-slate-700">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setPasswordError("");
+                }}
+                placeholder="Enter password"
+                required
+                autoFocus
+                className="border-0 border-b-2 border-slate-200 rounded-none focus:ring-0 focus:border-slate-900 px-0 bg-transparent font-serif text-lg"
+              />
+              {passwordError && (
+                <p className="text-sm text-red-500 font-serif italic">{passwordError}</p>
+              )}
+            </div>
+            <Button type="submit" className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-none font-serif h-12 text-lg">
+              Continue
+            </Button>
+          </form>
+        </div>
+    </div>
     );
   }
 
   // Email collection screen (if requireAuth is enabled and email not provided, and password verified or no password)
   if (test.requireAuth && !isEmailProvided && (!test.password || isPasswordVerified)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-slate-100 px-4">
+        <div className="max-w-md w-full bg-white p-8 shadow-xl rounded-sm border-t-4 border-slate-900">
+          <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
                 src="/superlearn full.png" 
                 alt="Superlearn" 
-                className="h-16 object-contain"
+                className="h-12 object-contain grayscale opacity-80"
               />
             </div>
-            <CardTitle>Email Required</CardTitle>
-            <CardDescription>Please enter your email address to begin the test.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={!userEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())}>
-                Continue
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <h2 className="text-2xl font-bold font-serif text-slate-900 mb-2">Email Required</h2>
+            <p className="text-slate-500 font-serif italic">Please enter your email address to begin.</p>
+          </div>
+          
+          <form onSubmit={handleEmailSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="font-serif font-bold text-slate-700">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                autoFocus
+                className="border-0 border-b-2 border-slate-200 rounded-none focus:ring-0 focus:border-slate-900 px-0 bg-transparent font-serif text-lg"
+              />
+            </div>
+            <Button type="submit" className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-none font-serif h-12 text-lg" disabled={!userEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim())}>
+              Continue
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -510,24 +512,24 @@ export default function TestPage() {
   if (test.requireFullScreen && !isFullscreenEnabled && !submissionResult && (!test.password || isPasswordVerified) && 
       (test.requireAuth ? (isEmailProvided && isNameProvided) : isNameProvided)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-slate-100 px-4">
+        <div className="max-w-md w-full bg-white p-8 shadow-xl rounded-sm border-t-4 border-slate-900">
+          <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
                 src="/superlearn full.png" 
                 alt="Superlearn" 
-                className="h-16 object-contain"
+                className="h-12 object-contain grayscale opacity-80"
               />
             </div>
-            <CardTitle>Fullscreen Required</CardTitle>
-            <CardDescription>
-              This test requires fullscreen mode. Please enable fullscreen to continue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            <h2 className="text-2xl font-bold font-serif text-slate-900 mb-2">Fullscreen Required</h2>
+            <p className="text-slate-500 font-serif italic">
+              This worksheet requires fullscreen mode. Please enable fullscreen to continue.
+            </p>
+          </div>
+          <div className="space-y-4">
             <Button
-              className="w-full"
+              className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-none font-serif h-12 text-lg"
               onClick={async () => {
                 try {
                   const element = document.documentElement;
@@ -550,11 +552,11 @@ export default function TestPage() {
             >
               Enable Fullscreen
             </Button>
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-sm text-slate-400 text-center font-serif italic">
               You can also press F11 to enable fullscreen mode
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -565,39 +567,39 @@ export default function TestPage() {
   if (!isNameProvided && (!test.password || isPasswordVerified) && 
       (test.requireAuth ? isEmailProvided : true)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-slate-100 px-4">
+        <div className="max-w-md w-full bg-white p-8 shadow-xl rounded-sm border-t-4 border-slate-900">
+          <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
                 src="/superlearn full.png" 
                 alt="Superlearn" 
-                className="h-16 object-contain"
+                className="h-12 object-contain grayscale opacity-80"
               />
             </div>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Please enter your full name to begin the test.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleNameSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Enter your full name"
-                  required
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={!userName.trim()}>
-                Start Test
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <h2 className="text-2xl font-bold font-serif text-slate-900 mb-2">Welcome</h2>
+            <p className="text-slate-500 font-serif italic">Please enter your full name to begin.</p>
+          </div>
+          
+          <form onSubmit={handleNameSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="font-serif font-bold text-slate-700">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Enter your full name"
+                required
+                autoFocus
+                className="border-0 border-b-2 border-slate-200 rounded-none focus:ring-0 focus:border-slate-900 px-0 bg-transparent font-serif text-lg"
+              />
+            </div>
+            <Button type="submit" className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-none font-serif h-12 text-lg" disabled={!userName.trim()}>
+              Start Worksheet
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -622,47 +624,217 @@ export default function TestPage() {
 
   // Show success screen
   if (submissionResult) {
+    const percentage = submissionResult.percentage ?? 0;
+    const score = submissionResult.score ?? 0;
+    const maxScore = submissionResult.maxScore ?? 0;
+    
     return (
-      <div className="flex items-center justify-center min-h-screen bg-muted/30 px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
-            </div>
-            <CardTitle>Test Submitted Successfully</CardTitle>
-            <CardDescription>
-              {test.instantFeedback && submissionResult.score !== undefined
-                ? `Your score: ${submissionResult.score}${submissionResult.maxScore ? `/${submissionResult.maxScore}` : ""}${submissionResult.percentage !== undefined ? ` (${submissionResult.percentage}%)` : ""}`
-                : "Thank you for completing the test."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {test.instantFeedback && submissionResult.score !== undefined && (
-              <div className="text-center py-4">
-                <div className="text-3xl font-bold text-primary">
-                  {submissionResult.percentage !== undefined ? `${submissionResult.percentage}%` : ""}
-                </div>
-                {submissionResult.maxScore && (
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {submissionResult.score} out of {submissionResult.maxScore} points
-                  </div>
-                )}
-              </div>
-            )}
-            <Button 
-              className="w-full" 
-              onClick={() => navigate("/")}
-            >
-              Return Home
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-md w-full"
+        >
+           <div className="bg-white shadow-xl rounded-sm border-t-4 border-slate-900 overflow-hidden relative">
+             
+             <div className="text-center pt-12 pb-4 relative z-10 px-8">
+               <motion.div 
+                 initial={{ scale: 0, rotate: -180 }}
+                 animate={{ scale: 1, rotate: 0 }}
+                 transition={{ delay: 0.2, type: "spring", damping: 18, stiffness: 200 }}
+                 className="mx-auto mb-6 w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center shadow-inner ring-1 ring-slate-200"
+               >
+                 {test.instantFeedback && submissionResult.score !== undefined && percentage >= 80 ? (
+                   <Trophy className="h-12 w-12 text-slate-900 drop-shadow-sm" strokeWidth={1.5} />
+                 ) : (
+                   <CheckCircle className="h-12 w-12 text-slate-900 drop-shadow-sm" strokeWidth={2} />
+                 )}
+               </motion.div>
+               
+               <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+               >
+                  <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight font-serif">Worksheet Completed</h2>
+                  <p className="text-lg text-slate-500 font-serif italic">
+                    Your responses have been recorded.
+                  </p>
+               </motion.div>
+             </div>
+
+             <div className="space-y-8 pb-10 px-8 relative z-10">
+               {test.instantFeedback && submissionResult.score !== undefined ? (
+                 <div className="flex flex-col items-center">
+                   {/* Circular Progress */}
+                   <div className="relative w-52 h-52 mb-8">
+                      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                        {/* Background circle */}
+                        <circle 
+                          cx="50" cy="50" r="42" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="6" 
+                          className="text-slate-100" 
+                        />
+                        {/* Progress circle */}
+                        <motion.circle 
+                          cx="50" cy="50" r="42" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="6" 
+                          strokeLinecap="round"
+                          className={cn(
+                            "transition-colors duration-300",
+                            percentage >= 80 ? "text-slate-900" :
+                            percentage >= 60 ? "text-slate-700" :
+                            percentage >= 40 ? "text-slate-500" :
+                            "text-slate-400"
+                          )}
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: percentage / 100 }}
+                          transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
+                          strokeDasharray="1"
+                          strokeDashoffset="0"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <motion.span 
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 1, type: "spring" }}
+                          className="text-5xl font-black text-slate-900 tracking-tighter font-serif"
+                        >
+                          {percentage}%
+                        </motion.span>
+                        <span className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-1">Score</span>
+                      </div>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-4 w-full">
+                     <motion.div 
+                       initial={{ opacity: 0, x: -20 }}
+                       animate={{ opacity: 1, x: 0 }}
+                       transition={{ delay: 0.6 }}
+                       className="bg-slate-50 rounded-sm p-4 text-center border border-slate-100"
+                     >
+                       <div className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1.5">Correct</div>
+                       <div className="text-2xl font-black text-slate-900 font-serif">{score}</div>
+                     </motion.div>
+                     <motion.div 
+                       initial={{ opacity: 0, x: 20 }}
+                       animate={{ opacity: 1, x: 0 }}
+                       transition={{ delay: 0.7 }}
+                       className="bg-slate-50 rounded-sm p-4 text-center border border-slate-100"
+                     >
+                       <div className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1.5">Total</div>
+                       <div className="text-2xl font-black text-slate-900 font-serif">{maxScore}</div>
+                     </motion.div>
+                   </div>
+                 </div>
+               ) : (
+                 <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="bg-slate-50 rounded-sm p-8 text-center border border-slate-100 mx-2"
+                 >
+                   <p className="text-slate-600 leading-relaxed font-serif">
+                     Thank you for completing this worksheet. Your instructor will review your submission.
+                   </p>
+                 </motion.div>
+               )}
+
+               <motion.div 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: 0.8 }}
+                 className="pt-2"
+               >
+                 <Button 
+                   className="w-full h-14 text-lg font-bold font-serif shadow-none hover:bg-slate-800 bg-slate-900 text-white rounded-none gap-2 group" 
+                   onClick={() => navigate("/")}
+                   size="lg"
+                 >
+                   <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                   Return to Home
+                 </Button>
+               </motion.div>
+             </div>
+           </div>
+           
+           <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ delay: 1.2 }}
+             className="text-center mt-8 text-sm font-bold text-slate-300 uppercase tracking-widest"
+           >
+             Powered by Superlearn
+           </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return null;
 }
+
+// Helper component to wrap questions in a consistent worksheet style
+// Defined outside TestForm to prevent recreation on every render
+const QuestionWrapper = memo(({ 
+  children, 
+  labelFor, 
+  imageElement, 
+  latexElement, 
+  label, 
+  required, 
+  helpText,
+  questionNumber
+}: { 
+  children: ReactNode; 
+  labelFor?: string;
+  imageElement?: ReactNode;
+  latexElement?: ReactNode;
+  label: string;
+  required?: boolean;
+  helpText?: string;
+  questionNumber?: number;
+}) => (
+  <div className="mb-10 group">
+    <div className="flex gap-4">
+      {questionNumber !== undefined && (
+        <div className="flex-none pt-1">
+          <span className="font-serif text-lg font-bold text-slate-400 select-none">
+            {questionNumber}.
+          </span>
+        </div>
+      )}
+      <div className="flex-1 space-y-4">
+        {imageElement}
+        {latexElement}
+        <div className="space-y-2">
+          <Label 
+            htmlFor={labelFor} 
+            className={cn(
+              "text-lg font-medium leading-snug block text-slate-900 group-hover:text-black transition-colors font-serif",
+              labelFor ? "cursor-pointer" : ""
+            )}
+          >
+            {label}
+            {required && <span className="text-red-500 ml-1" title="Required field">*</span>}
+          </Label>
+          {helpText && (
+            <p className="text-sm text-slate-500 font-normal leading-relaxed italic">{helpText}</p>
+          )}
+        </div>
+        <div className="pt-2">
+          {children}
+        </div>
+      </div>
+    </div>
+  </div>
+));
 
 function TestForm({
   test,
@@ -892,43 +1064,74 @@ function TestForm({
     };
   }, [test.disableCopyPaste, test.blockTabSwitching, test.requireFullScreen]);
 
-  const handleInputChange = (fieldId: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [fieldId]: value }));
-  };
+  const handleInputChange = useCallback((fieldId: string, value: any) => {
+    setFormData((prev) => {
+      // Create a new object to ensure React detects the change
+      const newFormData = { ...prev };
+      newFormData[fieldId] = value;
+      return newFormData;
+    });
+  }, [setFormData]);
 
   // Split fields into pages based on page breaks
   // Ensure all field properties are preserved, including fileUrl and latexContent
-  const fields = ((test.fields || []) as any[]).map((f): TestField => ({
+  // Create fields array and preserve original index for stable sorting
+  const fieldsWithIndex = ((test.fields || []) as any[]).map((f, index): TestField & { originalIndex: number } => ({
     id: f.id,
     type: f.type,
     label: f.label,
     required: f.required,
     options: f.options,
-    order: f.order,
+    // Ensure order is always a number - use provided order or fall back to index
+    order: typeof f.order === 'number' && !isNaN(f.order) ? f.order : index,
     placeholder: f.placeholder,
     helpText: f.helpText,
     minLength: f.minLength,
     maxLength: f.maxLength,
     fileUrl: f.fileUrl,
     latexContent: f.latexContent,
-  })) as TestField[];
+    originalIndex: index, // Preserve original position for stable sort
+  }));
+  
+  const fields = fieldsWithIndex.map(({ originalIndex, ...field }) => field) as TestField[];
   
   // Use shuffled order if available, otherwise sort by order
   let sortedFields: TestField[];
   if (shuffledFieldIds) {
     // Create a map for O(1) lookup
-    const fieldMap = new Map(fields.map(f => [f.id, f]));
+    const fieldMap = new Map(fieldsWithIndex.map(f => [f.id, f]));
     // Map shuffled IDs to fields, filtering out any that might be missing (shouldn't happen)
-    sortedFields = shuffledFieldIds
+    const shuffledWithIndex = shuffledFieldIds
       .map(id => fieldMap.get(id))
-      .filter((f): f is TestField => f !== undefined);
+      .filter((f): f is TestField & { originalIndex: number } => f !== undefined);
       
     // If for some reason shuffledFields is empty or missing fields (e.g. schema change), fall back to default sort
-    if (sortedFields.length === 0 && fields.length > 0) {
-      sortedFields = fields.sort((a, b) => a.order - b.order);
+    if (shuffledWithIndex.length === 0 && fields.length > 0) {
+      sortedFields = fieldsWithIndex
+        .sort((a, b) => {
+          // Primary sort: by order field
+          if (a.order !== b.order) {
+            return a.order - b.order;
+          }
+          // Secondary sort: by original index (stable sort)
+          return a.originalIndex - b.originalIndex;
+        })
+        .map(({ originalIndex, ...field }) => field) as TestField[];
+    } else {
+      sortedFields = shuffledWithIndex.map(({ originalIndex, ...field }) => field) as TestField[];
     }
   } else {
-    sortedFields = fields.sort((a, b) => a.order - b.order);
+    // Stable sort by order, then by original index
+    sortedFields = fieldsWithIndex
+      .sort((a, b) => {
+        // Primary sort: by order field
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+        // Secondary sort: by original index (stable sort)
+        return a.originalIndex - b.originalIndex;
+      })
+      .map(({ originalIndex, ...field }) => field) as TestField[];
   }
   
   const pages: TestField[][] = [];
@@ -1059,8 +1262,19 @@ function TestForm({
     }
   };
 
+  // Calculate question numbers
+  const questionNumberMap = new Map<string, number>();
+  let qNum = 1;
+  sortedFields.forEach(f => {
+    if (f.type !== 'pageBreak' && f.type !== 'infoBlock') {
+      questionNumberMap.set(f.id, qNum++);
+    }
+  });
+
   const renderField = (field: TestField) => {
-    const fieldValue = formData[field.id] || "";
+    // Get the raw value from formData
+    const rawValue = formData[field.id];
+    const questionNumber = questionNumberMap.get(field.id);
     
     // Get display order for options if shuffled
     const getOptionDisplayOrder = (options: string[] = []) => {
@@ -1075,18 +1289,18 @@ function TestForm({
     const latexContent = field.latexContent;
 
     const imageElement = fileUrl ? (
-      <div className="mb-6 rounded-lg overflow-hidden border bg-muted/30 flex justify-center p-4">
+      <div className="mb-4 rounded-sm overflow-hidden flex justify-start">
         <img 
           src={fileUrl} 
           alt="Question attachment" 
-          className="max-h-[500px] max-w-full object-contain shadow-sm rounded"
+          className="max-h-[400px] max-w-full object-contain"
         />
       </div>
     ) : null;
 
     const latexElement = latexContent ? (
       <div 
-        className="mb-6 overflow-x-auto p-4 bg-muted/30 rounded-lg border"
+        className="mb-4 overflow-x-auto"
         dangerouslySetInnerHTML={{ 
           __html: katex.renderToString(latexContent, { 
             throwOnError: false,
@@ -1096,87 +1310,94 @@ function TestForm({
       />
     ) : null;
 
-    // Helper to wrap questions in a consistent card style
-    const QuestionWrapper = ({ children, labelFor }: { children: React.ReactNode; labelFor?: string }) => (
-      <Card className="mb-8 shadow-sm border-border/60 hover:border-border transition-all duration-200 group">
-        <CardHeader className="bg-muted/5 pb-4 space-y-4 border-b border-border/40">
-          {imageElement}
-          {latexElement}
-          <div className="flex gap-2">
-             <div className="flex-1 space-y-1.5">
-              <Label 
-                htmlFor={labelFor} 
-                className={cn(
-                  "text-lg font-semibold leading-snug block text-foreground/90 group-hover:text-foreground transition-colors",
-                  labelFor ? "cursor-pointer" : ""
-                )}
-              >
-                {field.label}
-                {field.required && <span className="text-destructive ml-1" title="Required field">*</span>}
-              </Label>
-              {field.helpText && (
-                <p className="text-sm text-muted-foreground font-normal leading-relaxed">{field.helpText}</p>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6 pb-6">
-          {children}
-        </CardContent>
-      </Card>
-    );
-
     switch (field.type) {
       case "shortInput":
+        const shortInputValue = rawValue != null ? String(rawValue) : "";
         return (
-          <QuestionWrapper labelFor={field.id}>
-            <Input
+          <QuestionWrapper 
+            labelFor={field.id}
+            imageElement={imageElement}
+            latexElement={latexElement}
+            label={field.label}
+            required={field.required}
+            helpText={field.helpText}
+            questionNumber={questionNumber}
+          >
+            <input
               id={field.id}
-              value={fieldValue}
+              value={shortInputValue}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder || "Your answer..."}
+              placeholder={field.placeholder || "Answer"}
               required={field.required}
               minLength={field.minLength}
               maxLength={field.maxLength}
-              className="max-w-md h-11"
+              className="w-full max-w-md border-0 border-b-2 border-slate-200 bg-transparent px-0 py-2 text-xl placeholder:text-slate-300 focus:ring-0 focus:border-slate-800 focus:outline-none rounded-none transition-colors font-serif text-slate-800"
+              autoComplete="off"
             />
           </QuestionWrapper>
         );
 
       case "longInput":
+        const longInputValue = rawValue != null ? String(rawValue) : "";
         return (
-          <QuestionWrapper labelFor={field.id}>
-            <Textarea
-              id={field.id}
-              value={fieldValue}
-              onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder || "Type your answer here..."}
-              required={field.required}
-              minLength={field.minLength}
-              maxLength={field.maxLength}
-              className="min-h-[140px] resize-y text-base leading-relaxed p-4"
-            />
+          <QuestionWrapper 
+            labelFor={field.id}
+            imageElement={imageElement}
+            latexElement={latexElement}
+            label={field.label}
+            required={field.required}
+            helpText={field.helpText}
+            questionNumber={questionNumber}
+          >
+            <div className="relative">
+              <textarea
+                id={field.id}
+                value={longInputValue}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                placeholder={field.placeholder || "Write your answer here..."}
+                required={field.required}
+                minLength={field.minLength}
+                maxLength={field.maxLength}
+                className="w-full min-h-[160px] resize-y border-0 border-b-2 border-slate-200 bg-transparent px-0 py-2 text-xl leading-8 placeholder:text-slate-300 focus:ring-0 focus:border-slate-800 focus:outline-none rounded-none transition-colors font-serif text-slate-800"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #e2e8f0 31px, #e2e8f0 32px)',
+                  backgroundAttachment: 'local',
+                  lineHeight: '32px',
+                  paddingTop: '0px'
+                }}
+              />
+            </div>
           </QuestionWrapper>
         );
 
       case "multipleChoice":
         return (
-          <QuestionWrapper>
-            <div className="grid gap-3">
+          <QuestionWrapper
+            imageElement={imageElement}
+            latexElement={latexElement}
+            label={field.label}
+            required={field.required}
+            helpText={field.helpText}
+            questionNumber={questionNumber}
+          >
+            <div className="grid gap-3 pt-2">
               {getOptionDisplayOrder(field.options).map((originalIndex) => {
                 const option = field.options?.[originalIndex];
-                const isSelected = fieldValue === String(originalIndex);
+                const isSelected = rawValue === String(originalIndex);
                 return (
                   <label
                     key={originalIndex}
                     className={cn(
-                      "flex items-center space-x-3 p-4 rounded-lg border transition-all cursor-pointer relative overflow-hidden",
-                      isSelected 
-                        ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20" 
-                        : "border-input hover:bg-accent/50 hover:border-accent-foreground/30"
+                      "flex items-start space-x-4 cursor-pointer group/option"
                     )}
                   >
-                    <div className="flex items-center justify-center shrink-0">
+                    <div className="flex items-center justify-center shrink-0 mt-1">
+                      <div className={cn(
+                        "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                        isSelected ? "border-slate-900" : "border-slate-300 group-hover/option:border-slate-400"
+                      )}>
+                        {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-slate-900" />}
+                      </div>
                       <input
                         type="radio"
                         id={`${field.id}-${originalIndex}`}
@@ -1185,12 +1406,12 @@ function TestForm({
                         checked={isSelected}
                         onChange={(e) => handleInputChange(field.id, e.target.value)}
                         required={field.required}
-                        className="peer h-4 w-4 border-primary text-primary shadow focus:ring-2 focus:ring-primary focus:ring-offset-2 accent-primary"
+                        className="sr-only"
                       />
                     </div>
                     <span className={cn(
-                      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1",
-                      isSelected ? "text-foreground" : "text-foreground/80"
+                      "text-lg leading-relaxed font-serif",
+                      isSelected ? "text-slate-900 font-medium" : "text-slate-700"
                     )}>
                       {option || `Option ${originalIndex + 1}`}
                     </span>
@@ -1203,41 +1424,53 @@ function TestForm({
 
       case "checkboxes":
         return (
-          <QuestionWrapper>
-            <div className="grid gap-3">
+          <QuestionWrapper
+            imageElement={imageElement}
+            latexElement={latexElement}
+            label={field.label}
+            required={field.required}
+            helpText={field.helpText}
+            questionNumber={questionNumber}
+          >
+            <div className="grid gap-3 pt-2">
               {getOptionDisplayOrder(field.options).map((originalIndex) => {
                 const option = field.options?.[originalIndex];
-                const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                const checkedValues = Array.isArray(rawValue) ? rawValue : [];
                 const isChecked = checkedValues.includes(String(originalIndex));
                 return (
                   <label
                     key={originalIndex}
                     className={cn(
-                      "flex items-center space-x-3 p-4 rounded-lg border transition-all cursor-pointer select-none",
-                      isChecked 
-                        ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20" 
-                        : "border-input hover:bg-accent/50 hover:border-accent-foreground/30"
+                      "flex items-start space-x-4 cursor-pointer group/option"
                     )}
                   >
-                    <Checkbox
-                      id={`${field.id}-${originalIndex}`}
-                      checked={isChecked}
-                      onCheckedChange={(checked) => {
-                        const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
-                        if (checked) {
-                          handleInputChange(field.id, [...currentValues, String(originalIndex)]);
-                        } else {
-                          handleInputChange(
-                            field.id,
-                            currentValues.filter((v) => v !== String(originalIndex))
-                          );
-                        }
-                      }}
-                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                    />
+                     <div className="flex items-center justify-center shrink-0 mt-1">
+                      <div className={cn(
+                        "h-5 w-5 rounded-sm border-2 flex items-center justify-center transition-colors",
+                        isChecked ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 group-hover/option:border-slate-400"
+                      )}>
+                        {isChecked && <CheckCircle className="h-3.5 w-3.5" />}
+                      </div>
+                      <Checkbox
+                        id={`${field.id}-${originalIndex}`}
+                        checked={isChecked}
+                        onCheckedChange={(checked) => {
+                          const currentValues = Array.isArray(rawValue) ? rawValue : [];
+                          if (checked) {
+                            handleInputChange(field.id, [...currentValues, String(originalIndex)]);
+                          } else {
+                            handleInputChange(
+                              field.id,
+                              currentValues.filter((v) => v !== String(originalIndex))
+                            );
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                    </div>
                     <span className={cn(
-                      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1",
-                      isChecked ? "text-foreground" : "text-foreground/80"
+                      "text-lg leading-relaxed font-serif",
+                      isChecked ? "text-slate-900 font-medium" : "text-slate-700"
                     )}>
                       {option || `Option ${originalIndex + 1}`}
                     </span>
@@ -1249,21 +1482,30 @@ function TestForm({
         );
 
       case "dropdown":
+        const dropdownValue = rawValue != null ? String(rawValue) : undefined;
         return (
-          <QuestionWrapper labelFor={field.id}>
+          <QuestionWrapper 
+            labelFor={field.id}
+            imageElement={imageElement}
+            latexElement={latexElement}
+            label={field.label}
+            required={field.required}
+            helpText={field.helpText}
+            questionNumber={questionNumber}
+          >
             <Select
-              value={fieldValue}
+              value={dropdownValue}
               onValueChange={(value) => handleInputChange(field.id, value)}
               required={field.required}
             >
-              <SelectTrigger id={field.id} className="h-11">
-                <SelectValue placeholder="Select an option" />
+              <SelectTrigger id={field.id} className="w-full max-w-md h-12 border-0 border-b-2 border-slate-200 bg-transparent px-0 text-lg rounded-none focus:ring-0 focus:border-slate-900 focus:outline-none font-serif">
+                <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
                 {getOptionDisplayOrder(field.options).map((originalIndex) => {
                   const option = field.options?.[originalIndex];
                   return (
-                    <SelectItem key={originalIndex} value={String(originalIndex)}>
+                    <SelectItem key={originalIndex} value={String(originalIndex)} className="font-serif">
                       {option || `Option ${originalIndex + 1}`}
                     </SelectItem>
                   );
@@ -1275,11 +1517,18 @@ function TestForm({
 
       case "imageChoice":
         return (
-          <QuestionWrapper>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <QuestionWrapper
+            imageElement={imageElement}
+            latexElement={latexElement}
+            label={field.label}
+            required={field.required}
+            helpText={field.helpText}
+            questionNumber={questionNumber}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
               {getOptionDisplayOrder(field.options).map((originalIndex) => {
                 const option = field.options?.[originalIndex];
-                const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                const selectedValues = Array.isArray(rawValue) ? rawValue : [];
                 const isSelected = selectedValues.includes(String(originalIndex));
                 const imageUrl = option && option.startsWith("http") ? option : undefined;
                 return (
@@ -1287,7 +1536,7 @@ function TestForm({
                     key={originalIndex}
                     type="button"
                     onClick={() => {
-                      const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
+                      const currentValues = Array.isArray(rawValue) ? rawValue : [];
                       if (isSelected) {
                         handleInputChange(
                           field.id,
@@ -1298,13 +1547,13 @@ function TestForm({
                       }
                     }}
                     className={cn(
-                      "group relative border-2 rounded-xl p-1 overflow-hidden transition-all duration-200 text-left",
+                      "group relative border-2 rounded-sm p-2 overflow-hidden transition-all duration-200 text-left",
                       isSelected
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/20 ring-offset-0"
-                        : "border-muted hover:border-primary/50 hover:bg-accent/50"
+                        ? "border-slate-900 ring-1 ring-slate-900"
+                        : "border-slate-200 hover:border-slate-400"
                     )}
                   >
-                    <div className="aspect-video sm:aspect-square rounded-lg overflow-hidden bg-muted/20 relative">
+                    <div className="aspect-video sm:aspect-square rounded-sm overflow-hidden bg-slate-50 relative">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
@@ -1312,23 +1561,21 @@ function TestForm({
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground bg-muted/30">
+                          <div className="w-full h-full flex items-center justify-center text-sm text-slate-400 font-serif">
                             Image {originalIndex + 1}
                           </div>
                         )}
                         
-                        {/* Selection indicator overlay */}
-                        <div className={cn(
-                            "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-200",
-                            isSelected ? "opacity-100" : "opacity-0"
-                        )}>
-                            <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg transform scale-100">
+                        {isSelected && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                            <div className="h-12 w-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg">
                                 <CheckCircle className="h-6 w-6" />
                             </div>
                         </div>
+                        )}
                     </div>
                     {!imageUrl && (
-                        <div className="p-3 text-center font-medium text-sm">
+                        <div className="p-3 text-center font-medium text-lg font-serif">
                             {option || `Option ${originalIndex + 1}`}
                         </div>
                     )}
@@ -1340,20 +1587,17 @@ function TestForm({
         );
 
       case "pageBreak":
-        // Page breaks are handled by page splitting logic, not rendered
         return null;
 
       case "infoBlock":
         return (
-          <Card className="mb-8 shadow-sm border-l-4 border-l-primary bg-muted/10">
-            <CardContent className="pt-6 pb-6">
-                {imageElement}
-                {latexElement}
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                   <h3 className="text-lg font-semibold mb-2">{field.label}</h3>
-                </div>
-            </CardContent>
-          </Card>
+          <div className="mb-10 p-6 bg-slate-50 border-l-4 border-slate-300">
+             {imageElement}
+             {latexElement}
+             <div className="prose prose-slate max-w-none">
+                <h3 className="text-xl font-bold font-serif mb-2">{field.label}</h3>
+             </div>
+          </div>
         );
 
       default:
@@ -1362,136 +1606,92 @@ function TestForm({
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans">
-      {/* Sticky Header with Progress */}
-      <div className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b shadow-sm transition-all">
-           <div className="max-w-3xl mx-auto px-4 md:px-6 py-3">
-               <div className="flex items-center justify-between mb-2">
-                   <h1 className="text-sm font-semibold truncate pr-4 max-w-[200px] sm:max-w-md text-foreground/80">
-                     {test.name || "Test"}
-                   </h1>
-                   <span className="text-xs text-muted-foreground font-medium whitespace-nowrap bg-secondary px-2 py-0.5 rounded-full">
-                     Page {currentPage + 1} of {pages.length}
-                   </span>
-               </div>
-               <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
-                 <div 
-                    className="h-full bg-primary transition-all duration-500 ease-out rounded-full shadow-[0_0_10px_rgba(var(--primary),0.3)]" 
-                    style={{ width: `${((currentPage + 1) / pages.length) * 100}%` }}
-                 />
-               </div>
+    <div className="min-h-screen bg-slate-100 flex flex-col font-sans print:bg-white">
+       {/* Clean minimal header */}
+       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-50 print:hidden">
+           <div className="flex items-center gap-4">
+               <div className="h-8 w-8 bg-slate-900 rounded-none flex items-center justify-center text-white font-bold text-sm">S</div>
+               <h1 className="text-lg font-bold text-slate-800 hidden sm:block font-serif">{test.name || "Test"}</h1>
+           </div>
+           <div className="flex items-center gap-4 text-sm text-slate-500 font-serif">
+                {test.timeLimitMinutes && timeRemaining !== null && (
+                    <div className={cn("font-mono font-bold px-3 py-1 rounded bg-slate-100 border border-slate-200", timeRemaining < 60 ? "text-red-600 bg-red-50 border-red-200" : "text-slate-700")}>
+                        {Math.floor(timeRemaining / 60).toString().padStart(2, '0')}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                    </div>
+                )}
+                <span>Page {currentPage + 1} of {pages.length}</span>
            </div>
        </div>
 
-      <div className="flex-1 py-8 px-4 md:px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="space-y-2 mb-10 animate-in fade-in slide-in-from-top-2 duration-500">
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">{test.name || "Untitled Test"}</h1>
-            {test.description && (
-              <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">{test.description}</p>
-            )}
-            
-            {(userName || userEmail) && (
-              <div className="flex flex-wrap gap-4 pt-3 text-sm text-muted-foreground/80 border-t mt-4 w-fit pr-8">
-                  {userName && (
-                      <div className="flex items-center gap-1.5">
-                           <span className="font-medium text-foreground">Name:</span> {userName}
-                      </div>
-                  )}
-                  {userEmail && (
-                      <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-foreground">Email:</span> {userEmail}
-                      </div>
-                  )}
-              </div>
-            )}
-          </div>
-
-          {/* Countdown Timer */}
-          {test.timeLimitMinutes && timeRemaining !== null && (
-            <div className="mb-8 sticky top-20 z-30 pointer-events-none">
-              <Card className={cn(
-                "border shadow-md inline-block pointer-events-auto transition-colors duration-300",
-                timeRemaining > 300 ? "border-green-500/20 bg-green-50/90 dark:bg-green-950/90" : 
-                timeRemaining > 60 ? "border-yellow-500/20 bg-yellow-50/90 dark:bg-yellow-950/90" : 
-                "border-red-500/20 bg-red-50/90 dark:bg-red-950/90 animate-pulse"
-              )}>
-                <CardContent className="py-2 px-4 flex items-center gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-wider opacity-70">
-                    Time Left
-                  </span>
-                  <span className={cn(
-                    "text-xl font-bold tabular-nums font-mono",
-                    timeRemaining > 300 ? "text-green-700 dark:text-green-400" : 
-                    timeRemaining > 60 ? "text-yellow-700 dark:text-yellow-400" : 
-                    "text-red-700 dark:text-red-400"
-                  )}>
-                    {Math.floor(timeRemaining / 60).toString().padStart(2, '0')}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                  </span>
-                </CardContent>
-              </Card>
+       <div className="flex-1 py-8 md:py-12 px-4 md:px-6 flex justify-center print:p-0">
+         <div className="max-w-4xl w-full bg-white shadow-xl min-h-[800px] relative mx-auto print:shadow-none print:w-full print:min-h-0">
+            {/* Worksheet Header */}
+            <div className="border-b-2 border-slate-900 p-8 md:p-12 pb-6">
+                <div className="flex justify-between items-start mb-8">
+                    <div>
+                         <h1 className="text-4xl font-black text-slate-900 mb-2 font-serif tracking-tight">{test.name || "Untitled Worksheet"}</h1>
+                         {test.description && <p className="text-slate-500 italic font-serif max-w-2xl leading-relaxed">{test.description}</p>}
+                    </div>
+                    <div className="text-right hidden md:block">
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Date</div>
+                        <div className="h-8 border-b-2 border-slate-300 min-w-[160px] font-serif text-lg text-slate-800">
+                            {new Date().toLocaleDateString()}
+                        </div>
+                    </div>
+                </div>
+                
+                {(userName || userEmail) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Name</div>
+                            <div className="border-b-2 border-slate-300 py-1 font-serif text-xl text-slate-900 min-h-[36px]">
+                                {userName || "Anonymous"}
+                            </div>
+                        </div>
+                        {userEmail && (
+                            <div>
+                                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Email</div>
+                                <div className="border-b-2 border-slate-300 py-1 font-serif text-xl text-slate-900 min-h-[36px]">
+                                    {userEmail}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="space-y-8 pb-24">
-            {currentPageFieldsToShow.map((field, index) => (
-              <div 
-                key={field.id} 
-                className="animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-backwards" 
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {renderField(field)}
-              </div>
-            ))}
-            
-            <div className="pt-8 flex gap-4 border-t mt-8 sticky bottom-0 bg-background/95 backdrop-blur p-4 -mx-4 md:-mx-6 md:px-6 border-t-border/50 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-30">
-              {allowBackNavigation && currentPage > 0 && (
-                <Button 
-                  type="button" 
-                  size="lg" 
-                  variant="outline"
-                  className="flex-1 md:flex-none min-w-[120px] h-12 text-base shadow-sm"
-                  onClick={handleBack}
-                >
-                  Back
-                </Button>
-              )}
-              {isLastPage ? (
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  className={cn(
-                    "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all h-12 text-base font-semibold",
-                    allowBackNavigation && currentPage > 0 ? "flex-1" : "w-full"
-                  )}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Submitting Test...
-                    </>
-                  ) : (
-                    "Submit Test"
-                  )}
-                </Button>
-              ) : (
-                <Button 
-                  type="button" 
-                  size="lg" 
-                  className={cn(
-                    "flex-1 md:flex-none min-w-[120px] h-12 text-base shadow-md ml-auto",
-                    allowBackNavigation && currentPage > 0 ? "" : "w-full"
-                  )}
-                  onClick={handleContinue}
-                >
-                  Continue
-                </Button>
-              )}
+            {/* Content */}
+            <div className="p-8 md:p-12">
+                <form onSubmit={handleSubmit} className="space-y-10">
+                    {currentPageFieldsToShow.map((field, index) => (
+                         <div key={field.id}>
+                            {renderField(field)}
+                         </div>
+                    ))}
+
+                    {/* Navigation */}
+                    <div className="pt-12 mt-12 border-t border-slate-100 flex justify-between items-center print:hidden">
+                         {allowBackNavigation && currentPage > 0 ? (
+                             <Button type="button" variant="ghost" onClick={handleBack} className="font-serif text-slate-500 hover:text-slate-900 hover:bg-slate-50">
+                                 &larr; Previous Page
+                             </Button>
+                         ) : <div />}
+                         
+                         {isLastPage ? (
+                            <Button type="submit" size="lg" disabled={isSubmitting} className="bg-slate-900 text-white hover:bg-slate-800 rounded-none px-8 font-serif shadow-none">
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                Submit Worksheet
+                            </Button>
+                         ) : (
+                             <Button type="button" variant="ghost" onClick={handleContinue} className="font-serif text-slate-900 hover:bg-slate-50 font-bold">
+                                 Next Page &rarr;
+                             </Button>
+                         )}
+                    </div>
+                </form>
             </div>
-          </form>
-        </div>
-      </div>
+         </div>
+       </div>
     </div>
   );
 }
