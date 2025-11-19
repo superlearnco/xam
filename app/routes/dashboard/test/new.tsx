@@ -30,7 +30,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Badge } from "~/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 
@@ -1591,6 +1591,84 @@ function MarkingPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Most Missed Questions */}
+      {submissionsData.questionAnalytics && submissionsData.questionAnalytics.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3 mb-8">
+          {submissionsData.questionAnalytics.slice(0, 3).map((q, i) => (
+            <Card key={q.fieldId}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Most Missed #{i + 1}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{q.averagePercentage}%</div>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2" title={q.label}>
+                  {q.label}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Avg: {q.averageScore.toFixed(1)} / {q.maxScore}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Question Analysis */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Question Analysis</CardTitle>
+          <CardDescription>Average performance per question</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {submissionsData.questionAnalytics && submissionsData.questionAnalytics.length > 0 ? (
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={submissionsData.questionAnalytics}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} unit="%" />
+                  <YAxis 
+                    dataKey="label" 
+                    type="category" 
+                    width={150} 
+                    tickFormatter={(value) => value.length > 20 ? `${value.substring(0, 20)}...` : value}
+                  />
+                  <RechartsTooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-background border rounded-lg p-3 shadow-lg">
+                            <p className="font-medium">{data.label}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Average: {data.averagePercentage}% ({data.averageScore.toFixed(1)}/{data.maxScore})
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Based on {data.count} marked submissions
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="averagePercentage" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} name="Average Score (%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+             <div className="text-center py-8 text-muted-foreground">
+              No question data available yet
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Submissions Table */}
       <Card>

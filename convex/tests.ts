@@ -416,6 +416,57 @@ export const getTestSubmissions = query({
       )
       : 0;
 
+    // Calculate question-level stats
+    const questionStats: Record<string, {
+      totalScore: number;
+      maxScore: number;
+      count: number;
+    }> = {};
+
+    const fields = test.fields || [];
+    // Filter for markable fields
+    const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock" && f.marks && f.marks > 0);
+
+    // Initialize stats for all markable fields
+    for (const field of markableFields) {
+      questionStats[field.id] = {
+        totalScore: 0,
+        maxScore: field.marks || 0,
+        count: 0,
+      };
+    }
+
+    for (const submission of markedSubmissions) {
+      const fieldMarks = submission.fieldMarks as Record<string, number> | undefined;
+      if (fieldMarks) {
+        for (const field of markableFields) {
+          const mark = fieldMarks[field.id];
+          if (mark !== undefined) {
+            if (questionStats[field.id]) {
+              questionStats[field.id].totalScore += mark;
+              questionStats[field.id].count += 1;
+            }
+          }
+        }
+      }
+    }
+
+    // Format for return
+    const questionAnalytics = markableFields.map(field => {
+      const stats = questionStats[field.id];
+      const averageScore = stats.count > 0 ? stats.totalScore / stats.count : 0;
+      const averagePercentage = stats.maxScore > 0 ? Math.round((averageScore / stats.maxScore) * 100) : 0;
+      
+      return {
+        fieldId: field.id,
+        label: field.label,
+        averageScore,
+        maxScore: stats.maxScore,
+        averagePercentage,
+        count: stats.count
+      };
+    }).sort((a, b) => a.averagePercentage - b.averagePercentage); // Sort by most missed (lowest percentage) first
+
     return {
       submissions: submissions.map((s) => ({
         _id: s._id,
@@ -433,6 +484,7 @@ export const getTestSubmissions = query({
         unmarked,
         meanPercentage,
       },
+      questionAnalytics,
     };
   },
 });
