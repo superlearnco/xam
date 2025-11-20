@@ -2,6 +2,7 @@
 
 import type { Route } from "./+types/new";
 import { useEffect, useState, useCallback, useRef } from "react";
+import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -1573,279 +1574,328 @@ function TestPreview({
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
   };
 
+  // Calculate question numbers
+  const questionNumberMap = new Map<string, number>();
+  let qNum = 1;
+  fields
+    .sort((a, b) => a.order - b.order)
+    .forEach((f) => {
+      if (f.type !== "pageBreak" && f.type !== "infoBlock") {
+        questionNumberMap.set(f.id, qNum++);
+      }
+    });
+
   const renderField = (field: TestField) => {
     const fieldValue = formData[field.id] || "";
+    const questionNumber = questionNumberMap.get(field.id);
 
-    const imageElement = field.fileUrl ? (
-      <div className="mb-4">
-        <img 
-          src={field.fileUrl} 
-          alt="Question attachment" 
-          className="max-h-96 max-w-full rounded-lg border object-contain"
-        />
+    // Common wrapper content
+    const Wrapper = ({ children }: { children: ReactNode }) => (
+      <div className="mb-6 group">
+        <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden">
+          <div className="p-6 md:p-8 bg-white">
+            <div className="flex gap-5">
+              {questionNumber !== undefined && (
+                <div className="flex-none hidden sm:block">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 font-mono border border-slate-200">
+                    {questionNumber}
+                  </div>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-3 mb-4 sm:hidden">
+                  {questionNumber !== undefined && (
+                    <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 font-mono border border-slate-200 shrink-0">
+                      {questionNumber}
+                    </div>
+                  )}
+                  <Label className="text-lg font-semibold text-slate-900 block leading-tight">
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
+                  </Label>
+                </div>
+
+                {field.fileUrl && (
+                   <div className="mb-4 rounded-lg overflow-hidden border border-gray-100 relative bg-gray-50">
+                    <img 
+                      src={field.fileUrl} 
+                      alt="Attachment" 
+                      className="max-h-[400px] w-full object-contain bg-gray-50"
+                    />
+                  </div>
+                )}
+
+                {field.latexContent && (
+                  <div 
+                    className="mb-4 overflow-x-auto p-2"
+                    dangerouslySetInnerHTML={{ 
+                      __html: katex.renderToString(field.latexContent, { 
+                        throwOnError: false,
+                        displayMode: true 
+                      }) 
+                    }}
+                  />
+                )}
+
+                <div className="mb-6 hidden sm:block">
+                  <Label className="text-xl font-semibold text-slate-900 block leading-normal">
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
+                  </Label>
+                  {field.helpText && (
+                    <p className="text-sm text-slate-500 mt-2 leading-relaxed">{field.helpText}</p>
+                  )}
+                </div>
+                {field.helpText && (
+                  <p className="text-sm text-slate-500 mb-4 sm:hidden leading-relaxed">{field.helpText}</p>
+                )}
+                
+                <div className="space-y-4">{children}</div>
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
-    ) : null;
-
-    const latexElement = field.latexContent ? (
-      <div 
-        className="mb-4 overflow-x-auto"
-        dangerouslySetInnerHTML={{ 
-          __html: katex.renderToString(field.latexContent, { 
-            throwOnError: false,
-            displayMode: true 
-          }) 
-        }}
-      />
-    ) : null;
+    );
 
     switch (field.type) {
       case "shortInput":
         return (
-          <div key={field.id} className="space-y-2">
-            {imageElement}
-            {latexElement}
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
+          <Wrapper>
             <Input
               id={field.id}
               value={fieldValue}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={field.placeholder || "Type your answer here..."}
               required={field.required}
               minLength={field.minLength}
               maxLength={field.maxLength}
+              className="max-w-xl text-base h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
             />
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </Wrapper>
         );
 
       case "longInput":
         return (
-          <div key={field.id} className="space-y-2">
-            {imageElement}
-            {latexElement}
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
+          <Wrapper>
             <Textarea
               id={field.id}
               value={fieldValue}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={field.placeholder || "Type your detailed answer here..."}
               required={field.required}
               minLength={field.minLength}
               maxLength={field.maxLength}
-              className="resize-none"
+              className="min-h-[140px] text-base resize-y rounded-xl border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm p-4"
             />
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </Wrapper>
         );
 
       case "multipleChoice":
         return (
-          <div key={field.id} className="space-y-2">
-            {imageElement}
-            {latexElement}
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="space-y-2">
-              {(field.options || []).map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id={`${field.id}-${index}`}
-                    name={field.id}
-                    value={String(index)}
-                    checked={fieldValue === String(index)}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    required={field.required}
-                    className="h-4 w-4 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  />
-                  <Label htmlFor={`${field.id}-${index}`} className="font-normal cursor-pointer">
-                    {option || `Option ${index + 1}`}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
-        );
-
-      case "checkboxes":
-        return (
-          <div key={field.id} className="space-y-2">
-            {imageElement}
-            {latexElement}
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="space-y-2">
+          <Wrapper>
+            <div className="space-y-3">
               {(field.options || []).map((option, index) => {
-                const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
-                const isChecked = checkedValues.includes(String(index));
+                const isSelected = fieldValue === String(index);
                 return (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`${field.id}-${index}`}
-                      checked={isChecked}
-                      onCheckedChange={(checked) => {
-                        const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
-                        if (checked) {
-                          handleInputChange(field.id, [...currentValues, String(index)]);
-                        } else {
-                          handleInputChange(
-                            field.id,
-                            currentValues.filter((v) => v !== String(index))
-                          );
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`${field.id}-${index}`} className="font-normal cursor-pointer">
+                  <div
+                    key={index}
+                    onClick={() => handleInputChange(field.id, String(index))}
+                    className={cn(
+                      "flex items-center p-4 rounded-xl border cursor-pointer transition-all duration-200 group",
+                      isSelected
+                        ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                        : "border-slate-200 hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all duration-200 shrink-0",
+                        isSelected
+                          ? "border-primary bg-primary text-white scale-110"
+                          : "border-slate-300 group-hover:border-primary/50 bg-white"
+                      )}
+                    >
+                      {isSelected && (
+                        <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                      )}
+                    </div>
+                    <span className={cn("text-base transition-colors", isSelected ? "text-primary font-medium" : "text-slate-700")}>
                       {option || `Option ${index + 1}`}
-                    </Label>
+                    </span>
                   </div>
                 );
               })}
             </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </Wrapper>
         );
 
-      case "dropdown":
+      case "checkboxes":
         return (
-          <div key={field.id} className="space-y-2">
-            {imageElement}
-            {latexElement}
-            <Label htmlFor={field.id}>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <Select
-              value={fieldValue}
-              onValueChange={(value) => handleInputChange(field.id, value)}
-              required={field.required}
-            >
-              <SelectTrigger id={field.id}>
-                <SelectValue placeholder="Select an option" />
-              </SelectTrigger>
-              <SelectContent>
-                {(field.options || []).map((option, index) => (
-                  <SelectItem key={index} value={String(index)}>
-                    {option || `Option ${index + 1}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
-        );
-
-      case "imageChoice":
-        return (
-          <div key={field.id} className="space-y-2">
-            {imageElement}
-            {latexElement}
-            <Label>
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="grid grid-cols-2 gap-4">
+          <Wrapper>
+            <div className="space-y-3">
               {(field.options || []).map((option, index) => {
-                const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
-                const isSelected = selectedValues.includes(String(index));
-                const imageUrl = option && option.startsWith("http") ? option : undefined;
+                const checkedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                const isChecked = checkedValues.includes(String(index));
                 return (
-                  <button
+                  <div
                     key={index}
-                    type="button"
                     onClick={() => {
                       const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
-                      if (isSelected) {
-                        handleInputChange(
-                          field.id,
-                          currentValues.filter((v) => v !== String(index))
-                        );
+                      if (isChecked) {
+                        handleInputChange(field.id, currentValues.filter((v: string) => v !== String(index)));
                       } else {
                         handleInputChange(field.id, [...currentValues, String(index)]);
                       }
                     }}
                     className={cn(
-                      "border-2 rounded-lg p-2 aspect-square overflow-hidden transition-all relative",
-                      isSelected
-                        ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2"
-                        : "border-border hover:border-primary/50"
+                      "flex items-center p-4 rounded-xl border cursor-pointer transition-all duration-200 group",
+                      isChecked
+                        ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                        : "border-slate-200 hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm"
                     )}
                   >
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={`Choice ${index + 1}`}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-                        Image {index + 1}
-                      </div>
-                    )}
-                    {isSelected && (
-                      <div className="absolute top-2 right-2">
-                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                      </div>
-                    )}
-                  </button>
+                    <div
+                      className={cn(
+                        "w-6 h-6 rounded-md border-2 flex items-center justify-center mr-4 transition-all duration-200 shrink-0",
+                        isChecked
+                          ? "border-primary bg-primary text-white scale-110"
+                          : "border-slate-300 group-hover:border-primary/50 bg-white"
+                      )}
+                    >
+                      {isChecked && <Check className="w-4 h-4" />}
+                    </div>
+                    <span className={cn("text-base transition-colors", isChecked ? "text-primary font-medium" : "text-slate-700")}>
+                      {option || `Option ${index + 1}`}
+                    </span>
+                  </div>
                 );
               })}
             </div>
-            {field.helpText && (
-              <p className="text-sm text-muted-foreground">{field.helpText}</p>
-            )}
-          </div>
+          </Wrapper>
         );
 
+      case "dropdown":
+        return (
+          <Wrapper>
+            <Select
+              value={fieldValue}
+              onValueChange={(value) => handleInputChange(field.id, value)}
+              required={field.required}
+            >
+              <SelectTrigger className="max-w-xl text-base h-12 rounded-xl border-slate-200 focus:ring-primary/10 shadow-sm">
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                {(field.options || []).map((option, index) => (
+                  <SelectItem key={index} value={String(index)} className="text-base py-3 cursor-pointer">
+                    {option || `Option ${index + 1}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Wrapper>
+        );
+
+      case "imageChoice":
+        return (
+          <Wrapper>
+             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+              {(field.options || []).map((option, index) => {
+                const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                const isSelected = selectedValues.includes(String(index));
+                const imageUrl = option && option.startsWith("http") ? option : undefined;
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
+                      if (isSelected) {
+                        handleInputChange(field.id, currentValues.filter((v: string) => v !== String(index)));
+                      } else {
+                        handleInputChange(field.id, [...currentValues, String(index)]);
+                      }
+                    }}
+                    className={cn(
+                      "relative cursor-pointer rounded-xl border-2 overflow-hidden transition-all duration-200 group hover:shadow-md",
+                      isSelected
+                        ? "border-primary ring-2 ring-primary/20 shadow-md scale-[1.02]"
+                        : "border-slate-200 hover:border-primary/50"
+                    )}
+                  >
+                    <div className="aspect-square bg-slate-50 relative">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={`Option ${index + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium">
+                          Option {index + 1}
+                        </div>
+                      )}
+                      <div className={cn(
+                          "absolute inset-0 flex items-center justify-center transition-all duration-200",
+                          isSelected ? "bg-primary/20 backdrop-blur-[2px]" : "opacity-0 group-hover:opacity-100 bg-black/5"
+                      )}>
+                          {isSelected && (
+                              <div className="bg-primary text-white rounded-full p-2 shadow-lg transform scale-110">
+                                <Check className="w-8 h-8" />
+                              </div>
+                          )}
+                      </div>
+                    </div>
+                    {!imageUrl && (
+                      <div className="p-3 text-center text-sm font-medium border-t bg-white text-slate-700">
+                        {option || `Option ${index + 1}`}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Wrapper>
+        );
 
       case "pageBreak":
         return (
-          <div 
-            key={field.id} 
-            className="py-8"
-            style={{
-              pageBreakAfter: 'always',
-              breakAfter: 'page',
-            }}
-          >
-            <Separator />
-            <div className="text-center -mt-3">
-              <span className="bg-background px-2 text-xs text-muted-foreground">
-                Page Break
-              </span>
-            </div>
+          <div key={field.id} className="py-8 flex items-center gap-4">
+            <div className="h-px flex-1 bg-slate-200"></div>
+            <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider">
+              Page Break
+            </span>
+            <div className="h-px flex-1 bg-slate-200"></div>
           </div>
         );
 
       case "infoBlock":
         return (
-          <div key={field.id} className="p-4 bg-muted rounded-lg">
-            {imageElement}
-            {latexElement}
-            <p className="text-sm whitespace-pre-wrap">{field.label}</p>
+          <div key={field.id} className="mb-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-2xl border border-blue-100 shadow-sm">
+            {field.fileUrl && (
+              <div className="mb-4 rounded-lg overflow-hidden border border-blue-100">
+                <img 
+                  src={field.fileUrl} 
+                  alt="Attachment" 
+                  className="max-h-[400px] w-full object-contain bg-white/50"
+                />
+              </div>
+            )}
+            {field.latexContent && (
+              <div 
+                className="mb-4 overflow-x-auto"
+                dangerouslySetInnerHTML={{ 
+                  __html: katex.renderToString(field.latexContent, { 
+                    throwOnError: false,
+                    displayMode: true 
+                  }) 
+                }}
+              />
+            )}
+            <h3 className="text-xl font-bold text-slate-900 mb-3">
+              {field.label}
+            </h3>
           </div>
         );
 
@@ -1855,34 +1905,23 @@ function TestPreview({
   };
 
   return (
-    <div className="flex flex-1 overflow-auto">
-      <div className="flex-1 max-w-3xl mx-auto w-full p-6 space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold">{testName || "Untitled Test"}</h1>
+    <div className="flex flex-1 overflow-auto bg-slate-50/50">
+      <div className="flex-1 max-w-3xl mx-auto w-full p-6 md:p-8 space-y-6">
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">{testName || "Untitled Test"}</h1>
           {testDescription && (
-            <p className="text-muted-foreground">{testDescription}</p>
+            <p className="text-slate-600 text-lg leading-relaxed">{testDescription}</p>
           )}
         </div>
-        <Separator />
-        <form className="space-y-6">
+        
+        <form className="space-y-6 pb-20">
           {fields
             .sort((a, b) => a.order - b.order)
-            .map((field, index, sortedFields) => {
-              const prevField = index > 0 ? sortedFields[index - 1] : null;
-              const shouldBreakBefore = prevField?.type === "pageBreak";
-              
-              return (
-                <div
-                  key={field.id}
-                  style={shouldBreakBefore ? {
-                    pageBreakBefore: 'always',
-                    breakBefore: 'page',
-                  } : undefined}
-                >
-                  {renderField(field)}
-                </div>
-              );
-            })}
+            .map((field) => (
+              <div key={field.id}>
+                {renderField(field)}
+              </div>
+            ))}
         </form>
       </div>
     </div>
