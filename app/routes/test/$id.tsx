@@ -114,6 +114,7 @@ export default function TestPage() {
   const [shuffledFieldIds, setShuffledFieldIds] = useState<string[] | undefined>(undefined);
   const [shuffledOptionsMapping, setShuffledOptionsMapping] = useState<Record<string, number[]> | undefined>(undefined);
   const hasInitialLoadCompletedRef = useRef(false);
+  const authScreenAnimatedRef = useRef<string | null>(null);
 
   const test = useQuery(
     api.tests.getPublicTest,
@@ -257,6 +258,7 @@ export default function TestPage() {
   useEffect(() => {
     if (testId) {
       hasInitialLoadCompletedRef.current = false;
+      authScreenAnimatedRef.current = null;
       setSubmissionResult(null);
     }
   }, [testId]);
@@ -352,13 +354,21 @@ export default function TestPage() {
   }
 
   // Auth Screen Wrapper
-  const AuthScreen = ({ title, subtitle, children, image = true }: { title: string, subtitle: string, children: ReactNode, image?: boolean }) => (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50/50 px-4 py-12">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
+  const AuthScreen = ({ title, subtitle, children, image = true }: { title: string, subtitle: string, children: ReactNode, image?: boolean }) => {
+    // Only animate if this is the first time we're showing this screen
+    const shouldAnimate = authScreenAnimatedRef.current !== title;
+    if (shouldAnimate) {
+      authScreenAnimatedRef.current = title;
+    }
+    
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50/50 px-4 py-12">
+        <motion.div 
+          key={title}
+          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
         <Card className="p-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
           <div className="text-center mb-8">
             {image && (
@@ -377,7 +387,8 @@ export default function TestPage() {
         </Card>
       </motion.div>
     </div>
-  );
+    );
+  };
 
   if (test.password && !isPasswordVerified) {
     return (
