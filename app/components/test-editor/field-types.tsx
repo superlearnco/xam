@@ -112,16 +112,16 @@ export function DraggableFieldType({ fieldType, onClick }: DraggableFieldTypePro
       {...attributes}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border-2 border-border bg-card cursor-pointer transition-all hover:border-primary hover:bg-accent",
-        isDragging && "opacity-50"
+        "flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:border-primary/50 hover:-translate-y-0.5",
+        isDragging && "opacity-50 ring-2 ring-primary/20 shadow-xl rotate-2"
       )}
     >
-      <div className="p-2 rounded-md bg-muted">
-        <Icon className="h-4 w-4" />
+      <div className="p-2 rounded-lg bg-primary/5 text-primary ring-1 ring-inset ring-primary/10">
+        <Icon className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm">{fieldType.label}</div>
-        <div className="text-xs text-muted-foreground">
+        <div className="font-semibold text-sm text-slate-900">{fieldType.label}</div>
+        <div className="text-xs text-slate-500 truncate">
           {fieldType.description}
         </div>
       </div>
@@ -135,22 +135,24 @@ interface FieldTypesSidebarProps {
 
 export function FieldTypesSidebar({ onFieldTypeClick }: FieldTypesSidebarProps) {
   return (
-    <div className="w-64 border-r bg-muted/30 p-4 space-y-2 overflow-y-auto">
-      <div className="mb-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+    <div className="w-80 border-r bg-slate-50/50 p-6 space-y-6 overflow-y-auto hidden lg:block">
+      <div>
+        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Field Types
         </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Click or drag to add to your test
+        <p className="text-sm text-slate-500">
+          Drag fields to build your test
         </p>
       </div>
-      {FIELD_TYPES.map((fieldType) => (
-        <DraggableFieldType 
-          key={fieldType.type} 
-          fieldType={fieldType}
-          onClick={() => onFieldTypeClick?.(fieldType.type)}
-        />
-      ))}
+      <div className="space-y-3">
+        {FIELD_TYPES.map((fieldType) => (
+          <DraggableFieldType 
+            key={fieldType.type} 
+            fieldType={fieldType}
+            onClick={() => onFieldTypeClick?.(fieldType.type)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
