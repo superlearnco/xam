@@ -242,10 +242,12 @@ export default function MarkingPage() {
       case "dropdown": {
         const selectedIndex = typeof response === "string" ? parseInt(response, 10) : response;
         const options = field.options || [];
+        const correctAnswers = field.correctAnswers || [];
         return (
           <div className="space-y-2">
             {options.map((option, index) => {
               const isSelected = index === selectedIndex;
+              const isCorrect = correctAnswers.includes(index);
               return (
                 <div
                   key={index}
@@ -267,11 +269,27 @@ export default function MarkingPage() {
                   <span className={isSelected ? "font-medium text-foreground" : "text-muted-foreground"}>
                     {option || `Option ${index + 1}`}
                   </span>
-                  {isSelected && (
-                    <Badge variant="default" className="ml-auto">
-                      Selected
-                    </Badge>
-                  )}
+                  <div className="ml-auto flex items-center gap-2">
+                    {isCorrect && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Correct Answer</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {isSelected && (
+                      <Badge variant="default">
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -283,10 +301,12 @@ export default function MarkingPage() {
           ? response.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
           : [typeof response === "string" ? parseInt(response, 10) : response];
         const options = field.options || [];
+        const correctAnswers = field.correctAnswers || [];
         return (
           <div className="space-y-2">
             {options.map((option, index) => {
               const isSelected = selectedIndices.includes(index);
+              const isCorrect = correctAnswers.includes(index);
               return (
                 <div
                   key={index}
@@ -306,11 +326,27 @@ export default function MarkingPage() {
                   <span className={isSelected ? "font-medium text-foreground" : "text-muted-foreground"}>
                     {option || `Option ${index + 1}`}
                   </span>
-                  {isSelected && (
-                    <Badge variant="default" className="ml-auto">
-                      Selected
-                    </Badge>
-                  )}
+                  <div className="ml-auto flex items-center gap-2">
+                    {isCorrect && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Correct Answer</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {isSelected && (
+                      <Badge variant="default">
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -322,10 +358,12 @@ export default function MarkingPage() {
           ? response.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
           : [typeof response === "string" ? parseInt(response, 10) : response];
         const options = field.options || [];
+        const correctAnswers = field.correctAnswers || [];
         return (
           <div className="grid grid-cols-2 gap-4">
             {options.map((option, index) => {
               const isSelected = selectedIndices.includes(index);
+              const isCorrect = correctAnswers.includes(index);
               const imageUrl = option && option.startsWith("http") ? option : undefined;
               return (
                 <div
@@ -347,7 +385,23 @@ export default function MarkingPage() {
                       Image {index + 1}
                     </div>
                   )}
-                  {isSelected && (
+                  {isCorrect && (
+                    <div className="absolute top-2 right-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                              <Check className="h-4 w-4 text-white" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Correct Answer</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  )}
+                  {isSelected && !isCorrect && (
                     <div className="absolute top-2 right-2">
                       <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
                         <Check className="h-4 w-4 text-primary-foreground" />
