@@ -135,8 +135,8 @@ interface FieldTypesSidebarProps {
 
 export function FieldTypesSidebar({ onFieldTypeClick }: FieldTypesSidebarProps) {
   return (
-    <div className="w-80 border-r bg-slate-50/50 hidden lg:block h-full flex flex-col flex-shrink-0">
-      <div className="p-6 space-y-6 overflow-y-auto flex-1">
+    <div className="w-80 border-r bg-slate-50/50 hidden lg:block flex flex-col flex-shrink-0 overflow-hidden h-full">
+      <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0 max-h-full">
         <div>
           <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Field Types
