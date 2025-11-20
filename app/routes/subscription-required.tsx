@@ -1,3 +1,4 @@
+import type { Route } from "./+types/subscription-required";
 import { ArrowRight, CreditCard, Lock } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
@@ -7,6 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Subscription Required | XAM" },
+  ];
+}
 
 export default function SubscriptionRequired() {
   return (

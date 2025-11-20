@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "./+types/$testId";
 import { useParams, useNavigate, Link } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -10,6 +11,12 @@ import { Badge } from "~/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Question Analysis | XAM" },
+  ];
+}
 
 export default function QuestionAnalysisPage() {
   const params = useParams();

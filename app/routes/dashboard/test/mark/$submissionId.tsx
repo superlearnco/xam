@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "./+types/$submissionId";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useMutation, useQuery } from "convex/react";
@@ -18,6 +19,12 @@ import { ScrollArea } from "~/components/ui/scroll-area";
 import { cn } from "~/lib/utils";
 import { Toggle } from "~/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Mark Submission | XAM" },
+  ];
+}
 
 export default function MarkingPage() {
   const params = useParams();

@@ -1,8 +1,15 @@
+import type { Route } from "./+types/$id";
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useParams, useNavigate } from "react-router";
 import { api } from "../../../convex/_generated/api";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Take Test | XAM" },
+  ];
+}
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -1105,17 +1112,28 @@ const AnswerKey = ({
             : null;
 
           return (
-            <Card key={field.id} className="border shadow-sm">
-              <div className="p-6">
-                <div className="flex gap-4 mb-4">
+            <Card key={field.id} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+              <div className="p-6 md:p-8 bg-white">
+                <div className="flex gap-5">
                   {questionNumber !== undefined && (
-                    <div className="flex-none">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+                    <div className="flex-none hidden sm:block">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 font-mono border border-slate-200">
                         {questionNumber}
                       </div>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3 mb-4 sm:hidden">
+                       {questionNumber !== undefined && (
+                        <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 font-mono border border-slate-200 shrink-0">
+                          {questionNumber}
+                        </div>
+                      )}
+                      <h4 className="text-lg font-semibold text-slate-900 leading-tight">
+                        {field.label}
+                      </h4>
+                    </div>
+
                     {field.fileUrl && (
                       <MemoizedImageElement
                         key={`answer-key-image-${field.id}-${field.fileUrl}`}
@@ -1128,24 +1146,24 @@ const AnswerKey = ({
                         latexContent={field.latexContent}
                       />
                     )}
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                    <h4 className="text-xl font-semibold text-slate-900 mb-6 hidden sm:block">
                       {field.label}
                     </h4>
 
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm font-medium text-gray-700 min-w-[100px]">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-sm font-medium text-slate-500 min-w-[100px] pt-0.5">
                           Your Answer:
                         </span>
                         <div className="flex-1">
                           <span
                             className={cn(
-                              "text-sm",
+                              "text-base",
                               isCorrect === true
-                                ? "text-green-600 font-medium"
+                                ? "text-green-600 font-semibold"
                                 : isCorrect === false
-                                ? "text-red-600 font-medium"
-                                : "text-gray-700"
+                                ? "text-red-600 font-semibold"
+                                : "text-slate-900"
                             )}
                           >
                             {userAnswer}
@@ -1154,12 +1172,12 @@ const AnswerKey = ({
                       </div>
 
                       {correctAnswer && (
-                        <div className="flex items-start gap-2">
-                          <span className="text-sm font-medium text-gray-700 min-w-[100px]">
+                         <div className="flex items-start gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100">
+                          <span className="text-sm font-medium text-green-700 min-w-[100px] pt-0.5">
                             Correct Answer:
                           </span>
                           <div className="flex-1">
-                            <span className="text-sm text-green-700 font-semibold">
+                            <span className="text-base text-green-700 font-semibold">
                               {Array.isArray(correctAnswer)
                                 ? correctAnswer.join(", ")
                                 : correctAnswer}
@@ -1169,15 +1187,10 @@ const AnswerKey = ({
                       )}
 
                       {field.marks && field.marks > 0 && (
-                        <div className="flex items-start gap-2">
-                          <span className="text-sm font-medium text-gray-700 min-w-[100px]">
-                            Marks:
-                          </span>
-                          <div className="flex-1">
-                            <span className="text-sm text-gray-600">
+                        <div className="flex items-center justify-end pt-2">
+                            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
                               {field.marks} point{field.marks !== 1 ? "s" : ""}
-                            </span>
-                          </div>
+                            </div>
                         </div>
                       )}
                     </div>
@@ -1212,18 +1225,33 @@ const QuestionWrapper = ({
   questionNumber?: number;
 }) => {
   return (
-    <div className="mb-8 group">
-      <Card className="border shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div className="p-6 md:p-8">
+    <div className="mb-6 group">
+      <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden">
+        <div className="p-6 md:p-8 bg-white">
           <div className="flex gap-5">
             {questionNumber !== undefined && (
-              <div className="flex-none">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+              <div className="flex-none hidden sm:block">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 font-mono border border-slate-200">
                   {questionNumber}
                 </div>
               </div>
             )}
             <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-3 mb-4 sm:hidden">
+                 {questionNumber !== undefined && (
+                  <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 font-mono border border-slate-200 shrink-0">
+                    {questionNumber}
+                  </div>
+                )}
+                <Label
+                  htmlFor={labelFor}
+                  className="text-lg font-semibold text-slate-900 block leading-tight"
+                >
+                  {label}
+                  {required && <span className="text-red-500 ml-1" title="Required">*</span>}
+                </Label>
+              </div>
+
               {fileUrl && (
                 <MemoizedImageElement
                   key={`image-${labelFor}-${fileUrl}`}
@@ -1236,18 +1264,21 @@ const QuestionWrapper = ({
                   latexContent={latexContent}
                 />
               )}
-              <div className="mb-6">
+              <div className="mb-6 hidden sm:block">
                 <Label
                   htmlFor={labelFor}
-                  className="text-lg font-semibold text-gray-900 block leading-relaxed mb-2"
+                  className="text-xl font-semibold text-slate-900 block leading-normal"
                 >
                   {label}
-                  {required && <span className="text-red-500 ml-1">*</span>}
+                  {required && <span className="text-red-500 ml-1" title="Required">*</span>}
                 </Label>
                 {helpText && (
-                  <p className="text-sm text-gray-500">{helpText}</p>
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">{helpText}</p>
                 )}
               </div>
+               {helpText && (
+                  <p className="text-sm text-slate-500 mb-4 sm:hidden leading-relaxed">{helpText}</p>
+                )}
               <div className="space-y-4">{children}</div>
             </div>
           </div>
@@ -1641,9 +1672,9 @@ function TestForm({
                 id={field.id}
                 value={rawValue != null ? String(rawValue) : ""}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
-                placeholder={field.placeholder || "Your answer"}
+                placeholder={field.placeholder || "Type your answer here..."}
                 required={field.required}
-                className="max-w-lg text-base"
+                className="max-w-xl text-base h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
                 autoComplete="off"
               />
             </QuestionWrapper>
@@ -1656,9 +1687,9 @@ function TestForm({
                 id={field.id}
                 value={rawValue != null ? String(rawValue) : ""}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
-                placeholder={field.placeholder || "Type your answer here..."}
+                placeholder={field.placeholder || "Type your detailed answer here..."}
                 required={field.required}
-                className="min-h-[120px] text-base resize-y"
+                className="min-h-[140px] text-base resize-y rounded-xl border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm p-4"
               />
             </QuestionWrapper>
           );
@@ -1666,7 +1697,7 @@ function TestForm({
         case "multipleChoice":
           return (
             <QuestionWrapper {...commonProps}>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {getOptionDisplayOrder(field.options).map((idx) => {
                   const option = field.options?.[idx];
                   const valueStr = String(idx);
@@ -1675,36 +1706,34 @@ function TestForm({
                     <div
                       key={idx}
                       onClick={() => {
-                        // Use functional update to ensure we always have the latest state
                         setFormData((prev) => {
                           const currentValue = prev[field.id];
-                          // Only update if the value is different to avoid unnecessary re-renders
                           if (currentValue === valueStr || currentValue === idx) {
-                            return prev; // Already selected, no change needed
+                            return prev;
                           }
                           return { ...prev, [field.id]: valueStr };
                         });
                       }}
                       className={cn(
-                        "flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200",
+                        "flex items-center p-4 rounded-xl border cursor-pointer transition-all duration-200 group",
                         isSelected
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                          : "border-slate-200 hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm"
                       )}
                     >
                       <div
                         className={cn(
-                          "w-5 h-5 rounded-full border flex items-center justify-center mr-3 transition-colors",
+                          "w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all duration-200 shrink-0",
                           isSelected
-                            ? "border-primary bg-primary"
-                            : "border-gray-300"
+                            ? "border-primary bg-primary text-white scale-110"
+                            : "border-slate-300 group-hover:border-primary/50 bg-white"
                         )}
                       >
                         {isSelected && (
-                          <div className="w-2 h-2 bg-white rounded-full" />
+                          <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
                         )}
                       </div>
-                      <span className="text-gray-800">
+                      <span className={cn("text-base transition-colors", isSelected ? "text-primary font-medium" : "text-slate-700")}>
                         {option || `Option ${idx + 1}`}
                       </span>
                     </div>
@@ -1717,7 +1746,7 @@ function TestForm({
         case "checkboxes":
           return (
             <QuestionWrapper {...commonProps}>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {getOptionDisplayOrder(field.options).map((idx) => {
                   const option = field.options?.[idx];
                   const checkedValues = Array.isArray(rawValue) ? rawValue : [];
@@ -1754,23 +1783,23 @@ function TestForm({
                         });
                       }}
                       className={cn(
-                        "flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200",
+                        "flex items-center p-4 rounded-xl border cursor-pointer transition-all duration-200 group",
                         isChecked
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                          : "border-slate-200 hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm"
                       )}
                     >
                       <div
                         className={cn(
-                          "w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors",
+                          "w-6 h-6 rounded-md border-2 flex items-center justify-center mr-4 transition-all duration-200 shrink-0",
                           isChecked
-                            ? "border-primary bg-primary text-white"
-                            : "border-gray-300"
+                            ? "border-primary bg-primary text-white scale-110"
+                            : "border-slate-300 group-hover:border-primary/50 bg-white"
                         )}
                       >
-                        {isChecked && <CheckCircle className="w-3.5 h-3.5" />}
+                        {isChecked && <CheckCircle className="w-4 h-4" />}
                       </div>
-                      <span className="text-gray-800">
+                      <span className={cn("text-base transition-colors", isChecked ? "text-primary font-medium" : "text-slate-700")}>
                         {option || `Option ${idx + 1}`}
                       </span>
                     </div>
@@ -1788,12 +1817,12 @@ function TestForm({
                 onValueChange={(value) => handleInputChange(field.id, value)}
                 required={field.required}
               >
-                <SelectTrigger className="max-w-lg text-base h-11">
+                <SelectTrigger className="max-w-xl text-base h-12 rounded-xl border-slate-200 focus:ring-primary/10 shadow-sm">
                   <SelectValue placeholder="Select an option" />
                 </SelectTrigger>
                 <SelectContent>
                   {getOptionDisplayOrder(field.options).map((idx) => (
-                    <SelectItem key={idx} value={String(idx)}>
+                    <SelectItem key={idx} value={String(idx)} className="text-base py-3 cursor-pointer">
                       {field.options?.[idx] || `Option ${idx + 1}`}
                     </SelectItem>
                   ))}
@@ -1805,7 +1834,7 @@ function TestForm({
         case "imageChoice":
           return (
             <QuestionWrapper {...commonProps}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                 {getOptionDisplayOrder(field.options).map((idx) => {
                   const option = field.options?.[idx];
                   const currentValues = Array.isArray(rawValue) ? rawValue : [];
@@ -1844,34 +1873,37 @@ function TestForm({
                         });
                       }}
                       className={cn(
-                        "relative cursor-pointer rounded-lg border-2 overflow-hidden transition-all hover:shadow-md group",
+                        "relative cursor-pointer rounded-xl border-2 overflow-hidden transition-all duration-200 group hover:shadow-md",
                         isSelected
-                          ? "border-primary ring-1 ring-primary"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-primary ring-2 ring-primary/20 shadow-md scale-[1.02]"
+                          : "border-slate-200 hover:border-primary/50"
                       )}
                     >
-                      <div className="aspect-square bg-gray-50 relative">
+                      <div className="aspect-square bg-slate-50 relative">
                         {isUrl ? (
                           <img
                             src={option}
                             alt={`Option ${idx + 1}`}
-                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium">
                             Option {idx + 1}
                           </div>
                         )}
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                            <div className="bg-primary text-white rounded-full p-1 shadow-sm">
-                              <CheckCircle className="w-6 h-6" />
-                            </div>
-                          </div>
-                        )}
+                        <div className={cn(
+                            "absolute inset-0 flex items-center justify-center transition-all duration-200",
+                            isSelected ? "bg-primary/20 backdrop-blur-[2px]" : "opacity-0 group-hover:opacity-100 bg-black/5"
+                        )}>
+                            {isSelected && (
+                                <div className="bg-primary text-white rounded-full p-2 shadow-lg transform scale-110">
+                                <CheckCircle className="w-8 h-8" />
+                                </div>
+                            )}
+                        </div>
                       </div>
                       {!isUrl && (
-                        <div className="p-2 text-center text-sm font-medium border-t bg-white">
+                        <div className="p-3 text-center text-sm font-medium border-t bg-white text-slate-700">
                           {option}
                         </div>
                       )}
@@ -1884,7 +1916,7 @@ function TestForm({
 
         case "infoBlock":
           return (
-            <div className="mb-8 p-6 bg-blue-50/50 rounded-lg border border-blue-100">
+            <div className="mb-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-2xl border border-blue-100 shadow-sm">
               {field.fileUrl && (
                 <MemoizedImageElement
                   key={`image-info-${field.id}-${field.fileUrl}`}
@@ -1897,10 +1929,10 @@ function TestForm({
                   latexContent={field.latexContent}
                 />
               )}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
                 {field.label}
               </h3>
-              <div className="prose prose-sm text-gray-600 max-w-none">
+              <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed">
                 {/* Additional info content could go here if we had a description field */}
               </div>
             </div>

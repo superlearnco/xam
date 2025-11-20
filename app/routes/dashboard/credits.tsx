@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "./+types/credits";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { CreditsOverview } from "~/components/credits/credits-overview";
@@ -9,6 +10,12 @@ import { CreditsHistory } from "~/components/credits/credits-history";
 import { Separator } from "~/components/ui/separator";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@clerk/react-router";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Credits & Usage | XAM" },
+  ];
+}
 
 export default function CreditsPage() {
   const { isSignedIn } = useAuth();

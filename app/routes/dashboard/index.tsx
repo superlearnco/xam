@@ -1,7 +1,14 @@
 "use client";
 
+import type { Route } from "./+types/index";
 import { useState } from "react";
 import { Link } from "react-router";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Dashboard | XAM" },
+  ];
+}
 import { useQuery, useMutation } from "convex/react";
 import {
   Plus,

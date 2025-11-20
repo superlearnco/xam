@@ -47,8 +47,8 @@ export function TestBuilder({
         <div
           ref={setNodeRef}
           className={cn(
-            "flex-1 space-y-4 pb-20",
-            isOver && "bg-slate-100/50 ring-2 ring-primary/20 ring-inset rounded-lg transition-all duration-200"
+            "flex-1 space-y-6 pb-24",
+            isOver && "bg-slate-100/50 ring-2 ring-primary/20 ring-inset rounded-xl transition-all duration-200"
           )}
         >
           {fields.length === 0 ? (

@@ -1,10 +1,17 @@
 "use client";
 
+import type { Route } from "./+types/new";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Test Editor | XAM" },
+  ];
+}
 import {
   DndContext,
   DragOverlay,
@@ -433,167 +440,302 @@ export default function TestEditorPage() {
         <head>
           <title>${escapeHtml(testName || "Test Worksheet")}</title>
           <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
             @media print {
               @page {
-                margin: 1in;
+                margin: 0.75in;
+                size: auto; 
               }
               body {
-                margin: 0;
-                padding: 0;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                color: #000;
-                background: #fff;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
               .no-print {
                 display: none !important;
               }
+              .page-break {
+                page-break-before: always;
+              }
+              .avoid-break {
+                page-break-inside: avoid;
+              }
             }
+
             body {
               margin: 0;
-              padding: 20px;
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-              color: #000;
+              padding: 40px;
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              color: #1a1a1a;
               background: #fff;
-              max-width: 800px;
+              max-width: 850px;
               margin: 0 auto;
+              line-height: 1.5;
             }
+
             .worksheet-header {
-              margin-bottom: 30px;
-              border-bottom: 2px solid #000;
-              padding-bottom: 15px;
+              margin-bottom: 40px;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #e5e7eb;
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
             }
+
             .worksheet-title {
-              font-size: 24px;
-              font-weight: bold;
-              margin-bottom: 10px;
+              font-size: 28px;
+              font-weight: 700;
+              color: #111827;
+              line-height: 1.2;
             }
-            .worksheet-description {
+
+            .worksheet-meta {
+              display: flex;
+              gap: 24px;
               font-size: 14px;
-              color: #333;
-              margin-top: 10px;
-            }
-            .worksheet-field {
-              margin-bottom: 25px;
-              page-break-inside: avoid;
-            }
-            .field-label {
-              font-size: 16px;
-              font-weight: 600;
-              margin-bottom: 8px;
-            }
-            .field-label .required {
-              color: #d32f2f;
-              margin-left: 4px;
-            }
-            .answer-space {
-              border-bottom: 2px solid #000;
-              min-height: 24px;
+              color: #6b7280;
               margin-top: 8px;
-              padding-bottom: 2px;
             }
-            .answer-space-long {
-              border-bottom: 1px solid #000;
-              min-height: 60px;
-              margin-top: 8px;
-              padding-bottom: 2px;
-            }
-            .option-list {
-              margin-top: 10px;
-              margin-left: 20px;
-            }
-            .option-item {
-              margin-bottom: 8px;
+
+            .meta-item {
               display: flex;
               align-items: center;
-              gap: 8px;
+              gap: 6px;
             }
-            .radio-circle {
-              width: 18px;
-              height: 18px;
-              border: 2px solid #000;
-              border-radius: 50%;
-              display: inline-block;
-              flex-shrink: 0;
-            }
-            .checkbox-square {
-              width: 18px;
-              height: 18px;
-              border: 2px solid #000;
-              display: inline-block;
-              flex-shrink: 0;
-            }
-            .dropdown-indicator {
-              border-bottom: 2px solid #000;
-              min-width: 200px;
-              min-height: 24px;
+
+            .worksheet-description {
+              font-size: 15px;
+              color: #4b5563;
               margin-top: 8px;
+              white-space: pre-wrap;
+            }
+
+            .worksheet-field {
+              margin-bottom: 32px;
               position: relative;
-              padding-right: 30px;
             }
-            .dropdown-indicator::after {
-              content: "▼";
-              position: absolute;
-              right: 8px;
-              top: 2px;
-              font-size: 12px;
+
+            .field-header {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 12px;
             }
-            .dropdown-note {
-              font-size: 12px;
-              color: #555;
-              margin-top: 6px;
-              margin-bottom: 4px;
-            }
-            .image-choice-grid {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 15px;
-              margin-top: 10px;
-            }
-            .image-choice-item {
-              border: 2px solid #000;
-              aspect-ratio: 1;
+
+            .question-number {
+              font-size: 14px;
+              font-weight: 600;
+              color: #6b7280;
+              background: #f3f4f6;
+              width: 28px;
+              height: 28px;
               display: flex;
               align-items: center;
               justify-content: center;
-              position: relative;
+              border-radius: 6px;
+              flex-shrink: 0;
+              border: 1px solid #e5e7eb;
             }
-            .image-choice-checkbox {
-              position: absolute;
-              top: 8px;
-              left: 8px;
-              width: 18px;
-              height: 18px;
-              border: 2px solid #000;
+
+            .field-label {
+              font-size: 16px;
+              font-weight: 600;
+              color: #111827;
+              flex: 1;
+              padding-top: 2px;
             }
-            .info-block {
-              background: #f5f5f5;
-              border: 1px solid #ddd;
-              padding: 15px;
-              margin-top: 10px;
+
+            .field-label .required {
+              color: #ef4444;
+              margin-left: 4px;
+              font-size: 14px;
+            }
+
+            .help-text {
+              font-size: 13px;
+              color: #6b7280;
+              margin-top: 4px;
+              margin-left: 40px;
+              font-style: italic;
+            }
+
+            .answer-area {
+              margin-left: 40px;
+              margin-top: 12px;
+            }
+
+            .answer-line {
+              border-bottom: 1px solid #d1d5db;
+              height: 32px;
+              width: 100%;
+              margin-bottom: 8px;
+            }
+
+            .answer-box {
+              border: 1px solid #d1d5db;
+              border-radius: 8px;
+              min-height: 120px;
+              background-image: linear-gradient(#e5e7eb 1px, transparent 1px);
+              background-size: 100% 32px;
+              background-position: 0 31px;
+              width: 100%;
+            }
+
+            .option-list {
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+            }
+
+            .option-item {
+              display: flex;
+              align-items: flex-start;
+              gap: 12px;
+              padding: 8px 0;
+            }
+
+            .radio-circle {
+              width: 20px;
+              height: 20px;
+              border: 2px solid #d1d5db;
+              border-radius: 50%;
+              flex-shrink: 0;
+              margin-top: 2px;
+            }
+
+            .checkbox-square {
+              width: 20px;
+              height: 20px;
+              border: 2px solid #d1d5db;
+              border-radius: 6px;
+              flex-shrink: 0;
+              margin-top: 2px;
+            }
+
+            .option-text {
+              font-size: 15px;
+              color: #374151;
+              line-height: 1.5;
+            }
+
+            .image-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              margin-top: 12px;
+            }
+
+            .image-option {
+              border: 1px solid #e5e7eb;
+              border-radius: 12px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 12px;
+            }
+
+            .image-option img {
+              max-width: 100%;
+              height: 160px;
+              object-fit: contain;
               border-radius: 4px;
-              white-space: pre-wrap;
             }
+
+            .image-checkbox {
+              width: 24px;
+              height: 24px;
+              border: 2px solid #d1d5db;
+              border-radius: 50%;
+            }
+
+            .info-block {
+              background: #f9fafb;
+              border: 1px solid #e5e7eb;
+              border-radius: 12px;
+              padding: 24px;
+              margin: 24px 0;
+            }
+
+            .attachment-image {
+              max-height: 300px;
+              max-width: 100%;
+              border-radius: 8px;
+              border: 1px solid #e5e7eb;
+              margin-bottom: 16px;
+              display: block;
+            }
+
+            .student-info-section {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 40px;
+              margin-bottom: 40px;
+              border: 1px solid #e5e7eb;
+              padding: 24px;
+              border-radius: 12px;
+            }
+
+            .info-field label {
+              display: block;
+              font-size: 12px;
+              font-weight: 600;
+              text-transform: uppercase;
+              color: #6b7280;
+              letter-spacing: 0.05em;
+              margin-bottom: 8px;
+            }
+
+            .info-line {
+              border-bottom: 1px solid #d1d5db;
+              height: 24px;
+            }
+
             .worksheet-footer {
               margin-top: 60px;
-              padding-top: 20px;
-              border-top: 1px solid #ddd;
-              text-align: center;
-            }
-            .worksheet-logo {
-              max-width: 120px;
-              height: auto;
-              margin: 0 auto;
-            }
-            .help-text {
+              padding-top: 24px;
+              border-top: 1px solid #e5e7eb;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              color: #9ca3af;
               font-size: 12px;
-              color: #666;
-              font-style: italic;
-              margin-top: 4px;
+            }
+
+            .logo {
+              height: 24px;
+              opacity: 0.6;
             }
           </style>
         </head>
         <body>
+          <div class="worksheet-header">
+            <div>
+              <div class="worksheet-title">${escapeHtml(testName || "Untitled Test")}</div>
+              <div class="worksheet-meta">
+                ${estimatedDuration ? `<div class="meta-item">⏱ ${estimatedDuration} mins</div>` : ''}
+                ${fields.length > 0 ? `<div class="meta-item">📝 ${fields.filter(f => f.type !== 'pageBreak' && f.type !== 'infoBlock').length} Questions</div>` : ''}
+              </div>
+            </div>
+            ${testDescription ? `<div class="worksheet-description">${escapeHtml(testDescription)}</div>` : ""}
+          </div>
+
+          <div class="student-info-section">
+            <div class="info-field">
+              <label>Full Name</label>
+              <div class="info-line"></div>
+            </div>
+            <div class="info-field">
+              <label>Date</label>
+              <div class="info-line"></div>
+            </div>
+          </div>
+
           ${renderPrintWorksheet()}
+
+          <div class="worksheet-footer">
+            <span>Generated by Superlearn</span>
+            <img src="/superlearn full.png" alt="Superlearn" class="logo" />
+          </div>
         </body>
       </html>
     `);
@@ -604,156 +746,136 @@ export default function TestEditorPage() {
     printWindow.onload = () => {
       setTimeout(() => {
         printWindow.print();
-        // Close window after printing (optional)
-        // printWindow.close();
-      }, 250);
+      }, 500);
     };
   };
 
   const renderPrintWorksheet = () => {
     const sortedFields = [...fields].sort((a, b) => a.order - b.order);
     
-    let html = `
-      <div class="worksheet-header">
-        <div class="worksheet-title">${escapeHtml(testName || "Untitled Test")}</div>
-        ${testDescription ? `<div class="worksheet-description">${escapeHtml(testDescription)}</div>` : ""}
-      </div>
-    `;
-
+    let html = '';
     let questionNumber = 0;
+
     sortedFields.forEach((field) => {
       const isQuestion = field.type !== "pageBreak" && field.type !== "infoBlock";
       if (isQuestion) {
         questionNumber++;
       }
       
-      html += `<div class="worksheet-field">`;
+      const breakClass = field.type === "pageBreak" ? "page-break" : "worksheet-field avoid-break";
       
-      switch (field.type) {
-        case "shortInput":
-          html += `
-            <div class="field-label">
-              ${questionNumber}. ${escapeHtml(field.label || "Question")}
-              ${field.required ? '<span class="required">*</span>' : ""}
-            </div>
-            <div class="answer-space"></div>
-            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
-          `;
-          break;
+      html += `<div class="${breakClass}">`;
+      
+      // Handle attachments
+      let attachmentHtml = '';
+      if (field.fileUrl) {
+        attachmentHtml = `<div style="margin-left: 40px;"><img src="${escapeHtml(field.fileUrl)}" class="attachment-image" alt="Attachment" /></div>`;
+      }
 
-        case "longInput":
-          html += `
-            <div class="field-label">
-              ${questionNumber}. ${escapeHtml(field.label || "Question")}
-              ${field.required ? '<span class="required">*</span>' : ""}
-            </div>
-            <div class="answer-space-long"></div>
-            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
-          `;
-          break;
+      if (field.type === "pageBreak") {
+        html += `</div>`;
+        return;
+      }
 
-        case "multipleChoice":
-          html += `
+      if (field.type === "infoBlock") {
+        html += `
+          <div class="info-block avoid-break">
+            ${attachmentHtml}
+            ${field.label ? `<div style="font-weight: 500; color: #374151;">${escapeHtml(field.label)}</div>` : ""}
+          </div>
+        `;
+      } else {
+        // Render Question Header
+        html += `
+          <div class="field-header">
+            <div class="question-number">${questionNumber}</div>
             <div class="field-label">
-              ${questionNumber}. ${escapeHtml(field.label || "Question")}
+              ${escapeHtml(field.label || "Question")}
               ${field.required ? '<span class="required">*</span>' : ""}
+              ${field.marks ? `<span style="font-weight: 400; color: #6b7280; font-size: 13px; float: right;">(${field.marks} points)</span>` : ""}
             </div>
-            <div class="option-list">
-              ${(field.options || []).map((option, optIndex) => `
+          </div>
+          ${attachmentHtml}
+        `;
+
+        // Render Answer Area based on type
+        html += `<div class="answer-area">`;
+        
+        switch (field.type) {
+          case "shortInput":
+            html += `<div class="answer-line" style="margin-top: 24px;"></div>`;
+            break;
+
+          case "longInput":
+            html += `<div class="answer-box"></div>`;
+            break;
+
+          case "multipleChoice":
+            html += `<div class="option-list">`;
+            (field.options || []).forEach((option, idx) => {
+              html += `
                 <div class="option-item">
-                  <span class="radio-circle"></span>
-                  <span>${escapeHtml(option || `Option ${optIndex + 1}`)}</span>
+                  <div class="radio-circle"></div>
+                  <div class="option-text">${escapeHtml(option || `Option ${idx + 1}`)}</div>
                 </div>
-              `).join("")}
-            </div>
-            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
-          `;
-          break;
+              `;
+            });
+            html += `</div>`;
+            break;
 
-        case "checkboxes":
-          html += `
-            <div class="field-label">
-              ${questionNumber}. ${escapeHtml(field.label || "Question")}
-              ${field.required ? '<span class="required">*</span>' : ""}
-            </div>
-            <div class="option-list">
-              ${(field.options || []).map((option, optIndex) => `
+          case "checkboxes":
+            html += `<div class="option-list">`;
+            (field.options || []).forEach((option, idx) => {
+              html += `
                 <div class="option-item">
-                  <span class="checkbox-square"></span>
-                  <span>${escapeHtml(option || `Option ${optIndex + 1}`)}</span>
+                  <div class="checkbox-square"></div>
+                  <div class="option-text">${escapeHtml(option || `Option ${idx + 1}`)}</div>
                 </div>
-              `).join("")}
-            </div>
-            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
-          `;
-          break;
+              `;
+            });
+            html += `</div>`;
+            break;
 
-        case "dropdown":
-          html += `
-            <div class="field-label">
-              ${questionNumber}. ${escapeHtml(field.label || "Question")}
-              ${field.required ? '<span class="required">*</span>' : ""}
-            </div>
-            <div class="dropdown-indicator"></div>
-            <div class="dropdown-note">Select one option:</div>
-            <div class="option-list">
-              ${(field.options || []).map((option, optIndex) => `
-                <div class="option-item">
-                  <span class="radio-circle"></span>
-                  <span>${escapeHtml(option || `Option ${optIndex + 1}`)}</span>
-                </div>
-              `).join("")}
-            </div>
-            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
-          `;
-          break;
+          case "dropdown":
+            html += `
+              <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; display: inline-flex; align-items: center; justify-content: space-between; min-width: 240px; color: #9ca3af;">
+                Select an option...
+                <span style="font-size: 10px;">▼</span>
+              </div>
+              <div class="option-list" style="margin-top: 16px; opacity: 0.6;">
+                <div style="font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; margin-bottom: 8px;">Options:</div>
+                ${(field.options || []).map(opt => `<span style="display: inline-block; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; margin-right: 8px; margin-bottom: 8px; font-size: 13px; border: 1px solid #e5e7eb;">${escapeHtml(opt)}</span>`).join('')}
+              </div>
+            `;
+            break;
 
-        case "imageChoice":
-          html += `
-            <div class="field-label">
-              ${questionNumber}. ${escapeHtml(field.label || "Question")}
-              ${field.required ? '<span class="required">*</span>' : ""}
-            </div>
-            <div class="image-choice-grid">
-              ${(field.options || []).map((option, optIndex) => {
-                const imageUrl = option && option.startsWith("http") ? option : null;
-                return `
-                  <div class="image-choice-item">
-                    <span class="image-choice-checkbox"></span>
-                    ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="Choice ${optIndex + 1}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />` : `<span>Image ${optIndex + 1}</span>`}
+          case "imageChoice":
+            html += `<div class="image-grid">`;
+            (field.options || []).forEach((option, idx) => {
+              const imageUrl = option && option.startsWith("http") ? option : null;
+              html += `
+                <div class="image-option">
+                  ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="Option ${idx + 1}" />` : `<div style="height: 120px; width: 100%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af;">Image ${idx + 1}</div>`}
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="radio-circle"></div>
+                    <span style="font-size: 13px; font-weight: 500;">Option ${idx + 1}</span>
                   </div>
-                `;
-              }).join("")}
-            </div>
-            ${field.helpText ? `<div class="help-text">${escapeHtml(field.helpText)}</div>` : ""}
-          `;
-          break;
+                </div>
+              `;
+            });
+            html += `</div>`;
+            break;
+        }
 
-        case "infoBlock":
-          html += `
-            <div class="info-block">
-              ${escapeHtml(field.label || "")}
-            </div>
-          `;
-          break;
-
-        case "pageBreak":
-          // User said don't worry about page breaks, so we'll just add some spacing
-          html += `<div style="margin: 30px 0; border-top: 1px dashed #ccc;"></div>`;
-          break;
-
-        default:
-          break;
+        html += `</div>`; // Close answer-area
+        
+        if (field.helpText) {
+          html += `<div class="help-text">${escapeHtml(field.helpText)}</div>`;
+        }
       }
       
-      html += `</div>`;
+      html += `</div>`; // Close worksheet-field
     });
-
-    html += `
-      <div class="worksheet-footer">
-        <img src="/superlearn full.png" alt="Superlearn" class="worksheet-logo" />
-      </div>
-    `;
 
     return html;
   };

@@ -1,4 +1,5 @@
 "use client";
+import type { Route } from "./+types/success";
 import { useQuery, useMutation } from "convex/react";
 import { useAuth } from "@clerk/react-router";
 import { Link } from "react-router";
@@ -13,6 +14,12 @@ import {
 import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Success | XAM" },
+  ];
+}
 
 export default function Success() {
   const { isSignedIn } = useAuth();

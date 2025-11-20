@@ -1,5 +1,12 @@
 "use client";
+import type { Route } from "./+types/settings";
 import SubscriptionStatus from "~/components/subscription-status";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Settings | XAM" },
+  ];
+}
 
 export default function Page() {
   return (
