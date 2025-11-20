@@ -103,6 +103,7 @@ export default defineSchema({
       )
     ),
     createdAt: v.number(),
+    lastEdited: v.optional(v.number()),
     maxAttempts: v.optional(v.number()),
     estimatedDuration: v.optional(v.number()),
     requireAuth: v.optional(v.boolean()),

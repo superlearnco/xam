@@ -35,7 +35,6 @@ import {
 } from "~/components/ui/dialog";
 import { NewTestDialog } from "~/components/dashboard/new-test-dialog";
 
-
 export default function DashboardIndex() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -52,7 +51,9 @@ export default function DashboardIndex() {
   const [typeFilter, setTypeFilter] = useState<
     "all" | "test" | "survey" | "essay"
   >("all");
-  const [sortBy, setSortBy] = useState<"name" | "recency">("recency");
+  const [sortBy, setSortBy] = useState<"name" | "recency" | "lastEdited">(
+    "lastEdited"
+  );
 
   const tests = useQuery(api.tests.listTests, {
     search: search.trim() || undefined,
@@ -131,7 +132,9 @@ export default function DashboardIndex() {
       <div className="border-b bg-gradient-to-r from-primary/5 via-background to-background">
         <div className="mx-auto max-w-6xl px-4 py-8 flex flex-col gap-4">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Your Assessments</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Your Assessments
+            </h1>
             <p className="text-sm text-muted-foreground">
               Create, edit, and manage your tests and surveys in one place.
             </p>
@@ -179,14 +182,15 @@ export default function DashboardIndex() {
                 <Select
                   value={sortBy}
                   onValueChange={(value) =>
-                    setSortBy(value as "name" | "recency")
+                    setSortBy(value as "name" | "recency" | "lastEdited")
                   }
                 >
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="recency">Newest first</SelectItem>
+                    <SelectItem value="lastEdited">Last edited</SelectItem>
+                    <SelectItem value="recency">Last created</SelectItem>
                     <SelectItem value="name">Alphabetical</SelectItem>
                   </SelectContent>
                 </Select>

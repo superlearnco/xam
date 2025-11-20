@@ -6,7 +6,7 @@ export const listTests = query({
   args: {
     search: v.optional(v.string()),
     type: v.optional(v.union(v.literal("test"), v.literal("survey"), v.literal("essay"))),
-    sortBy: v.optional(v.union(v.literal("name"), v.literal("recency"))),
+    sortBy: v.optional(v.union(v.literal("name"), v.literal("recency"), v.literal("lastEdited"))), // Supports name, recency, or lastEdited
   },
   handler: async (ctx, args) => {
     // Get the authenticated user
@@ -41,6 +41,12 @@ export const listTests = query({
       filteredTests.sort((a, b) => a.name.localeCompare(b.name));
     } else if (args.sortBy === "recency") {
       filteredTests.sort((a, b) => b.createdAt - a.createdAt);
+    } else if (args.sortBy === "lastEdited") {
+      filteredTests.sort((a, b) => {
+        const aLastEdited = a.lastEdited ?? a.createdAt;
+        const bLastEdited = b.lastEdited ?? b.createdAt;
+        return bLastEdited - aLastEdited;
+      });
     }
 
     return filteredTests;
@@ -97,13 +103,15 @@ export const createTest = mutation({
       throw new Error("Not authenticated");
     }
 
+    const now = Date.now();
     const testId = await ctx.db.insert("tests", {
       userId: identity.subject,
       name: args.name,
       type: args.type,
       description: args.description,
       fields: [],
-      createdAt: Date.now(),
+      createdAt: now,
+      lastEdited: now,
     });
 
     return testId;
@@ -195,6 +203,7 @@ export const updateTest = mutation({
         fileUrl?: string;
         latexContent?: string;
       }>;
+      lastEdited?: number;
       maxAttempts?: number;
       estimatedDuration?: number;
       requireAuth?: boolean;
@@ -262,6 +271,9 @@ export const updateTest = mutation({
     if (args.shuffleOptions !== undefined) {
       updates.shuffleOptions = args.shuffleOptions;
     }
+
+    // Always update lastEdited when any field is updated
+    updates.lastEdited = Date.now();
 
     await ctx.db.patch(args.testId, updates);
 
