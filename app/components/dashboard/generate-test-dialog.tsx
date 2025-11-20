@@ -14,6 +14,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Label } from "~/components/ui/label";
 import { api } from "convex/_generated/api";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 
@@ -25,6 +33,9 @@ interface GenerateTestDialogProps {
 export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogProps) {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
+  const [gradeLevel, setGradeLevel] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
+  const [complexity, setComplexity] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -39,7 +50,12 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
 
     try {
       // 1. Call AI to generate test structure using Convex action (automatic authentication)
-      const data = await generateTestWithAI({ prompt });
+      const data = await generateTestWithAI({ 
+        prompt,
+        gradeLevel: gradeLevel || undefined,
+        category: category || undefined,
+        complexity: complexity || undefined,
+      });
       
       // 2. Validate basic structure
       if (!data.name || !Array.isArray(data.fields)) {
@@ -91,14 +107,76 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <Textarea
-            placeholder="e.g., Create a 10-question physics test about Newton's laws for 10th grade students. Include multiple choice and short answer questions."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={6}
-            disabled={isGenerating}
-            className="resize-none"
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="grade-level">Grade Level</Label>
+            <Select
+              value={gradeLevel}
+              onValueChange={setGradeLevel}
+              disabled={isGenerating}
+            >
+              <SelectTrigger id="grade-level" className="w-full">
+                <SelectValue placeholder="Select grade level" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
+                  <SelectItem key={grade} value={`${grade}`}>
+                    {grade === 1 ? "1st" : grade === 2 ? "2nd" : grade === 3 ? "3rd" : `${grade}th`} Grade
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={category}
+              onValueChange={setCategory}
+              disabled={isGenerating}
+            >
+              <SelectTrigger id="category" className="w-full">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Math">Math</SelectItem>
+                <SelectItem value="Science">Science</SelectItem>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="History">History</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="complexity">Complexity</Label>
+            <Select
+              value={complexity}
+              onValueChange={setComplexity}
+              disabled={isGenerating}
+            >
+              <SelectTrigger id="complexity" className="w-full">
+                <SelectValue placeholder="Select complexity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="prompt">Test Description</Label>
+            <Textarea
+              id="prompt"
+              placeholder="e.g., Create a 10-question physics test about Newton's laws. Include multiple choice and short answer questions."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={6}
+              disabled={isGenerating}
+              className="resize-none"
+            />
+          </div>
           
           {error && (
             <Alert variant="destructive">

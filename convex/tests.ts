@@ -747,6 +747,9 @@ const OUTPUT_CREDITS_PER_TOKEN = 0.00015;
 export const generateTestWithAI = action({
   args: {
     prompt: v.string(),
+    gradeLevel: v.optional(v.string()),
+    category: v.optional(v.string()),
+    complexity: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -782,7 +785,25 @@ export const generateTestWithAI = action({
       );
     }
 
-    const systemPrompt = `You are an expert exam creator. Create a test based on the user's prompt.
+    // Build configuration context for the prompt
+    const configParts: string[] = [];
+    if (args.gradeLevel) {
+      const gradeNum = parseInt(args.gradeLevel);
+      const gradeSuffix = gradeNum === 1 ? "st" : gradeNum === 2 ? "nd" : gradeNum === 3 ? "rd" : "th";
+      configParts.push(`Grade Level: ${gradeNum}${gradeSuffix} grade`);
+    }
+    if (args.category) {
+      configParts.push(`Category: ${args.category}`);
+    }
+    if (args.complexity) {
+      configParts.push(`Complexity: ${args.complexity}`);
+    }
+    
+    const configContext = configParts.length > 0
+      ? `\n\nIMPORTANT: The following configuration should guide the test creation:\n${configParts.join("\n")}\n\n- Adjust the difficulty and vocabulary to match the specified grade level.\n- Align all questions with the specified category.\n- Set question complexity based on the specified level (Low: basic concepts, Medium: application of concepts, High: analysis and synthesis).`
+      : "";
+
+    const systemPrompt = `You are an expert exam creator. Create a test based on the user's prompt.${configContext}
     Return a JSON object with the following structure:
     {
       "name": "Test Name",

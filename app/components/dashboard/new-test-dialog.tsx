@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { FileText, ClipboardList, BookOpen } from "lucide-react";
+import { ClipboardList, PieChart, MessageSquare } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -48,21 +48,21 @@ export function NewTestDialog({ open, onOpenChange }: NewTestDialogProps) {
     {
       type: "test" as const,
       label: "Test",
-      icon: FileText,
+      icon: ClipboardList,
       description: "Create assessments with multiple choice, true/false, and short answer questions",
       available: true,
     },
     {
       type: "survey" as const,
       label: "Survey",
-      icon: ClipboardList,
+      icon: PieChart,
       description: "Gather feedback and insights with customizable survey forms",
       available: false,
     },
     {
       type: "essay" as const,
       label: "Essay",
-      icon: BookOpen,
+      icon: MessageSquare,
       description: "Design essay prompts and evaluate written responses",
       available: false,
     },
