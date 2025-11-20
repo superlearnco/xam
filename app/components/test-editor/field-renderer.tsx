@@ -212,7 +212,7 @@ export function FieldRenderer({
                           value={field.label}
                           onChange={(e) => handleLabelChange(e.target.value)}
                           placeholder="Type your question here..."
-                          className="text-lg font-medium border-0 border-b border-transparent focus:border-primary rounded-none px-0 focus-visible:ring-0 bg-transparent placeholder:text-slate-300 transition-all hover:border-slate-200 h-auto py-1"
+                          className="text-lg font-medium text-slate-900 border-0 border-b border-slate-200 focus:border-primary focus:border-b-2 rounded-none px-0 focus-visible:ring-0 bg-transparent placeholder:text-slate-400 transition-all hover:border-slate-300 h-auto py-1.5"
                         />
                     </div>
                 </div>
