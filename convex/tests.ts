@@ -380,67 +380,94 @@ export const submitTest = mutation({
     let score: number | undefined;
     let maxScore: number | undefined;
     let percentage: number | undefined;
+    let fieldMarks: Record<string, number> | undefined;
+    let isMarked: boolean | undefined;
 
-    // Calculate score if instant feedback is enabled
-    if (test.instantFeedback && test.fields) {
+    // Check if test has any text input fields (shortInput or longInput)
+    const hasTextInputFields = test.fields?.some(
+      (f) => f.type === "shortInput" || f.type === "longInput"
+    ) || false;
+
+    // Calculate marks if instant feedback is enabled OR if there are no text input fields (auto-mark)
+    if ((test.instantFeedback || !hasTextInputFields) && test.fields) {
       let earnedMarks = 0;
       let totalMarks = 0;
+      const calculatedFieldMarks: Record<string, number> = {};
+      
       // Only count fields that are actually markable (exclude pageBreak and infoBlock)
       const markableFields = test.fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
 
       for (const field of markableFields) {
-        // Only calculate score for fields with correctAnswers defined
-        if (field.correctAnswers && field.correctAnswers.length > 0 && field.marks) {
+        // Only process fields with marks
+        if (field.marks && field.marks > 0) {
           totalMarks += field.marks;
           const userResponse = args.responses[field.id];
+          let mark = 0;
 
-          if (userResponse !== undefined && userResponse !== null && userResponse !== "") {
-            let isCorrect = false;
+          // Only calculate score for fields with correctAnswers defined
+          if (field.correctAnswers && field.correctAnswers.length > 0) {
+            if (userResponse !== undefined && userResponse !== null && userResponse !== "") {
+              let isCorrect = false;
 
-            // Handle different field types
-            if (field.type === "multipleChoice" || field.type === "dropdown") {
-              // Single answer - check if response matches any correct answer
-              const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
-              isCorrect = field.correctAnswers.includes(responseIndex);
-            } else if (field.type === "checkboxes" || field.type === "imageChoice") {
-              // Multiple answers - check if all correct answers are selected
-              const selectedIndices = Array.isArray(userResponse)
-                ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
-                : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+              // Handle different field types
+              if (field.type === "multipleChoice" || field.type === "dropdown") {
+                // Single answer - check if response matches any correct answer
+                const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+                isCorrect = field.correctAnswers.includes(responseIndex);
+              } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+                // Multiple answers - check if all correct answers are selected
+                const selectedIndices = Array.isArray(userResponse)
+                  ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
+                  : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
 
-              // Check if all correct answers are selected and no incorrect ones
-              const correctSet = new Set(field.correctAnswers);
-              const selectedSet = new Set(selectedIndices);
+                // Check if all correct answers are selected and no incorrect ones
+                const correctSet = new Set(field.correctAnswers);
+                const selectedSet = new Set(selectedIndices);
 
-              // All correct answers must be selected
-              const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
-              // No extra incorrect answers
-              const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
+                // All correct answers must be selected
+                const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
+                // No extra incorrect answers
+                const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
 
-              isCorrect = allCorrectSelected && noExtraAnswers;
-            } else if (field.type === "shortInput" || field.type === "longInput") {
-              // Text input - compare with correct answers (assuming correctAnswers contains indices to options array)
-              // For text inputs, we might need to compare text directly
-              // For now, if correctAnswers is defined, we'll check if response matches any option at those indices
-              if (field.options && field.options.length > 0) {
-                const responseText = String(userResponse).toLowerCase().trim();
-                isCorrect = field.correctAnswers.some((idx) => {
-                  const correctOption = field.options?.[idx];
-                  return correctOption && correctOption.toLowerCase().trim() === responseText;
-                });
+                isCorrect = allCorrectSelected && noExtraAnswers;
+              } else if (field.type === "shortInput" || field.type === "longInput") {
+                // Text input - compare with correct answers (assuming correctAnswers contains indices to options array)
+                // For text inputs, we might need to compare text directly
+                // For now, if correctAnswers is defined, we'll check if response matches any option at those indices
+                if (field.options && field.options.length > 0) {
+                  const responseText = String(userResponse).toLowerCase().trim();
+                  isCorrect = field.correctAnswers.some((idx) => {
+                    const correctOption = field.options?.[idx];
+                    return correctOption && correctOption.toLowerCase().trim() === responseText;
+                  });
+                }
+              }
+
+              if (isCorrect) {
+                mark = field.marks;
+                earnedMarks += field.marks;
               }
             }
-
-            if (isCorrect) {
-              earnedMarks += field.marks;
-            }
           }
+          // If field has marks but no correctAnswers, mark stays at 0 (requires manual marking)
+          
+          // Store the mark for this field
+          calculatedFieldMarks[field.id] = mark;
         }
       }
 
       score = earnedMarks;
       maxScore = totalMarks;
       percentage = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
+      
+      // If there are no text input fields, automatically mark the submission
+      if (!hasTextInputFields) {
+        fieldMarks = calculatedFieldMarks;
+        isMarked = true;
+      } else if (test.instantFeedback) {
+        // If instant feedback is enabled, store field marks for reference but don't mark as complete
+        fieldMarks = calculatedFieldMarks;
+      }
     }
 
     // Create submission
@@ -452,6 +479,8 @@ export const submitTest = mutation({
       score,
       maxScore,
       percentage,
+      fieldMarks,
+      isMarked,
       submittedAt: Date.now(),
       startedAt: args.startedAt,
     });

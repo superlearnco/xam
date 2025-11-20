@@ -131,6 +131,7 @@ export default function TestPage() {
     score?: number;
     maxScore?: number;
     percentage?: number;
+    shuffledOptionsMapping?: Record<string, number[]>;
   } | null>(null);
   const [isFullscreenEnabled, setIsFullscreenEnabled] = useState(false);
   const [isLoadingSavedState, setIsLoadingSavedState] = useState(true);
@@ -149,6 +150,11 @@ export default function TestPage() {
   useEffect(() => {
     if (!testId || test === undefined) {
       setIsLoadingSavedState(false);
+      return;
+    }
+
+    // Prevent overwriting state with stale localStorage data on subsequent renders
+    if (hasInitialLoadCompletedRef.current) {
       return;
     }
 
@@ -180,14 +186,16 @@ export default function TestPage() {
     }, 100);
   }, [testId, test]);
 
-  // Save progress
+  // Save progress (auth/flow state only - formData is saved separately in TestForm)
   useEffect(() => {
     if (!testId || isLoadingSavedState || !hasInitialLoadCompletedRef.current)
       return;
 
     const existing = loadTestProgress(testId) || {};
+    // Destructure to exclude formData & currentPage - TestForm manages those
+    const { formData, currentPage, ...rest } = existing;
     const dataToSave = {
-      ...existing,
+      ...rest,
       isPasswordVerified,
       isEmailProvided,
       isNameProvided,
@@ -209,7 +217,6 @@ export default function TestPage() {
     userEmail,
     showTest,
     testStartedAt,
-    formData,
     test,
     shuffledFieldIds,
     shuffledOptionsMapping,
@@ -644,13 +651,16 @@ export default function TestPage() {
     const percentage = submissionResult.percentage ?? 0;
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 py-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="max-w-md w-full"
+          className={cn(
+            "w-full",
+            test.showAnswerKey ? "max-w-4xl" : "max-w-md"
+          )}
         >
-          <Card className="overflow-hidden shadow-xl border-0">
+          <Card className="overflow-hidden shadow-xl border-0 max-h-[90vh] overflow-y-auto">
             <div className="bg-primary/5 p-8 text-center border-b border-border/50">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
@@ -751,6 +761,15 @@ export default function TestPage() {
                     will review your submission.
                   </p>
                 </div>
+              )}
+
+              {test.showAnswerKey && (
+                <AnswerKey
+                  test={test}
+                  formData={formData}
+                  shuffledOptionsMapping={submissionResult.shuffledOptionsMapping}
+                  shuffledFieldIds={shuffledFieldIds}
+                />
               )}
 
               <Button
@@ -859,81 +878,384 @@ const MemoizedLatexElement = memo(
   (prev, next) => prev.latexContent === next.latexContent
 );
 
-const QuestionWrapper = memo(
-  ({
-    children,
-    labelFor,
-    fileUrl,
-    latexContent,
-    label,
-    required,
-    helpText,
-    questionNumber,
-  }: {
-    children: ReactNode;
-    labelFor?: string;
-    fileUrl?: string;
-    latexContent?: string;
-    label: string;
-    required?: boolean;
-    helpText?: string;
-    questionNumber?: number;
-  }) => {
-    return (
-      <div className="mb-8 group">
-        <Card className="border shadow-sm hover:shadow-md transition-shadow duration-200">
-          <div className="p-6 md:p-8">
-            <div className="flex gap-5">
-              {questionNumber !== undefined && (
-                <div className="flex-none">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
-                    {questionNumber}
+// AnswerKey component to display correct answers after submission
+const AnswerKey = ({
+  test,
+  formData,
+  shuffledOptionsMapping,
+  shuffledFieldIds,
+}: {
+  test: NonNullable<
+    ReturnType<typeof useQuery<typeof api.tests.getPublicTest>>
+  >;
+  formData: Record<string, any>;
+  shuffledOptionsMapping?: Record<string, number[]>;
+  shuffledFieldIds?: string[];
+}) => {
+  const fieldsWithIndex = useMemo(
+    () =>
+      ((test.fields || []) as any[]).map(
+        (f, index): TestField & { originalIndex: number } => ({
+          id: f.id,
+          type: f.type,
+          label: f.label,
+          required: f.required,
+          options: f.options,
+          order:
+            typeof f.order === "number" && !isNaN(f.order) ? f.order : index,
+          placeholder: f.placeholder,
+          helpText: f.helpText,
+          minLength: f.minLength,
+          maxLength: f.maxLength,
+          fileUrl: f.fileUrl,
+          latexContent: f.latexContent,
+          originalIndex: index,
+          correctAnswers: (f as any).correctAnswers,
+          marks: (f as any).marks,
+        })
+      ),
+    [test.fields]
+  );
+
+  const sortedFields: (TestField & { correctAnswers?: number[]; marks?: number })[] = useMemo(() => {
+    if (shuffledFieldIds) {
+      const fieldMap = new Map(fieldsWithIndex.map((f) => [f.id, f]));
+      const shuffledWithIndex = shuffledFieldIds
+        .map((id) => fieldMap.get(id))
+        .filter(
+          (f): f is TestField & { originalIndex: number; correctAnswers?: number[]; marks?: number } => f !== undefined
+        );
+
+      return (
+        shuffledWithIndex.length > 0 ? shuffledWithIndex : fieldsWithIndex
+      ).map(({ originalIndex, ...field }) => field) as (TestField & { correctAnswers?: number[]; marks?: number })[];
+    } else {
+      return fieldsWithIndex
+        .sort((a, b) =>
+          a.order !== b.order
+            ? a.order - b.order
+            : a.originalIndex - b.originalIndex
+        )
+        .map(({ originalIndex, ...field }) => field) as (TestField & { correctAnswers?: number[]; marks?: number })[];
+    }
+  }, [fieldsWithIndex, shuffledFieldIds]);
+
+  const questionNumberMap = useMemo(() => {
+    const map = new Map<string, number>();
+    let qNum = 1;
+    sortedFields.forEach((f) => {
+      if (f.type !== "pageBreak" && f.type !== "infoBlock")
+        map.set(f.id, qNum++);
+    });
+    return map;
+  }, [sortedFields]);
+
+  const getCorrectAnswerDisplay = (field: TestField & { correctAnswers?: number[] }) => {
+    if (!field.correctAnswers || field.correctAnswers.length === 0) {
+      return null;
+    }
+
+    // correctAnswers are stored as original indices, so we can use them directly
+    // to get the option text from the original options array
+    switch (field.type) {
+      case "multipleChoice":
+      case "dropdown": {
+        const correctIndex = field.correctAnswers[0];
+        const option = field.options?.[correctIndex];
+        return option || `Option ${correctIndex + 1}`;
+      }
+
+      case "checkboxes":
+      case "imageChoice": {
+        const options = field.correctAnswers
+          .map((idx) => field.options?.[idx])
+          .filter(Boolean);
+        return options.length > 0 ? options : field.correctAnswers.map((idx) => `Option ${idx + 1}`);
+      }
+
+      case "shortInput":
+      case "longInput": {
+        if (field.options && field.options.length > 0) {
+          const correctOptions = field.correctAnswers
+            .map((idx) => field.options?.[idx])
+            .filter(Boolean);
+          return correctOptions.length > 0 ? correctOptions : null;
+        }
+        return null;
+      }
+
+      default:
+        return null;
+    }
+  };
+
+  const getUserAnswerDisplay = (field: TestField) => {
+    const userResponse = formData[field.id];
+    if (userResponse === undefined || userResponse === null || userResponse === "") {
+      return "No answer provided";
+    }
+
+    // User responses are stored as shuffled indices, so we need to map them back to original indices
+    // shuffledOptionsMapping[field.id][originalIndex] = shuffledIndex
+    // To get original index from shuffled: find i where mapping[i] === shuffledIndex
+    const getOriginalOptionIndex = (shuffledIndex: number): number => {
+      if (shuffledOptionsMapping && shuffledOptionsMapping[field.id]) {
+        const shuffledMapping = shuffledOptionsMapping[field.id];
+        const originalIndex = shuffledMapping.findIndex((val) => val === shuffledIndex);
+        return originalIndex !== -1 ? originalIndex : shuffledIndex;
+      }
+      return shuffledIndex;
+    };
+
+    switch (field.type) {
+      case "multipleChoice":
+      case "dropdown": {
+        const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+        const originalIndex = getOriginalOptionIndex(responseIndex);
+        const option = field.options?.[originalIndex];
+        return option || `Option ${originalIndex + 1}`;
+      }
+
+      case "checkboxes":
+      case "imageChoice": {
+        const selectedIndices = Array.isArray(userResponse)
+          ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
+          : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+        const originalIndices = selectedIndices.map(getOriginalOptionIndex);
+        const options = originalIndices
+          .map((idx) => field.options?.[idx])
+          .filter(Boolean);
+        return options.length > 0 ? options.join(", ") : originalIndices.map((idx) => `Option ${idx + 1}`).join(", ");
+      }
+
+      case "shortInput":
+      case "longInput": {
+        return String(userResponse);
+      }
+
+      default:
+        return String(userResponse);
+    }
+  };
+
+  const markableFields = sortedFields.filter(
+    (f) => f.type !== "pageBreak" && f.type !== "infoBlock" && f.correctAnswers && f.correctAnswers.length > 0
+  );
+
+  if (markableFields.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-6 border-t border-gray-200 pt-8">
+      <div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Answer Key</h3>
+        <p className="text-sm text-gray-600">
+          Review the correct answers for each question below.
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {markableFields.map((field) => {
+          const questionNumber = questionNumberMap.get(field.id);
+          const correctAnswer = getCorrectAnswerDisplay(field);
+          const userAnswer = getUserAnswerDisplay(field);
+          const isCorrect = field.correctAnswers && field.correctAnswers.length > 0
+            ? (() => {
+                const userResponse = formData[field.id];
+                if (userResponse === undefined || userResponse === null || userResponse === "") {
+                  return false;
+                }
+
+                // Map user's shuffled indices back to original indices for comparison
+                const getOriginalOptionIndex = (shuffledIndex: number): number => {
+                  if (shuffledOptionsMapping && shuffledOptionsMapping[field.id]) {
+                    const shuffledMapping = shuffledOptionsMapping[field.id];
+                    const originalIndex = shuffledMapping.findIndex((val) => val === shuffledIndex);
+                    return originalIndex !== -1 ? originalIndex : shuffledIndex;
+                  }
+                  return shuffledIndex;
+                };
+
+                if (field.type === "multipleChoice" || field.type === "dropdown") {
+                  const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+                  const originalIndex = getOriginalOptionIndex(responseIndex);
+                  return field.correctAnswers.includes(originalIndex);
+                } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+                  const selectedIndices = Array.isArray(userResponse)
+                    ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
+                    : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+                  const originalIndices = selectedIndices.map(getOriginalOptionIndex);
+                  const correctSet = new Set(field.correctAnswers);
+                  const selectedSet = new Set(originalIndices);
+                  const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
+                  const noExtraAnswers = originalIndices.every((idx) => correctSet.has(idx));
+                  return allCorrectSelected && noExtraAnswers;
+                } else if (field.type === "shortInput" || field.type === "longInput") {
+                  if (field.options && field.options.length > 0) {
+                    const responseText = String(userResponse).toLowerCase().trim();
+                    return field.correctAnswers.some((idx) => {
+                      const correctOption = field.options?.[idx];
+                      return correctOption && correctOption.toLowerCase().trim() === responseText;
+                    });
+                  }
+                }
+                return false;
+              })()
+            : null;
+
+          return (
+            <Card key={field.id} className="border shadow-sm">
+              <div className="p-6">
+                <div className="flex gap-4 mb-4">
+                  {questionNumber !== undefined && (
+                    <div className="flex-none">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+                        {questionNumber}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {field.fileUrl && (
+                      <MemoizedImageElement
+                        key={`answer-key-image-${field.id}-${field.fileUrl}`}
+                        fileUrl={field.fileUrl}
+                      />
+                    )}
+                    {field.latexContent && (
+                      <MemoizedLatexElement
+                        key={`answer-key-latex-${field.id}-${field.latexContent}`}
+                        latexContent={field.latexContent}
+                      />
+                    )}
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      {field.label}
+                    </h4>
+
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm font-medium text-gray-700 min-w-[100px]">
+                          Your Answer:
+                        </span>
+                        <div className="flex-1">
+                          <span
+                            className={cn(
+                              "text-sm",
+                              isCorrect === true
+                                ? "text-green-600 font-medium"
+                                : isCorrect === false
+                                ? "text-red-600 font-medium"
+                                : "text-gray-700"
+                            )}
+                          >
+                            {userAnswer}
+                          </span>
+                        </div>
+                      </div>
+
+                      {correctAnswer && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm font-medium text-gray-700 min-w-[100px]">
+                            Correct Answer:
+                          </span>
+                          <div className="flex-1">
+                            <span className="text-sm text-green-700 font-semibold">
+                              {Array.isArray(correctAnswer)
+                                ? correctAnswer.join(", ")
+                                : correctAnswer}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {field.marks && field.marks > 0 && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm font-medium text-gray-700 min-w-[100px]">
+                            Marks:
+                          </span>
+                          <div className="flex-1">
+                            <span className="text-sm text-gray-600">
+                              {field.marks} point{field.marks !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                {fileUrl && (
-                  <MemoizedImageElement
-                    key={`image-${labelFor}-${fileUrl}`}
-                    fileUrl={fileUrl}
-                  />
-                )}
-                {latexContent && (
-                  <MemoizedLatexElement
-                    key={`latex-${labelFor}-${latexContent}`}
-                    latexContent={latexContent}
-                  />
-                )}
-                <div className="mb-6">
-                  <Label
-                    htmlFor={labelFor}
-                    className="text-lg font-semibold text-gray-900 block leading-relaxed mb-2"
-                  >
-                    {label}
-                    {required && <span className="text-red-500 ml-1">*</span>}
-                  </Label>
-                  {helpText && (
-                    <p className="text-sm text-gray-500">{helpText}</p>
-                  )}
-                </div>
-                <div className="space-y-4">{children}</div>
               </div>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const QuestionWrapper = ({
+  children,
+  labelFor,
+  fileUrl,
+  latexContent,
+  label,
+  required,
+  helpText,
+  questionNumber,
+}: {
+  children: ReactNode;
+  labelFor?: string;
+  fileUrl?: string;
+  latexContent?: string;
+  label: string;
+  required?: boolean;
+  helpText?: string;
+  questionNumber?: number;
+}) => {
+  return (
+    <div className="mb-8 group">
+      <Card className="border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div className="p-6 md:p-8">
+          <div className="flex gap-5">
+            {questionNumber !== undefined && (
+              <div className="flex-none">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+                  {questionNumber}
+                </div>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              {fileUrl && (
+                <MemoizedImageElement
+                  key={`image-${labelFor}-${fileUrl}`}
+                  fileUrl={fileUrl}
+                />
+              )}
+              {latexContent && (
+                <MemoizedLatexElement
+                  key={`latex-${labelFor}-${latexContent}`}
+                  latexContent={latexContent}
+                />
+              )}
+              <div className="mb-6">
+                <Label
+                  htmlFor={labelFor}
+                  className="text-lg font-semibold text-gray-900 block leading-relaxed mb-2"
+                >
+                  {label}
+                  {required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+                {helpText && (
+                  <p className="text-sm text-gray-500">{helpText}</p>
+                )}
+              </div>
+              <div className="space-y-4">{children}</div>
             </div>
           </div>
-        </Card>
-      </div>
-    );
-  },
-  (prev, next) =>
-    prev.labelFor === next.labelFor &&
-    prev.fileUrl === next.fileUrl &&
-    prev.latexContent === next.latexContent &&
-    prev.label === next.label &&
-    prev.required === next.required &&
-    prev.helpText === next.helpText &&
-    prev.questionNumber === next.questionNumber
-  // Removed children comparison - children are input controls that should update independently
-);
+        </div>
+      </Card>
+    </div>
+  );
+};
 
 function TestForm({
   test,
@@ -960,6 +1282,7 @@ function TestForm({
     score?: number;
     maxScore?: number;
     percentage?: number;
+    shuffledOptionsMapping?: Record<string, number[]>;
   }) => void;
   shuffledFieldIds?: string[];
   shuffledOptionsMapping?: Record<string, number[]>;
@@ -1040,10 +1363,32 @@ function TestForm({
 
   // Browser restrictions (Copy/Paste/Tab)
   useEffect(() => {
-    const preventDefault = (e: Event) => {
+    const handleCopyPaste = (e: ClipboardEvent) => {
+      // Allow all clipboard events on input/textarea elements for usability
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        // Allow all clipboard operations in form fields to enable typing
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
-      return false;
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Allow context menu on input fields for accessibility
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
     };
 
     const handleVisibilityChange = () => {
@@ -1061,10 +1406,10 @@ function TestForm({
     };
 
     if (test.disableCopyPaste) {
-      document.addEventListener("copy", preventDefault as any, true);
-      document.addEventListener("cut", preventDefault as any, true);
-      document.addEventListener("paste", preventDefault as any, true);
-      document.addEventListener("contextmenu", preventDefault as any, true);
+      document.addEventListener("copy", handleCopyPaste as any);
+      document.addEventListener("cut", handleCopyPaste as any);
+      document.addEventListener("paste", handleCopyPaste as any);
+      document.addEventListener("contextmenu", handleContextMenu as any);
     }
 
     if (test.blockTabSwitching) {
@@ -1076,10 +1421,10 @@ function TestForm({
     }
 
     return () => {
-      document.removeEventListener("copy", preventDefault as any, true);
-      document.removeEventListener("cut", preventDefault as any, true);
-      document.removeEventListener("paste", preventDefault as any, true);
-      document.removeEventListener("contextmenu", preventDefault as any, true);
+      document.removeEventListener("copy", handleCopyPaste as any);
+      document.removeEventListener("cut", handleCopyPaste as any);
+      document.removeEventListener("paste", handleCopyPaste as any);
+      document.removeEventListener("contextmenu", handleContextMenu as any);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
@@ -1101,7 +1446,8 @@ function TestForm({
           label: f.label,
           required: f.required,
           options: f.options,
-          order: typeof f.order === "number" && !isNaN(f.order) ? f.order : index,
+          order:
+            typeof f.order === "number" && !isNaN(f.order) ? f.order : index,
           placeholder: f.placeholder,
           helpText: f.helpText,
           minLength: f.minLength,
@@ -1217,6 +1563,7 @@ function TestForm({
         score: result.score,
         maxScore: result.maxScore,
         percentage: result.percentage,
+        shuffledOptionsMapping,
       });
     } catch (error) {
       toast.error("Failed to submit. Please try again.");
@@ -1317,14 +1664,12 @@ function TestForm({
                     <div
                       key={idx}
                       onClick={() => {
+                        // Use functional update to ensure we always have the latest state
                         setFormData((prev) => {
                           const currentValue = prev[field.id];
-                          // If already selected, don't change (or toggle if needed)
-                          if (
-                            currentValue === valueStr ||
-                            currentValue === idx
-                          ) {
-                            return prev; // Keep selected
+                          // Only update if the value is different to avoid unnecessary re-renders
+                          if (currentValue === valueStr || currentValue === idx) {
+                            return prev; // Already selected, no change needed
                           }
                           return { ...prev, [field.id]: valueStr };
                         });
@@ -1554,7 +1899,13 @@ function TestForm({
           return null;
       }
     },
-    [formData, shuffledOptionsMapping, handleInputChange, setFormData, questionNumberMap]
+    [
+      formData,
+      shuffledOptionsMapping,
+      handleInputChange,
+      setFormData,
+      questionNumberMap,
+    ]
   );
 
   const progress = Math.round(((currentPage + 1) / pages.length) * 100);
