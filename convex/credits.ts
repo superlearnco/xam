@@ -157,6 +157,84 @@ export const getCreditTransactions = query({
   },
 });
 
+// Get usage analytics
+export const getUsageAnalytics = query({
+  args: {
+    days: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { dailyUsage: [], modelUsage: [] };
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) {
+      return { dailyUsage: [], modelUsage: [] };
+    }
+
+    const days = args.days || 30;
+    const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
+
+    // Use the new index if possible, or filter in memory if index not ready yet (though we added it)
+    // Since we just added the index, we should use it.
+    // However, query with multiple fields in index usually requires defining range.
+    // "by_user_date" index on ["userId", "createdAt"] allows:
+    // .withIndex("by_user_date", q => q.eq("userId", ...).gte("createdAt", ...))
+    
+    const transactions = await ctx.db
+      .query("creditTransactions")
+      .withIndex("by_user_date", (q) => 
+        q.eq("userId", user.tokenIdentifier).gte("createdAt", startDate)
+      )
+      .collect();
+
+    const dailyUsageMap = new Map<string, number>();
+    const modelUsageMap = new Map<string, number>();
+
+    // Fill in all days with 0 first to ensure continuity
+    for (let i = 0; i < days; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      dailyUsageMap.set(dateStr, 0);
+    }
+
+    for (const tx of transactions) {
+      if (tx.type === "usage") {
+        // Daily Usage
+        const date = new Date(tx.createdAt).toISOString().split('T')[0];
+        const amount = Math.abs(tx.amount);
+        // Use set to overwrite the 0 initialization, but we need to accumulate if multiple tx per day
+        // Wait, the map already has 0. So we should get and add.
+        // But since we initialized all days, we don't need to check for existence if we just iterate days.
+        // However, iterating transactions is better.
+        
+        dailyUsageMap.set(date, (dailyUsageMap.get(date) || 0) + amount);
+
+        // Model Usage
+        if (tx.aiModel) {
+          modelUsageMap.set(tx.aiModel, (modelUsageMap.get(tx.aiModel) || 0) + amount);
+        }
+      }
+    }
+
+    const dailyUsage = Array.from(dailyUsageMap.entries())
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const modelUsage = Array.from(modelUsageMap.entries())
+      .map(([model, amount]) => ({ model, amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return { dailyUsage, modelUsage };
+  },
+});
+
 
 // Use credits
 export const useCredits = action({

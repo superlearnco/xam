@@ -54,6 +54,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("userId", ["userId"])
+    .index("by_user_date", ["userId", "createdAt"])
     .index("polarOrderId", ["polarOrderId"]),
   meterUsage: defineTable({
     userId: v.string(),
