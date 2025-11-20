@@ -184,104 +184,108 @@ export function FieldRenderer({
       ref={combinedRef}
       style={style}
       className={cn(
-        "group relative border-2 border-border rounded-lg p-4 bg-card transition-all",
-        isDragging && "opacity-50 border-primary"
+        "group relative p-5 transition-all rounded-xl border bg-white shadow-sm hover:shadow-md",
+        isDragging 
+          ? "opacity-50 border-primary/50 shadow-xl z-50 ring-2 ring-primary/20" 
+          : "border-slate-200 hover:border-slate-300"
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         <button
           {...attributes}
           {...listeners}
-          className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+          className="mt-3 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-slate-100 rounded-md"
         >
           <GripVertical className="h-5 w-5" />
         </button>
 
-        <div className="flex-1 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-md bg-muted">
-              <Icon className="h-4 w-4" />
+        <div className="flex-1 space-y-6">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 rounded-lg bg-primary/5 text-primary hidden sm:block ring-1 ring-inset ring-primary/10">
+              <Icon className="h-5 w-5" />
             </div>
             {isEditable ? (
-              <div className="flex-1">
+              <div className="flex-1 space-y-3">
                 <Input
                   value={field.label}
                   onChange={(e) => handleLabelChange(e.target.value)}
-                  placeholder="Field label"
-                  className="font-medium"
+                  placeholder="Question Text"
+                  className="text-lg font-medium border-0 border-b border-transparent focus:border-primary rounded-none px-0 focus-visible:ring-0 bg-transparent placeholder:text-slate-400 transition-all hover:border-slate-200"
                 />
-                <div className="text-xs text-muted-foreground/70 mt-0.5">
-                  {fieldTypeLabel}
+                <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
+                  <span className="bg-slate-100 px-2 py-0.5 rounded-full">{fieldTypeLabel}</span>
+                  <div className="h-1 w-1 rounded-full bg-slate-300" />
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`required-${field.id}`}
+                      checked={field.required || false}
+                      onCheckedChange={(checked) =>
+                        handleRequiredChange(checked === true)
+                      }
+                      className="h-4 w-4 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-sm"
+                    />
+                    <Label
+                      htmlFor={`required-${field.id}`}
+                      className="cursor-pointer hover:text-slate-700"
+                    >
+                      Required
+                    </Label>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="flex-1">
-                <div className="font-medium text-sm text-muted-foreground">
+                <div className="text-lg font-semibold text-slate-900 pb-1">
                   {field.type === "pageBreak" ? "Page Break" : "Info Block"}
                 </div>
-                <div className="text-xs text-muted-foreground/70 mt-0.5">
-                  {fieldTypeLabel}
+                <div className="flex mt-1">
+                  <span className="bg-slate-100 px-2 py-0.5 rounded-full text-xs font-medium text-slate-500">{fieldTypeLabel}</span>
                 </div>
               </div>
             )}
-            {isEditable && (
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={`required-${field.id}`}
-                  checked={field.required || false}
-                  onCheckedChange={(checked) =>
-                    handleRequiredChange(checked === true)
-                  }
-                />
-                <Label
-                  htmlFor={`required-${field.id}`}
-                  className="text-sm text-muted-foreground cursor-pointer"
+            
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onSettingsClick && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onSettingsClick(field)}
+                  title="Field settings"
+                  className="h-8 w-8 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md"
                 >
-                  Required
-                </Label>
-              </div>
-            )}
-            {onSettingsClick && (
+                  <Settings className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onSettingsClick(field)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Field settings"
+                onClick={() => onDelete(field.id)}
+                className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-md"
               >
-                <Settings className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDelete(field.id)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            </div>
           </div>
 
           {displayFileUrl && (
-            <div className="pl-9">
-              <div className="relative inline-block border rounded-lg overflow-hidden bg-muted/30 max-w-full">
+            <div className="pl-0 sm:pl-14">
+              <div className="relative inline-block border border-slate-200 rounded-lg overflow-hidden bg-slate-50 max-w-full group/image shadow-sm">
                 <img 
                   src={displayFileUrl} 
                   alt="Question attachment" 
                   className="max-h-64 object-contain"
                   onError={(e) => {
-                    // If image fails to load and we have a storage ID, it might still be processing
                     console.warn("Image failed to load:", displayFileUrl);
                   }}
                 />
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="icon"
-                  className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                  className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover/image:opacity-100 transition-opacity shadow-sm hover:bg-destructive hover:text-destructive-foreground"
                   onClick={() => onUpdate({ ...field, fileUrl: undefined })}
                   title="Remove image"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -295,9 +299,9 @@ export function FieldRenderer({
           )}
 
           {field.latexContent && (
-            <div className="pl-9">
+            <div className="pl-0 sm:pl-14">
               <div 
-                className="p-3 rounded-md bg-muted/50 border border-border overflow-x-auto"
+                className="p-3 rounded-lg bg-slate-50/50 border border-slate-200 overflow-x-auto"
                 dangerouslySetInnerHTML={{ 
                   __html: katex.renderToString(field.latexContent, { 
                     throwOnError: false,
@@ -309,12 +313,12 @@ export function FieldRenderer({
           )}
 
           {needsOptions && (
-            <div className="space-y-2 pl-9">
-              <Label className="text-sm text-muted-foreground">Options</Label>
+            <div className="space-y-3 pl-0 sm:pl-14">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Options</Label>
               {(field.options || []).map((option, index) => {
                 const isCorrect = (field.correctAnswers || []).includes(index);
                 return (
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={index} className="flex items-center gap-3 group/option">
                     {isQuestionType && (
                       <Checkbox
                         id={`option-correct-${field.id}-${index}`}
@@ -323,20 +327,24 @@ export function FieldRenderer({
                           handleCorrectAnswerChange(index, checked === true)
                         }
                         title="Mark as correct answer"
+                        className="h-5 w-5 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-full transition-colors"
                       />
                     )}
-                    <Input
-                      value={option}
-                      onChange={(e) =>
-                        handleOptionChange(index, e.target.value)
-                      }
-                      placeholder={`Option ${index + 1}`}
-                      className="flex-1"
-                    />
+                    <div className="flex-1 relative">
+                        <Input
+                        value={option}
+                        onChange={(e) =>
+                            handleOptionChange(index, e.target.value)
+                        }
+                        placeholder={`Option ${index + 1}`}
+                        className="font-normal text-base border border-slate-200 focus-visible:ring-1 focus-visible:ring-primary rounded-md px-3 bg-white transition-colors hover:border-slate-300"
+                        />
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleOptionRemove(index)}
+                      className="opacity-0 group-hover/option:opacity-100 transition-opacity text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-md"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -344,10 +352,10 @@ export function FieldRenderer({
                 );
               })}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={handleOptionAdd}
-                className="w-full"
+                className="ml-8 text-primary hover:text-primary/80 hover:bg-primary/5 font-medium mt-1"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Option
@@ -356,17 +364,17 @@ export function FieldRenderer({
           )}
 
           {isInputOrChoiceType && (
-            <div className="space-y-3 pl-9 border-t pt-3">
+            <div className="pl-0 sm:pl-14 border-t border-slate-100 pt-4 mt-2">
               <div className="flex items-center gap-4">
-                <div className="space-y-1 flex-1">
-                  <Label className="text-sm text-muted-foreground">Marks</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Points</Label>
                   <Input
                     type="number"
                     min="0"
                     step="0.5"
                     value={field.marks ?? 1}
                     onChange={(e) => handleMarksChange(parseFloat(e.target.value) || 0)}
-                    className="w-24"
+                    className="w-24 font-mono border-slate-200 focus-visible:ring-primary rounded-md"
                   />
                 </div>
               </div>
@@ -374,34 +382,36 @@ export function FieldRenderer({
           )}
 
           {field.type === "longInput" && (
-            <div className="pl-9">
-              <Textarea
-                placeholder="Preview of long input field"
-                disabled
-                className="resize-none"
-              />
+            <div className="pl-0 sm:pl-14">
+              <div className="relative">
+                <Textarea
+                    placeholder="Long answer text area preview..."
+                    disabled
+                    className="resize-none min-h-[100px] border border-slate-200 bg-slate-50/30 text-base rounded-md disabled:opacity-100 disabled:text-slate-400"
+                />
+              </div>
             </div>
           )}
 
           {field.type === "infoBlock" && (
-            <div className="pl-9">
+            <div className="pl-0 sm:pl-14">
               <Textarea
                 value={field.label}
                 onChange={(e) => handleLabelChange(e.target.value)}
-                placeholder="Enter information to display"
-                className="resize-none"
+                placeholder="Enter information to display (Markdown supported)"
+                className="resize-none min-h-[100px] text-base bg-slate-50 border-slate-200 focus-visible:ring-primary rounded-md"
               />
             </div>
           )}
 
           {field.type === "imageChoice" && field.options && field.options.length > 0 && (
-            <div className="pl-9">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="pl-0 sm:pl-14">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {field.options.map((option, index) => {
                   const isCorrect = (field.correctAnswers || []).includes(index);
                   const imageUrl = option && option.startsWith("http") ? option : undefined;
                   return (
-                    <div key={index} className="relative space-y-2">
+                    <div key={index} className="relative group/image-option">
                       <div className="absolute top-2 left-2 z-10">
                         <Checkbox
                           id={`image-correct-${field.id}-${index}`}
@@ -410,29 +420,29 @@ export function FieldRenderer({
                             handleCorrectAnswerChange(index, checked === true)
                           }
                           title="Mark as correct answer"
-                          className="bg-background"
+                          className="bg-white border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary shadow-sm"
                         />
                       </div>
-                      <div className="border-2 border-border rounded-lg p-2 aspect-square bg-muted/30 overflow-hidden">
+                      <div className="border border-slate-200 rounded-lg p-1 aspect-square bg-slate-50 overflow-hidden hover:border-slate-400 transition-colors hover:shadow-sm">
                         {imageUrl ? (
                           <div className="relative w-full h-full">
                             <img
                               src={imageUrl}
                               alt={`Image choice ${index + 1}`}
-                              className="w-full h-full object-contain rounded"
+                              className="w-full h-full object-cover rounded-md"
                             />
                             <Button
-                              variant="ghost"
+                              variant="secondary"
                               size="icon"
-                              className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                              className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover/image-option:opacity-100 transition-opacity shadow-sm hover:bg-destructive hover:text-destructive-foreground"
                               onClick={() => handleOptionChange(index, "")}
                               title="Remove image"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         ) : (
-                          <div className="h-full flex items-center justify-center">
+                          <div className="h-full flex items-center justify-center bg-white rounded-md">
                             <FileUpload
                               endpoint="imageUploader"
                               onUploadComplete={(url) => {
@@ -442,7 +452,7 @@ export function FieldRenderer({
                                 // Error handling is done by FileUpload component
                               }}
                               variant="dropzone"
-                              className="h-full w-full"
+                              className="h-full w-full opacity-50 hover:opacity-100 transition-opacity"
                             />
                           </div>
                         )}
@@ -455,13 +465,11 @@ export function FieldRenderer({
           )}
 
           {field.type === "pageBreak" && (
-            <div className="pl-9">
-              <div className="border-t-2 border-dashed border-border my-4">
-                <div className="text-center -mt-3">
-                  <span className="bg-card px-2 text-xs text-muted-foreground">
-                    Page Break
-                  </span>
-                </div>
+            <div className="pl-0 sm:pl-14">
+              <div className="flex items-center gap-4 py-4 opacity-60">
+                <div className="h-px bg-slate-300 flex-1"></div>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full">Page Break</span>
+                <div className="h-px bg-slate-300 flex-1"></div>
               </div>
             </div>
           )}
