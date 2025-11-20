@@ -34,9 +34,12 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { NewTestDialog } from "~/components/dashboard/new-test-dialog";
+import { GenerateTestDialog } from "~/components/dashboard/generate-test-dialog";
+import { Sparkles } from "lucide-react";
 
 export default function DashboardIndex() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [testToEdit, setTestToEdit] = useState<{
@@ -139,10 +142,16 @@ export default function DashboardIndex() {
               Create, edit, and manage your tests and surveys in one place.
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="w-fit gap-2">
-            <Plus className="h-4 w-4" />
-            New Assessment
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setDialogOpen(true)} className="w-fit gap-2">
+              <Plus className="h-4 w-4" />
+              New Assessment
+            </Button>
+            <Button onClick={() => setGenerateDialogOpen(true)} variant="outline" className="w-fit gap-2">
+              <Sparkles className="h-4 w-4" />
+              Generate
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -263,6 +272,7 @@ export default function DashboardIndex() {
       </main>
 
       <NewTestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <GenerateTestDialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen} />
 
       <Dialog open={editDialogOpen} onOpenChange={handleEditClose}>
         <DialogContent>

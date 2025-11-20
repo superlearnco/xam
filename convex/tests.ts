@@ -1,6 +1,8 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { generateText } from "ai";
+import { api } from "./_generated/api";
 
 export const listTests = query({
   args: {
@@ -110,6 +112,63 @@ export const createTest = mutation({
       type: args.type,
       description: args.description,
       fields: [],
+      createdAt: now,
+      lastEdited: now,
+    });
+
+    return testId;
+  },
+});
+
+export const generateAndCreateTest = mutation({
+  args: {
+    name: v.string(),
+    type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    description: v.optional(v.string()),
+    fields: v.array(
+      v.object({
+        id: v.string(),
+        type: v.union(
+          v.literal("shortInput"),
+          v.literal("longInput"),
+          v.literal("multipleChoice"),
+          v.literal("checkboxes"),
+          v.literal("dropdown"),
+          v.literal("imageChoice"),
+          v.literal("pageBreak"),
+          v.literal("infoBlock")
+        ),
+        label: v.string(),
+        required: v.optional(v.boolean()),
+        options: v.optional(v.array(v.string())),
+        order: v.number(),
+        correctAnswers: v.optional(v.array(v.number())),
+        marks: v.optional(v.number()),
+        placeholder: v.optional(v.string()),
+        helpText: v.optional(v.string()),
+        minLength: v.optional(v.number()),
+        maxLength: v.optional(v.number()),
+        pattern: v.optional(v.string()),
+        width: v.optional(v.string()),
+        fileUrl: v.optional(v.string()),
+        latexContent: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const now = Date.now();
+    const testId = await ctx.db.insert("tests", {
+      userId: identity.subject,
+      name: args.name,
+      type: args.type,
+      description: args.description,
+      fields: args.fields,
       createdAt: now,
       lastEdited: now,
     });
@@ -649,6 +708,134 @@ export const deleteSubmission = mutation({
     }
 
     await ctx.db.delete(args.submissionId);
+  },
+});
+
+const INPUT_CREDITS_PER_TOKEN = 0.00005;
+const OUTPUT_CREDITS_PER_TOKEN = 0.00015;
+
+// Generate test using AI
+export const generateTestWithAI = action({
+  args: {
+    prompt: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check user's current credits
+    const creditCheck = await ctx.runQuery(api.credits.checkCredits, {
+      amount: 0, // Just to get current credits
+    });
+
+    // Do not allow users with 0 credits
+    if (creditCheck.credits <= 0) {
+      throw new Error(
+        "You need at least 1 credit to generate tests. Please purchase credits to continue."
+      );
+    }
+
+    // Estimate credits needed (rough estimate before generation)
+    const estimatedInputTokens = Math.ceil((args.prompt.length || 0) / 4); // Rough estimate: 4 chars per token
+    const estimatedOutputTokens = 2000; // Estimate for a typical test generation
+    const estimatedCreditsRaw =
+      estimatedInputTokens * INPUT_CREDITS_PER_TOKEN +
+      estimatedOutputTokens * OUTPUT_CREDITS_PER_TOKEN;
+    const estimatedCredits = Math.ceil(estimatedCreditsRaw); // Round up to nearest credit
+
+    // Check if user has enough credits (with buffer)
+    if (creditCheck.credits < estimatedCredits * 1.5) {
+      // 50% buffer for safety
+      throw new Error(
+        `Insufficient credits. You have ${creditCheck.credits} credits, but need approximately ${estimatedCredits} credits. Please purchase more credits to continue.`
+      );
+    }
+
+    const systemPrompt = `You are an expert exam creator. Create a test based on the user's prompt.
+    Return a JSON object with the following structure:
+    {
+      "name": "Test Name",
+      "description": "Test Description",
+      "type": "test" | "survey" | "essay",
+      "fields": [
+        {
+          "id": "unique_string_id",
+          "type": "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "pageBreak" | "infoBlock",
+          "label": "Question text",
+          "required": boolean (optional),
+          "options": ["Option 1", "Option 2"] (optional, for multipleChoice, checkboxes, dropdown, imageChoice),
+          "correctAnswers": [0] (optional, indices of correct options for auto-grading),
+          "marks": number (optional, default 1),
+          "helpText": "Optional hint",
+          "placeholder": "Optional placeholder"
+        }
+      ]
+    }
+    Ensure the JSON is valid and fields follow this schema.
+    For 'id', generate a unique string like 'field-{timestamp}'.
+    Default to 'test' type if not specified.
+    `;
+
+    const result = await generateText({
+      model: "xai/grok-4-fast-reasoning", // AI Gateway format: provider/model-name
+      system: systemPrompt,
+      prompt: args.prompt,
+    });
+
+    const text = result.text;
+    const usage = result.usage;
+
+    // Debug: Log the usage object structure to understand its format
+    console.log("Usage object:", JSON.stringify(usage, null, 2));
+    console.log("Usage object keys:", usage ? Object.keys(usage) : "usage is null/undefined");
+
+    // Calculate actual credits used
+    // The Vercel AI SDK v5 usage object should have promptTokens and completionTokens
+    const usageObj = usage as any;
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    if (usageObj) {
+      // Try standard Vercel AI SDK format
+      inputTokens = usageObj.promptTokens ?? usageObj.inputTokens ?? 0;
+      outputTokens = usageObj.completionTokens ?? usageObj.outputTokens ?? 0;
+      
+      // If still 0, try nested structure
+      if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
+        inputTokens = usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
+        outputTokens = usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
+      }
+    }
+    
+    const creditsUsedRaw =
+      inputTokens * INPUT_CREDITS_PER_TOKEN +
+      outputTokens * OUTPUT_CREDITS_PER_TOKEN;
+    
+    // Ensure at least 1 credit is charged if there was any usage, and always round up
+    const creditsUsed = Math.max(1, Math.ceil(creditsUsedRaw));
+
+    // Deduct credits
+    await ctx.runMutation(api.credits.deductCredits, {
+      userId: identity.subject,
+      amount: creditsUsed,
+      description: `AI test generation (${inputTokens} input + ${outputTokens} output tokens)`,
+      aiModel: "xai/grok-4-fast-reasoning",
+    });
+
+    // Parse the JSON response
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (error) {
+      // If parsing fails, try to extract JSON from the text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      throw new Error("Failed to parse AI response as JSON");
+    }
   },
 });
 

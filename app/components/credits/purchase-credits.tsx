@@ -13,6 +13,15 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
+import { Badge } from "~/components/ui/badge";
 import { api } from "../../../convex/_generated/api";
 
 export function PurchaseCredits() {
@@ -24,6 +33,7 @@ export function PurchaseCredits() {
 
   const userCredits = useQuery(api.credits.getUserCredits);
   const subscription = useQuery(api.subscriptions.fetchUserSubscription);
+  const creditTransactions = useQuery(api.credits.getCreditTransactions, { limit: 20 });
   const getCreditProducts = useAction(api.subscriptions.getCreditProducts);
   const createCheckout = useAction(api.subscriptions.createCheckoutSession);
   const createPortalUrl = useAction(api.subscriptions.createCustomerPortalUrl);
@@ -214,6 +224,63 @@ export function PurchaseCredits() {
               )}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Usage Logs</CardTitle>
+          <CardDescription>
+            History of your credit usage and AI generations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Activity</TableHead>
+                <TableHead>AI Model</TableHead>
+                <TableHead className="text-right">Credits</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!creditTransactions ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : creditTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    No transaction history found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                creditTransactions.map((transaction) => (
+                  <TableRow key={transaction._id}>
+                    <TableCell>
+                      {new Date(transaction.createdAt).toLocaleDateString()} {new Date(transaction.createdAt).toLocaleTimeString()}
+                    </TableCell>
+                    <TableCell className="font-medium">{transaction.description}</TableCell>
+                    <TableCell>
+                      {transaction.aiModel ? (
+                        <Badge variant="secondary" className="text-xs">
+                          {transaction.aiModel}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className={`text-right font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.amount > 0 ? '+' : ''}{transaction.amount}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

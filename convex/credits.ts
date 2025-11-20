@@ -67,6 +67,7 @@ export const deductCredits = mutation({
     amount: v.number(),
     description: v.optional(v.string()),
     meterId: v.optional(v.string()),
+    aiModel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -97,6 +98,7 @@ export const deductCredits = mutation({
       type: "usage",
       description: args.description || "Credits used",
       meterId: args.meterId,
+      aiModel: args.aiModel,
       createdAt: Date.now(),
     });
 

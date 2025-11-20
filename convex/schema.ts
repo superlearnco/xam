@@ -50,6 +50,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     polarOrderId: v.optional(v.string()),
     meterId: v.optional(v.string()),
+    aiModel: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("userId", ["userId"])
