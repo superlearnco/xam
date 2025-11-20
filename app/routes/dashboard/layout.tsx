@@ -3,6 +3,7 @@ import { redirect } from "react-router";
 import type { Route } from "./+types/layout";
 import { Outlet, useLocation } from "react-router";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
+import { cn } from "~/lib/utils";
 
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args);
@@ -20,7 +21,7 @@ export default function DashboardLayout() {
   const isTestEditor = location.pathname.includes("/test/new");
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className={cn("flex flex-col", isTestEditor ? "h-screen overflow-hidden" : "min-h-screen")}>
       {!isTestEditor && <DashboardNav />}
       <Outlet />
     </div>

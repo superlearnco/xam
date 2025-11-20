@@ -42,7 +42,7 @@ export function TestBuilder({
   const fieldIds = fields.map((field) => field.id);
 
   return (
-    <div className="flex-1 bg-slate-50/50 overflow-y-auto p-4 md:p-8 flex justify-center">
+    <div className="flex-1 bg-slate-50/50 p-4 md:p-8 flex justify-center">
       <div className="max-w-3xl w-full flex flex-col relative mx-auto">
         <div
           ref={setNodeRef}

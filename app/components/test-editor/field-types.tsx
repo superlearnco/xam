@@ -135,23 +135,25 @@ interface FieldTypesSidebarProps {
 
 export function FieldTypesSidebar({ onFieldTypeClick }: FieldTypesSidebarProps) {
   return (
-    <div className="w-80 border-r bg-slate-50/50 p-6 space-y-6 overflow-y-auto hidden lg:block">
-      <div>
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Field Types
-        </h2>
-        <p className="text-sm text-slate-500">
-          Drag fields to build your test
-        </p>
-      </div>
-      <div className="space-y-3">
-        {FIELD_TYPES.map((fieldType) => (
-          <DraggableFieldType 
-            key={fieldType.type} 
-            fieldType={fieldType}
-            onClick={() => onFieldTypeClick?.(fieldType.type)}
-          />
-        ))}
+    <div className="w-80 border-r bg-slate-50/50 hidden lg:block h-full flex flex-col flex-shrink-0">
+      <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div>
+          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Field Types
+          </h2>
+          <p className="text-sm text-slate-500">
+            Drag fields to build your test
+          </p>
+        </div>
+        <div className="space-y-3">
+          {FIELD_TYPES.map((fieldType) => (
+            <DraggableFieldType 
+              key={fieldType.type} 
+              fieldType={fieldType}
+              onClick={() => onFieldTypeClick?.(fieldType.type)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -819,8 +819,8 @@ export default function TestEditorPage() {
   return (
     <>
       <DashboardNav tabs={tabs} />
-      <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="border-b px-6 py-4">
+      <div className="flex flex-1 flex-col min-h-0">
+      <div className="border-b px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/dashboard">
@@ -847,19 +847,21 @@ export default function TestEditorPage() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 min-h-0 overflow-hidden relative">
             <FieldTypesSidebar onFieldTypeClick={handleFieldTypeClick} />
-            <TestBuilder
-              testName={testName}
-              testDescription={testDescription}
-              fields={fields}
-              onNameChange={setTestName}
-              onDescriptionChange={setTestDescription}
-              onFieldUpdate={handleFieldUpdate}
-              onFieldDelete={handleFieldDelete}
-              fieldRefs={fieldRefs}
-              onFieldSettingsClick={handleFieldSettingsClick}
-            />
+            <div className="flex-1 overflow-y-auto h-full flex flex-col">
+              <TestBuilder
+                testName={testName}
+                testDescription={testDescription}
+                fields={fields}
+                onNameChange={setTestName}
+                onDescriptionChange={setTestDescription}
+                onFieldUpdate={handleFieldUpdate}
+                onFieldDelete={handleFieldDelete}
+                fieldRefs={fieldRefs}
+                onFieldSettingsClick={handleFieldSettingsClick}
+              />
+            </div>
           </div>
           <FieldPropertiesPanel
             field={selectedFieldForProperties}
