@@ -19,7 +19,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -79,6 +79,7 @@ export default function TestEditorPage() {
   const [selectedFieldForProperties, setSelectedFieldForProperties] = useState<TestField | null>(null);
   const [propertiesPanelOpen, setPropertiesPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("editor");
+  const [activeOptionCategory, setActiveOptionCategory] = useState("share");
   
   // Options state
   const [maxAttempts, setMaxAttempts] = useState<number | undefined>(undefined);
@@ -884,371 +885,512 @@ export default function TestEditorPage() {
         </DndContext>
       )}
       {activeTab === "options" && (
-        <div className="flex flex-1 overflow-auto">
-          <div className="flex-1 max-w-4xl mx-auto w-full p-6 space-y-6">
-            {/* Share Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Share</CardTitle>
-                <CardDescription>Share this test with others using the link below</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <div className="flex-1 flex items-center gap-3 px-4 py-2 border rounded-lg bg-muted/50">
-                    <span className="text-sm text-muted-foreground flex-shrink-0">Link:</span>
-                    {testId ? (
-                      <Link
-                        to={`/test/${testId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-mono text-primary hover:underline truncate"
-                      >
-                        {`${window.location.origin}/test/${testId}`}
-                      </Link>
-                    ) : (
-                      <span className="text-sm font-mono text-foreground truncate">
-                        Loading...
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    onClick={handleCopyLink}
-                    variant="outline"
-                    size="icon"
-                    className="flex-shrink-0"
-                    disabled={!testId}
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => setQrCodeOpen(true)}
-                    variant="outline"
-                    size="icon"
-                    className="flex-shrink-0"
-                    disabled={!testId}
-                  >
-                    <QrCode className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="flex flex-1 overflow-hidden min-h-0">
+          {/* Settings Sidebar */}
+          <div className="w-64 border-r bg-white flex flex-col overflow-y-auto flex-shrink-0 min-h-0">
+            <div className="p-6 pb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Settings</h2>
+              <p className="text-sm text-muted-foreground mt-1">Configure your test</p>
+            </div>
+            <nav className="flex-1 px-4 space-y-1">
+              <button
+                onClick={() => setActiveOptionCategory("share")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+                  activeOptionCategory === "share" 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <Share2 className="h-4 w-4" />
+                Share
+              </button>
+              <button
+                onClick={() => setActiveOptionCategory("general")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+                  activeOptionCategory === "general" 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <Settings className="h-4 w-4" />
+                General
+              </button>
+              <button
+                onClick={() => setActiveOptionCategory("access")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+                  activeOptionCategory === "access" 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <Lock className="h-4 w-4" />
+                Access & Security
+              </button>
+              <button
+                onClick={() => setActiveOptionCategory("presentation")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+                  activeOptionCategory === "presentation" 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <LayoutTemplate className="h-4 w-4" />
+                Presentation
+              </button>
+              <button
+                onClick={() => setActiveOptionCategory("marking")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+                  activeOptionCategory === "marking" 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <GraduationCap className="h-4 w-4" />
+                Marking & Grading
+              </button>
+            </nav>
+          </div>
 
-            {/* QR Code Modal */}
-            <Dialog open={qrCodeOpen} onOpenChange={setQrCodeOpen}>
-              <DialogContent className="max-w-none w-screen h-screen m-0 p-0 rounded-none border-0 bg-background fixed inset-0 translate-x-0 translate-y-0">
-                <div className="flex flex-col items-center justify-center h-full w-full gap-8 p-8">
-                  <div className="flex flex-col items-center gap-6">
-                    <h2 className="text-3xl font-bold">Scan QR Code</h2>
-                    <p className="text-muted-foreground text-center max-w-md">
-                      Scan this QR code to access the test link on your mobile device
-                    </p>
-                    {testId && (
-                      <div className="bg-white p-8 rounded-lg shadow-lg">
-                        <QRCodeSVG
-                          value={`${window.location.origin}/test/${testId}`}
-                          size={400}
-                          level="H"
-                          includeMargin={true}
-                        />
+          {/* Main Content Area */}
+          <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+            <div className="max-w-2xl mx-auto space-y-6">
+              
+              {/* Share Category */}
+              {activeOptionCategory === "share" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Share Test</CardTitle>
+                    <CardDescription>Share this test with your students using the link below</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label>Public Link</Label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 flex items-center gap-3 px-4 py-2 border rounded-lg bg-muted/50">
+                          {testId ? (
+                            <Link
+                              to={`/test/${testId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-mono text-primary hover:underline truncate"
+                            >
+                              {`${window.location.origin}/test/${testId}`}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-mono text-foreground truncate">
+                              Loading...
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          onClick={handleCopyLink}
+                          variant="outline"
+                          size="icon"
+                          className="flex-shrink-0"
+                          disabled={!testId}
+                        >
+                          {copied ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
-                    )}
-                    {testId && (
-                      <div className="text-center">
-                        <p className="text-sm text-muted-foreground mb-2">Or copy the link:</p>
-                        <p className="text-sm font-mono text-primary break-all max-w-md">
-                          {`${window.location.origin}/test/${testId}`}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>QR Code</Label>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          onClick={() => setQrCodeOpen(true)}
+                          variant="outline"
+                          disabled={!testId}
+                          className="w-full sm:w-auto"
+                        >
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Show QR Code
+                        </Button>
+                        <p className="text-sm text-muted-foreground">
+                          Display a QR code for students to scan
                         </p>
                       </div>
-                    )}
-                  </div>
-                  <Button
-                    onClick={() => setQrCodeOpen(false)}
-                    variant="outline"
-                    size="lg"
-                    className="mt-4"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Close
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Test Information Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Information</CardTitle>
-                <CardDescription>Basic information about your test</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="test-name">Test Name</Label>
-                  <Input
-                    id="test-name"
-                    value={testName}
-                    onChange={(e) => setTestName(e.target.value)}
-                    placeholder="Enter test name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="test-description">Description</Label>
-                  <Textarea
-                    id="test-description"
-                    value={testDescription}
-                    onChange={(e) => setTestDescription(e.target.value)}
-                    placeholder="Enter test description"
-                    rows={3}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max-attempts">Max Attempts</Label>
-                    <Input
-                      id="max-attempts"
-                      type="number"
-                      min="1"
-                      value={maxAttempts ?? ""}
-                      onChange={(e) => setMaxAttempts(e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="Unlimited"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="estimated-duration">Estimated Duration</Label>
-                    <div className="flex gap-2">
+              {/* General Category */}
+              {activeOptionCategory === "general" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>General Information</CardTitle>
+                    <CardDescription>Basic details and time settings for your test</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="test-name">Test Name</Label>
                       <Input
-                        id="estimated-duration"
+                        id="test-name"
+                        value={testName}
+                        onChange={(e) => setTestName(e.target.value)}
+                        placeholder="Enter test name"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="test-description">Description</Label>
+                      <Textarea
+                        id="test-description"
+                        value={testDescription}
+                        onChange={(e) => setTestDescription(e.target.value)}
+                        placeholder="Enter test description"
+                        rows={4}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="max-attempts">Max Attempts</Label>
+                        <Input
+                          id="max-attempts"
+                          type="number"
+                          min="1"
+                          value={maxAttempts ?? ""}
+                          onChange={(e) => setMaxAttempts(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="Unlimited"
+                        />
+                        <p className="text-xs text-muted-foreground">Leave empty for unlimited attempts</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="estimated-duration">Estimated Duration</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="estimated-duration"
+                            type="number"
+                            min="1"
+                            value={
+                              estimatedDuration
+                                ? estimatedDuration >= 60
+                                  ? Math.round(estimatedDuration / 60)
+                                  : estimatedDuration
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value ? parseInt(e.target.value) : undefined;
+                              if (value !== undefined) {
+                                const currentUnit = estimatedDuration && estimatedDuration >= 60 ? "hours" : "minutes";
+                                setEstimatedDuration(currentUnit === "hours" ? value * 60 : value);
+                              } else {
+                                setEstimatedDuration(undefined);
+                              }
+                            }}
+                            placeholder="Duration"
+                            className="flex-1"
+                          />
+                          <Select
+                            value={estimatedDuration ? (estimatedDuration >= 60 ? "hours" : "minutes") : "minutes"}
+                            onValueChange={(value) => {
+                              if (estimatedDuration) {
+                                if (value === "hours" && estimatedDuration < 60) {
+                                  setEstimatedDuration(estimatedDuration * 60);
+                                } else if (value === "minutes" && estimatedDuration >= 60) {
+                                  setEstimatedDuration(Math.round(estimatedDuration / 60));
+                                }
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="minutes">Minutes</SelectItem>
+                              <SelectItem value="hours">Hours</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="time-limit">Enforced Time Limit (minutes)</Label>
+                      <Input
+                        id="time-limit"
                         type="number"
                         min="1"
-                        value={
-                          estimatedDuration
-                            ? estimatedDuration >= 60
-                              ? Math.round(estimatedDuration / 60)
-                              : estimatedDuration
-                            : ""
-                        }
-                        onChange={(e) => {
-                          const value = e.target.value ? parseInt(e.target.value) : undefined;
-                          if (value !== undefined) {
-                            const currentUnit = estimatedDuration && estimatedDuration >= 60 ? "hours" : "minutes";
-                            setEstimatedDuration(currentUnit === "hours" ? value * 60 : value);
-                          } else {
-                            setEstimatedDuration(undefined);
-                          }
-                        }}
-                        placeholder="Duration"
-                        className="flex-1"
+                        value={timeLimitMinutes ?? ""}
+                        onChange={(e) => setTimeLimitMinutes(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="No time limit"
                       />
-                      <Select
-                        value={estimatedDuration ? (estimatedDuration >= 60 ? "hours" : "minutes") : "minutes"}
-                        onValueChange={(value) => {
-                          if (estimatedDuration) {
-                            if (value === "hours" && estimatedDuration < 60) {
-                              setEstimatedDuration(estimatedDuration * 60);
-                            } else if (value === "minutes" && estimatedDuration >= 60) {
-                              setEstimatedDuration(Math.round(estimatedDuration / 60));
-                            }
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="minutes">Minutes</SelectItem>
-                          <SelectItem value="hours">Hours</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Test will automatically submit when this time expires. Leave empty for no limit.
+                      </p>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="time-limit">Enforced Time Limit (minutes)</Label>
-                    <Input
-                      id="time-limit"
-                      type="number"
-                      min="1"
-                      value={timeLimitMinutes ?? ""}
-                      onChange={(e) => setTimeLimitMinutes(e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="No time limit"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Test will auto-submit when time expires. Leave empty for no time limit.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Access Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Access</CardTitle>
-                <CardDescription>Control who can access and how they interact with the test</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="require-auth"
-                    checked={requireAuth}
-                    onCheckedChange={(checked) => setRequireAuth(checked === true)}
-                  />
-                  <Label htmlFor="require-auth" className="font-normal cursor-pointer">
-                    Require E-Mail
-                  </Label>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="password-protection"
-                      checked={passwordProtectionEnabled}
-                      onCheckedChange={(checked) => {
-                        setPasswordProtectionEnabled(checked === true);
-                        if (!checked) {
-                          setPassword("");
-                        }
-                      }}
-                    />
-                    <Label htmlFor="password-protection" className="font-normal cursor-pointer">
-                      Password protection
-                    </Label>
-                  </div>
-                  {passwordProtectionEnabled && (
-                    <div className="ml-6">
+              {/* Access Category */}
+              {activeOptionCategory === "access" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Access & Security</CardTitle>
+                    <CardDescription>Control who can access the test and security restrictions</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-start space-x-3 border p-4 rounded-lg bg-slate-50">
+                        <Checkbox
+                          id="require-auth"
+                          checked={requireAuth}
+                          onCheckedChange={(checked) => setRequireAuth(checked === true)}
+                          className="mt-1"
+                        />
+                        <div>
+                          <Label htmlFor="require-auth" className="font-medium cursor-pointer">
+                            Require Email Address
+                          </Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Students must provide an email address to start the test
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            id="password-protection"
+                            checked={passwordProtectionEnabled}
+                            onCheckedChange={(checked) => {
+                              setPasswordProtectionEnabled(checked === true);
+                              if (!checked) {
+                                setPassword("");
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <div>
+                            <Label htmlFor="password-protection" className="font-medium cursor-pointer">
+                              Password Protection
+                            </Label>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Require a password to access the test
+                            </p>
+                          </div>
+                        </div>
+                        {passwordProtectionEnabled && (
+                          <div className="ml-7">
+                            <Input
+                              type="password"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="Enter access password"
+                              className="max-w-md"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider">Browser Restrictions</h3>
+                      
+                      <div className="grid gap-4">
+                        <div className="flex items-center justify-between p-3 border rounded-md bg-white">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="disable-copy-paste" className="text-base font-medium">Disable Copy/Paste</Label>
+                            <p className="text-sm text-muted-foreground">Prevent copying text from or pasting into the test</p>
+                          </div>
+                          <Checkbox
+                            id="disable-copy-paste"
+                            checked={disableCopyPaste}
+                            onCheckedChange={(checked) => setDisableCopyPaste(checked === true)}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 border rounded-md bg-white">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="require-fullscreen" className="text-base font-medium">Require Full Screen</Label>
+                            <p className="text-sm text-muted-foreground">Force the browser into full screen mode</p>
+                          </div>
+                          <Checkbox
+                            id="require-fullscreen"
+                            checked={requireFullScreen}
+                            onCheckedChange={(checked) => setRequireFullScreen(checked === true)}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 border rounded-md bg-white">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="block-tab-switching" className="text-base font-medium">Block Tab Switching</Label>
+                            <p className="text-sm text-muted-foreground">Detect and warn/block when student switches tabs</p>
+                          </div>
+                          <Checkbox
+                            id="block-tab-switching"
+                            checked={blockTabSwitching}
+                            onCheckedChange={(checked) => setBlockTabSwitching(checked === true)}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 border rounded-md bg-white">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="allow-back-navigation" className="text-base font-medium">Allow Back Navigation</Label>
+                            <p className="text-sm text-muted-foreground">Allow students to go back to previous questions (if not randomized)</p>
+                          </div>
+                          <Checkbox
+                            id="allow-back-navigation"
+                            checked={allowBackNavigation}
+                            onCheckedChange={(checked) => setAllowBackNavigation(checked === true)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Presentation Category */}
+              {activeOptionCategory === "presentation" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Presentation</CardTitle>
+                    <CardDescription>Configure how questions and options are displayed to students</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="randomize-questions" className="text-base font-medium">Randomize Questions</Label>
+                          <p className="text-sm text-muted-foreground">Shuffle the order of questions for each student</p>
+                        </div>
+                        <Checkbox
+                          id="randomize-questions"
+                          checked={randomizeQuestions}
+                          onCheckedChange={(checked) => setRandomizeQuestions(checked === true)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="shuffle-options" className="text-base font-medium">Shuffle Options</Label>
+                          <p className="text-sm text-muted-foreground">Randomize answer choices within Multiple Choice/Checkbox questions</p>
+                        </div>
+                        <Checkbox
+                          id="shuffle-options"
+                          checked={shuffleOptions}
+                          onCheckedChange={(checked) => setShuffleOptions(checked === true)}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Marking Category */}
+              {activeOptionCategory === "marking" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Marking & Grading</CardTitle>
+                    <CardDescription>Configure grading criteria and feedback settings</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="passing-grade">Passing Grade (%)</Label>
                       <Input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
+                        id="passing-grade"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={passingGrade ?? ""}
+                        onChange={(e) => setPassingGrade(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="e.g., 70"
                         className="max-w-md"
+                      />
+                      <p className="text-xs text-muted-foreground">Minimum percentage required to pass</p>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="instant-feedback" className="text-base font-medium">Instant Feedback</Label>
+                          <p className="text-sm text-muted-foreground">Show score immediately after submission</p>
+                        </div>
+                        <Checkbox
+                          id="instant-feedback"
+                          checked={instantFeedback}
+                          onCheckedChange={(checked) => setInstantFeedback(checked === true)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="show-answer-key" className="text-base font-medium">Show Answer Key</Label>
+                          <p className="text-sm text-muted-foreground">Display correct answers to students after submission</p>
+                        </div>
+                        <Checkbox
+                          id="show-answer-key"
+                          checked={showAnswerKey}
+                          onCheckedChange={(checked) => setShowAnswerKey(checked === true)}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* QR Code Modal - Keep it rendered if open, but better placed outside the conditional if possible, but here works */}
+          <Dialog open={qrCodeOpen} onOpenChange={setQrCodeOpen}>
+            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 rounded-none border-0 bg-background fixed inset-0 translate-x-0 translate-y-0">
+              <div className="flex flex-col items-center justify-center h-full w-full gap-8 p-8">
+                <div className="flex flex-col items-center gap-6">
+                  <h2 className="text-3xl font-bold">Scan QR Code</h2>
+                  <p className="text-muted-foreground text-center max-w-md">
+                    Scan this QR code to access the test link on your mobile device
+                  </p>
+                  {testId && (
+                    <div className="bg-white p-8 rounded-lg shadow-lg">
+                      <QRCodeSVG
+                        value={`${window.location.origin}/test/${testId}`}
+                        size={400}
+                        level="H"
+                        includeMargin={true}
                       />
                     </div>
                   )}
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Browser Restrictions</Label>
-                  <div className="space-y-3 ml-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="disable-copy-paste"
-                        checked={disableCopyPaste}
-                        onCheckedChange={(checked) => setDisableCopyPaste(checked === true)}
-                      />
-                      <Label htmlFor="disable-copy-paste" className="font-normal cursor-pointer">
-                        Disable copy/paste
-                      </Label>
+                  {testId && (
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">Or copy the link:</p>
+                      <p className="text-sm font-mono text-primary break-all max-w-md">
+                        {`${window.location.origin}/test/${testId}`}
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="require-fullscreen"
-                        checked={requireFullScreen}
-                        onCheckedChange={(checked) => setRequireFullScreen(checked === true)}
-                      />
-                      <Label htmlFor="require-fullscreen" className="font-normal cursor-pointer">
-                        Full screen mode required
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="block-tab-switching"
-                        checked={blockTabSwitching}
-                        onCheckedChange={(checked) => setBlockTabSwitching(checked === true)}
-                      />
-                      <Label htmlFor="block-tab-switching" className="font-normal cursor-pointer">
-                        Block tab switching
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="allow-back-navigation"
-                        checked={allowBackNavigation}
-                        onCheckedChange={(checked) => setAllowBackNavigation(checked === true)}
-                      />
-                      <Label htmlFor="allow-back-navigation" className="font-normal cursor-pointer">
-                        Allow back navigation
-                      </Label>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Presentation Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Presentation</CardTitle>
-                <CardDescription>Configure how questions and options are displayed</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="randomize-questions"
-                    checked={randomizeQuestions}
-                    onCheckedChange={(checked) => setRandomizeQuestions(checked === true)}
-                  />
-                  <Label htmlFor="randomize-questions" className="font-normal cursor-pointer">
-                    Randomize question order per student
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="shuffle-options"
-                    checked={shuffleOptions}
-                    onCheckedChange={(checked) => setShuffleOptions(checked === true)}
-                  />
-                  <Label htmlFor="shuffle-options" className="font-normal cursor-pointer">
-                    Shuffle answer options (Multiple Choice, Checkboxes, etc.)
-                  </Label>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Marking Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Marking</CardTitle>
-                <CardDescription>Configure how the test is graded and feedback is provided</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="passing-grade">Passing Grade (%)</Label>
-                  <Input
-                    id="passing-grade"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={passingGrade ?? ""}
-                    onChange={(e) => setPassingGrade(e.target.value ? parseInt(e.target.value) : undefined)}
-                    placeholder="e.g., 70"
-                    className="max-w-md"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="instant-feedback"
-                    checked={instantFeedback}
-                    onCheckedChange={(checked) => setInstantFeedback(checked === true)}
-                  />
-                  <Label htmlFor="instant-feedback" className="font-normal cursor-pointer">
-                    Instant feedback (after test)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="show-answer-key"
-                    checked={showAnswerKey}
-                    onCheckedChange={(checked) => setShowAnswerKey(checked === true)}
-                  />
-                  <Label htmlFor="show-answer-key" className="font-normal cursor-pointer">
-                    Show answer key
-                  </Label>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Button
+                  onClick={() => setQrCodeOpen(false)}
+                  variant="outline"
+                  size="lg"
+                  className="mt-4"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Close
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
       {activeTab === "preview" && (
