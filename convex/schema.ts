@@ -120,6 +120,7 @@ export default defineSchema({
     timeLimitMinutes: v.optional(v.number()),
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
+    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
   }).index("userId", ["userId"]),
   testSubmissions: defineTable({
     testId: v.id("tests"),

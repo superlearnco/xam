@@ -97,6 +97,7 @@ export default function TestEditorPage() {
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | undefined>(undefined);
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
+  const [viewType, setViewType] = useState<"singlePage" | "oneQuestionPerPage">("singlePage");
   const [copied, setCopied] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
@@ -164,6 +165,7 @@ export default function TestEditorPage() {
       setTimeLimitMinutes(test.timeLimitMinutes);
       setRandomizeQuestions(test.randomizeQuestions || false);
       setShuffleOptions(test.shuffleOptions || false);
+      setViewType((test.viewType as "singlePage" | "oneQuestionPerPage") || "singlePage");
       setIsLoaded(true);
     }
   }, [test, testId, isLoaded]);
@@ -192,6 +194,7 @@ export default function TestEditorPage() {
           timeLimitMinutes?: number;
           randomizeQuestions: boolean;
           shuffleOptions: boolean;
+          viewType: "singlePage" | "oneQuestionPerPage";
         }
       ) => {
         try {
@@ -217,6 +220,7 @@ export default function TestEditorPage() {
             timeLimitMinutes: options.timeLimitMinutes,
             randomizeQuestions: options.randomizeQuestions,
             shuffleOptions: options.shuffleOptions,
+            viewType: options.viewType,
           });
         } catch (error) {
           console.error("Failed to update test:", error);
@@ -246,6 +250,7 @@ export default function TestEditorPage() {
         timeLimitMinutes,
         randomizeQuestions,
         shuffleOptions,
+        viewType,
       });
     }
   }, [
@@ -268,6 +273,7 @@ export default function TestEditorPage() {
     timeLimitMinutes,
     randomizeQuestions,
     shuffleOptions,
+    viewType,
     debouncedUpdate,
     test,
   ]);
@@ -1291,6 +1297,25 @@ export default function TestEditorPage() {
                           checked={shuffleOptions}
                           onCheckedChange={(checked) => setShuffleOptions(checked === true)}
                         />
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <Label>View Type</Label>
+                        <Select
+                          value={viewType}
+                          onValueChange={(value) => setViewType(value as "singlePage" | "oneQuestionPerPage")}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="singlePage">All questions on one page (default)</SelectItem>
+                            <SelectItem value="oneQuestionPerPage">One question per page</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground">
+                          Choose how questions are presented to the student. "All questions on one page" respects manual page breaks.
+                        </p>
                       </div>
                     </div>
                   </CardContent>

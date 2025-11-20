@@ -1487,20 +1487,31 @@ function TestForm({
     const pgs: TestField[][] = [];
     let currentPageFields: TestField[] = [];
 
-    sortedFields.forEach((field) => {
-      if (field.type === "pageBreak") {
-        if (currentPageFields.length > 0) {
-          pgs.push(currentPageFields);
-          currentPageFields = [];
-        }
-      } else {
-        currentPageFields.push(field);
-      }
-    });
+    // Default to singlePage if not set
+    const viewType = test.viewType || "singlePage";
 
-    if (currentPageFields.length > 0) pgs.push(currentPageFields);
+    if (viewType === "oneQuestionPerPage") {
+      sortedFields.forEach((field) => {
+        if (field.type !== "pageBreak") {
+          pgs.push([field]);
+        }
+      });
+    } else {
+      sortedFields.forEach((field) => {
+        if (field.type === "pageBreak") {
+          if (currentPageFields.length > 0) {
+            pgs.push(currentPageFields);
+            currentPageFields = [];
+          }
+        } else {
+          currentPageFields.push(field);
+        }
+      });
+
+      if (currentPageFields.length > 0) pgs.push(currentPageFields);
+    }
     return pgs;
-  }, [sortedFields]);
+  }, [sortedFields, test.viewType]);
 
   const currentPageFieldsToShow = pages[currentPage] || [];
   const isLastPage = currentPage === pages.length - 1;

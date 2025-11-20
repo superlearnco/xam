@@ -227,6 +227,7 @@ export const updateTest = mutation({
     timeLimitMinutes: v.optional(v.number()),
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
+    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -277,6 +278,7 @@ export const updateTest = mutation({
       timeLimitMinutes?: number;
       randomizeQuestions?: boolean;
       shuffleOptions?: boolean;
+      viewType?: "singlePage" | "oneQuestionPerPage";
     } = {};
 
     if (args.name !== undefined) {
@@ -329,6 +331,9 @@ export const updateTest = mutation({
     }
     if (args.shuffleOptions !== undefined) {
       updates.shuffleOptions = args.shuffleOptions;
+    }
+    if (args.viewType !== undefined) {
+      updates.viewType = args.viewType;
     }
 
     // Always update lastEdited when any field is updated
