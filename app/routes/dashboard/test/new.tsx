@@ -19,7 +19,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -30,7 +30,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Badge } from "~/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart";
-import { PieChart, Pie, Cell } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import katex from "katex";
@@ -1769,6 +1769,7 @@ function MarkingPage({
   const deleteSubmission = useMutation(api.tests.deleteSubmission);
   const [submissionToDelete, setSubmissionToDelete] = useState<Id<"testSubmissions"> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeMarkingCategory, setActiveMarkingCategory] = useState("overview");
 
   if (submissionsData === undefined) {
     return (
@@ -1778,7 +1779,7 @@ function MarkingPage({
     );
   }
 
-  const { submissions, statistics } = submissionsData;
+  const { submissions, statistics, questionAnalytics } = submissionsData;
 
   const handleExportCSV = () => {
     if (!submissions || submissions.length === 0) return;
@@ -1883,170 +1884,334 @@ function MarkingPage({
   const statusColors = [statusChartConfig.marked.color, statusChartConfig.awaiting.color];
 
   return (
-    <div className="flex flex-1 flex-col overflow-auto p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">Submissions</h2>
-          <p className="text-muted-foreground">Review and mark student submissions</p>
+    <div className="flex flex-1 overflow-hidden min-h-0">
+      {/* Marking Sidebar */}
+      <div className="w-64 border-r bg-white flex flex-col overflow-y-auto flex-shrink-0 min-h-0">
+        <div className="p-6 pb-4">
+          <h2 className="text-lg font-semibold text-slate-900">Marking</h2>
+          <p className="text-sm text-muted-foreground mt-1">Review submissions & stats</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportCSV} disabled={submissions.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          {statistics.marked > 0 && (
-            <Button variant="outline" asChild>
-              <Link to={`/dashboard/test/analysis/${testId}`}>
-                View Question Analysis
-              </Link>
-            </Button>
+        <nav className="flex-1 px-4 space-y-1">
+          <button
+            onClick={() => setActiveMarkingCategory("overview")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+              activeMarkingCategory === "overview" 
+                ? "bg-primary/10 text-primary" 
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            )}
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveMarkingCategory("submissions")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+              activeMarkingCategory === "submissions" 
+                ? "bg-primary/10 text-primary" 
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            )}
+          >
+            <Users className="h-4 w-4" />
+            Submissions
+          </button>
+          <button
+            onClick={() => setActiveMarkingCategory("analysis")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+              activeMarkingCategory === "analysis" 
+                ? "bg-primary/10 text-primary" 
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            )}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Item Analysis
+          </button>
+        </nav>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+        <div className="max-w-5xl mx-auto space-y-6">
+          
+          {/* Overview Category */}
+          {activeMarkingCategory === "overview" && (
+             <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                   <div>
+                     <h2 className="text-2xl font-semibold tracking-tight">Overview</h2>
+                     <p className="text-muted-foreground">Key statistics for this test</p>
+                   </div>
+                   <Button variant="outline" onClick={handleExportCSV} disabled={submissions.length === 0}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                   </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{statistics.total}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Average Score</CardTitle>
+                        <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{statistics.meanPercentage}%</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Marked</CardTitle>
+                        <Check className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{statistics.marked} / {statistics.total}</div>
+                      </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Charts */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Class Accuracy</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {statistics.marked > 0 ? (
+                              <ChartContainer config={accuracyChartConfig} className="h-[250px]">
+                                <PieChart>
+                                  <ChartTooltip content={<ChartTooltipContent />} />
+                                  <Pie
+                                    data={accuracyData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    label
+                                  >
+                                    {accuracyData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={accuracyColors[index]} />
+                                    ))}
+                                  </Pie>
+                                </PieChart>
+                              </ChartContainer>
+                            ) : (
+                              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                                No marked submissions yet
+                              </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Marking Status</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {statistics.total > 0 ? (
+                              <ChartContainer config={statusChartConfig} className="h-[250px]">
+                                <PieChart>
+                                  <ChartTooltip content={<ChartTooltipContent />} />
+                                  <Pie
+                                    data={markingStatusData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    label
+                                  >
+                                    {markingStatusData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={statusColors[index]} />
+                                    ))}
+                                  </Pie>
+                                </PieChart>
+                              </ChartContainer>
+                            ) : (
+                              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                                No submissions yet
+                              </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+             </div>
           )}
+
+          {/* Submissions Category */}
+          {activeMarkingCategory === "submissions" && (
+             <div className="space-y-6">
+                <div>
+                     <h2 className="text-2xl font-semibold tracking-tight">Submissions</h2>
+                     <p className="text-muted-foreground">Manage and mark individual submissions</p>
+                </div>
+                <Card>
+                   <CardContent className="p-0">
+                        {submissions.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground">
+                              No submissions yet
+                            </div>
+                          ) : (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="pl-6">Name</TableHead>
+                                  <TableHead>Email</TableHead>
+                                  <TableHead>Submitted</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead>Grade</TableHead>
+                                  <TableHead className="text-right pr-6">Action</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {submissions.map((submission) => (
+                                  <TableRow key={submission._id}>
+                                    <TableCell className="font-medium pl-6">
+                                      {submission.respondentName || "Anonymous"}
+                                    </TableCell>
+                                    <TableCell>{submission.respondentEmail || "-"}</TableCell>
+                                    <TableCell>
+                                      {new Date(submission.submittedAt).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={submission.isMarked ? "default" : "secondary"}>
+                                        {submission.isMarked ? "Marked" : "Submitted"}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {submission.percentage !== undefined
+                                        ? `${submission.percentage}%`
+                                        : "-"}
+                                    </TableCell>
+                                    <TableCell className="text-right pr-6">
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant={submission.isMarked ? "outline" : "default"}
+                                          size="sm"
+                                          onClick={() => navigate(`/dashboard/test/mark/${submission._id}`)}
+                                        >
+                                          {submission.isMarked ? "Review" : "Mark"}
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          onClick={() => setSubmissionToDelete(submission._id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          )}
+                   </CardContent>
+                </Card>
+             </div>
+          )}
+
+          {/* Analysis Category */}
+          {activeMarkingCategory === "analysis" && (
+             <div className="space-y-6">
+                <div>
+                     <h2 className="text-2xl font-semibold tracking-tight">Item Analysis</h2>
+                     <p className="text-muted-foreground">Detailed performance breakdown per question</p>
+                </div>
+                
+                {questionAnalytics && questionAnalytics.length > 0 ? (
+                    <>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          {questionAnalytics.slice(0, 3).map((q, i) => (
+                            <Card key={q.fieldId}>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                  Most Missed #{i + 1}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-2xl font-bold">{q.averagePercentage}%</div>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2" title={q.label}>
+                                  {q.label}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Question Performance</CardTitle>
+                                <CardDescription>
+                                    Average performance per question based on {statistics.marked} marked submissions
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-[600px] w-full">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                      data={questionAnalytics}
+                                      layout="vertical"
+                                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                    >
+                                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                      <XAxis type="number" domain={[0, 100]} unit="%" />
+                                      <YAxis 
+                                        dataKey="label" 
+                                        type="category" 
+                                        width={200} 
+                                        tickFormatter={(value) => value.length > 30 ? `${value.substring(0, 30)}...` : value}
+                                      />
+                                      <RechartsTooltip 
+                                        content={({ active, payload }) => {
+                                          if (active && payload && payload.length) {
+                                            const data = payload[0].payload;
+                                            return (
+                                              <div className="bg-background border rounded-lg p-3 shadow-lg">
+                                                <p className="font-medium">{data.label}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                  Average: {data.averagePercentage}% ({data.averageScore.toFixed(1)}/{data.maxScore})
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                  Based on {data.count} marked submissions
+                                                </p>
+                                              </div>
+                                            );
+                                          }
+                                          return null;
+                                        }}
+                                      />
+                                      <Bar dataKey="averagePercentage" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} name="Average Score (%)" />
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
+                ) : (
+                    <Card>
+                        <CardContent className="text-center py-12 text-muted-foreground">
+                            No question data available yet. Mark some submissions to see analysis.
+                        </CardContent>
+                    </Card>
+                )}
+             </div>
+          )}
+
         </div>
       </div>
 
-      {/* Statistics Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Class Accuracy Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Class Accuracy</CardTitle>
-            <CardDescription>Mean percentage: {statistics.meanPercentage}%</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {statistics.marked > 0 ? (
-              <ChartContainer config={accuracyChartConfig} className="h-[250px]">
-                <PieChart>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Pie
-                    data={accuracyData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {accuracyData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={accuracyColors[index]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-            ) : (
-              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                No marked submissions yet
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Marking Status Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Marking Status</CardTitle>
-            <CardDescription>
-              {statistics.marked} marked, {statistics.unmarked} awaiting
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {statistics.total > 0 ? (
-              <ChartContainer config={statusChartConfig} className="h-[250px]">
-                <PieChart>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Pie
-                    data={markingStatusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {markingStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={statusColors[index]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-            ) : (
-              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                No submissions yet
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Submissions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Submissions</CardTitle>
-          <CardDescription>Total: {statistics.total} submissions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {submissions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No submissions yet
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {submissions.map((submission) => (
-                  <TableRow key={submission._id}>
-                    <TableCell className="font-medium">
-                      {submission.respondentName || "Anonymous"}
-                    </TableCell>
-                    <TableCell>{submission.respondentEmail || "-"}</TableCell>
-                    <TableCell>
-                      {new Date(submission.submittedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={submission.isMarked ? "default" : "secondary"}>
-                        {submission.isMarked ? "Marked" : "Submitted"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {submission.percentage !== undefined
-                        ? `${submission.percentage}%`
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant={submission.isMarked ? "outline" : "default"}
-                          size="sm"
-                          onClick={() => navigate(`/dashboard/test/mark/${submission._id}`)}
-                        >
-                          {submission.isMarked ? "Review" : "Mark"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setSubmissionToDelete(submission._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
+      {/* Delete Dialog */}
       <Dialog open={!!submissionToDelete} onOpenChange={(open) => !open && setSubmissionToDelete(null)}>
         <DialogContent>
           <DialogHeader>
