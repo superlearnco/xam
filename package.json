@@ -37,7 +37,7 @@
     "@types/katex": "^0.16.7",
     "@vercel/analytics": "^1.5.0",
     "@vercel/react-router": "^1.1.2",
-    "ai": "^4.3.16",
+    "ai": "^5.0.97",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.24.3",
