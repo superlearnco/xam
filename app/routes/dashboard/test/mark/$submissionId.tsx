@@ -458,7 +458,7 @@ export default function MarkingPage() {
                     <span className="hidden sm:inline">Advanced Marking</span>
                   </Toggle>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
+                <TooltipContent side="bottom" className="max-w-xs bg-popover text-popover-foreground border">
                   <p className="font-semibold mb-2">Keyboard Shortcuts:</p>
                   <ul className="text-xs space-y-1">
                     <li><kbd className="bg-muted px-1 rounded">Arrow Right/Down</kbd> Next Question</li>
