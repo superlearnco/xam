@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useQuery } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 import {
@@ -20,6 +20,7 @@ import {
   Plus,
   X,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -32,6 +33,7 @@ import type { FieldType } from "./field-types";
 import { FIELD_TYPES } from "./field-types";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { toast } from "sonner";
 
 export interface TestField {
   id: string;
@@ -87,6 +89,9 @@ export function FieldRenderer({
     isDragging,
   } = useSortable({ id: field.id });
 
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generateDummyAnswers = useAction(api.tests.generateDummyAnswers);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -110,6 +115,44 @@ export function FieldRenderer({
   const displayFileUrl = storageId 
     ? (fileUrlFromQuery || (isStorageId ? undefined : field.fileUrl))
     : field.fileUrl;
+
+  const handleGenerateDistractors = async () => {
+    if (!field.label) {
+        toast.error("Please enter a question first");
+        return;
+    }
+    const currentCorrectIndices = field.correctAnswers || [];
+    if (currentCorrectIndices.length === 0) {
+        toast.error("Please mark at least one correct answer");
+        return;
+    }
+
+    const correctOptions = currentCorrectIndices.map(idx => field.options?.[idx]).filter(Boolean) as string[];
+    if (correctOptions.length === 0) {
+         toast.error("Please fill in the correct answer text");
+         return;
+    }
+
+    setIsGenerating(true);
+    try {
+        const distractors = await generateDummyAnswers({
+            question: field.label,
+            correctAnswers: correctOptions
+        });
+        
+        // Add to options
+        const currentOptions = field.options || [];
+        onUpdate({
+            ...field,
+            options: [...currentOptions, ...distractors]
+        });
+        toast.success("Distractors generated!");
+    } catch (error) {
+        toast.error("Failed to generate distractors: " + (error as Error).message);
+    } finally {
+        setIsGenerating(false);
+    }
+  };
 
   const handleLabelChange = (label: string) => {
     onUpdate({ ...field, label });
@@ -371,15 +414,30 @@ export function FieldRenderer({
                 );
               })}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleOptionAdd}
-                className="text-primary hover:text-primary/80 hover:bg-primary/5 font-medium mt-2 h-9 px-3 rounded-lg"
-              >
-                <Plus className="h-3.5 w-3.5 mr-2" />
-                Add Option
-              </Button>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleOptionAdd}
+                  className="text-primary hover:text-primary/80 hover:bg-primary/5 font-medium h-9 px-3 rounded-lg"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-2" />
+                  Add Option
+                </Button>
+
+                {isEditable && field.type !== "imageChoice" && field.label && field.correctAnswers && field.correctAnswers.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateDistractors}
+                    disabled={isGenerating}
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 font-medium h-9 px-3 rounded-lg"
+                  >
+                    <Sparkles className={cn("h-3.5 w-3.5 mr-2", isGenerating && "animate-spin")} />
+                    {isGenerating ? "Generating..." : "Generate Distractors"}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 

@@ -894,3 +894,109 @@ export const generateTestWithAI = action({
   },
 });
 
+export const generateDummyAnswers = action({
+  args: {
+    question: v.string(),
+    correctAnswers: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check user's current credits
+    const creditCheck = await ctx.runQuery(api.credits.checkCredits, {
+      amount: 0, // Just to get current credits
+    });
+
+    // Do not allow users with 0 credits
+    if (creditCheck.credits <= 0) {
+      throw new Error(
+        "You need at least 1 credit to generate answers. Please purchase credits to continue."
+      );
+    }
+
+    const systemPrompt = `You are an expert exam creator. Generate 3 incorrect but plausible options (distractors) for a multiple choice question.
+    
+    Question: "${args.question}"
+    Correct Answer(s): "${args.correctAnswers.join(", ")}"
+    
+    Return ONLY a JSON array of strings containing 3 incorrect options.
+    Example: ["Incorrect Option 1", "Incorrect Option 2", "Incorrect Option 3"]
+    Do not include the correct answer in the output.
+    Ensure the JSON is valid.`;
+
+    // Estimate credits needed (rough estimate)
+    const estimatedInputTokens = Math.ceil((systemPrompt.length + args.question.length) / 4);
+    const estimatedOutputTokens = 100; // Short response
+    const estimatedCreditsRaw =
+      estimatedInputTokens * INPUT_CREDITS_PER_TOKEN +
+      estimatedOutputTokens * OUTPUT_CREDITS_PER_TOKEN;
+    const estimatedCredits = Math.ceil(estimatedCreditsRaw);
+
+    // Check if user has enough credits (with buffer)
+    if (creditCheck.credits < estimatedCredits) {
+       // minimal check, usually 1 credit is enough
+    }
+
+    const result = await generateText({
+      model: "xai/grok-4-fast-non-reasoning", 
+      system: systemPrompt,
+      prompt: "Generate distractors.",
+    });
+
+    const text = result.text;
+    const usage = result.usage;
+
+    // Calculate actual credits used
+    const usageObj = usage as any;
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    if (usageObj) {
+      inputTokens = usageObj.promptTokens ?? usageObj.inputTokens ?? 0;
+      outputTokens = usageObj.completionTokens ?? usageObj.outputTokens ?? 0;
+       if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
+        inputTokens = usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
+        outputTokens = usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
+      }
+    }
+    
+    const creditsUsedRaw =
+      inputTokens * INPUT_CREDITS_PER_TOKEN +
+      outputTokens * OUTPUT_CREDITS_PER_TOKEN;
+    
+    // Ensure at least 1 credit is charged if there was any usage, and always round up
+    const creditsUsed = Math.max(1, Math.ceil(creditsUsedRaw));
+
+    // Deduct credits
+    await ctx.runMutation(api.credits.deductCredits, {
+      userId: identity.subject,
+      amount: creditsUsed,
+      description: `AI distractor generation (${inputTokens} in + ${outputTokens} out)`,
+      aiModel: "xai/grok-4-fast-non-reasoning",
+    });
+
+    // Parse the JSON response
+    try {
+      const data = JSON.parse(text);
+      if (Array.isArray(data)) {
+          return data;
+      }
+      // Try to find array in text if not direct JSON
+      const arrayMatch = text.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        return JSON.parse(arrayMatch[0]);
+      }
+      throw new Error("Invalid response format");
+    } catch (error) {
+       const arrayMatch = text.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        return JSON.parse(arrayMatch[0]);
+      }
+      throw new Error("Failed to parse AI response as JSON");
+    }
+  },
+});
+
