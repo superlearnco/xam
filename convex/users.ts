@@ -64,3 +64,40 @@ export const upsertUser = mutation({
     return await ctx.db.get(userId);
   },
 });
+
+export const getUserCredits = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    return user?.credits || 0;
+  },
+});
+
+export const getLastPurchase = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) return null;
+
+    const lastPurchase = await ctx.db
+      .query("creditTransactions")
+      .withIndex("by_user_date", (q) => q.eq("userId", user.tokenIdentifier))
+      .order("desc")
+      .filter((q) => q.eq(q.field("type"), "purchase"))
+      .first();
+
+    return lastPurchase;
+  },
+});

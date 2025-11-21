@@ -11,9 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { api } from "../../convex/_generated/api";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "~/lib/mixpanel";
 
 export function meta({}: Route.MetaArgs) {
@@ -24,9 +24,11 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Success() {
   const { isSignedIn, userId } = useAuth();
-  const subscription = useQuery(api.subscriptions.fetchUserSubscription);
+  // Get the latest purchase to show details
+  const lastPurchase = useQuery(api.users.getLastPurchase);
   const upsertUser = useMutation(api.users.upsertUser);
   const purchaseTrackedRef = useRef(false);
+  const [isWaitingForWebhook, setIsWaitingForWebhook] = useState(true);
 
   // Ensure user is created/updated when they land on success page
   useEffect(() => {
@@ -35,136 +37,149 @@ export default function Success() {
     }
   }, [isSignedIn, upsertUser]);
 
-  // Track Purchase event when subscription is active
+  // Check if we have a recent purchase
+  const recentPurchase = lastPurchase && (Date.now() - lastPurchase.createdAt < 5 * 60 * 1000) ? lastPurchase : null;
+
+  useEffect(() => {
+    // If we found a recent purchase, stop waiting
+    if (recentPurchase) {
+      setIsWaitingForWebhook(false);
+    }
+    
+    // Stop waiting after 10 seconds anyway to avoid infinite loading feeling
+    const timer = setTimeout(() => {
+      setIsWaitingForWebhook(false);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [recentPurchase]);
+
+  // Track Purchase event when transaction is found
   useEffect(() => {
     if (
-      subscription &&
-      subscription.status === "active" &&
+      recentPurchase &&
       userId &&
       !purchaseTrackedRef.current
     ) {
-      // Generate a unique transaction ID (using subscription ID if available)
-      const transactionId =
-        subscription.polarId || subscription._id || `txn_${Date.now()}_${userId.slice(0, 8)}`;
-
       trackEvent("Purchase", {
         user_id: userId,
-        transaction_id: transactionId,
-        revenue: subscription.amount ? subscription.amount / 100 : 0,
-        currency: subscription.currency || "USD",
+        transaction_id: recentPurchase.polarOrderId || recentPurchase._id,
+        amount: recentPurchase.amount, // Credits amount
+        type: "credit_purchase",
       });
-
       purchaseTrackedRef.current = true;
     }
-  }, [subscription, userId]);
+  }, [recentPurchase, userId]);
 
   if (!isSignedIn) {
     return (
-      <section className="flex flex-col items-center justify-center min-h-screen px-4">
-        <Card className="max-w-md w-full text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <Card className="max-w-md w-full text-center border-none shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardTitle className="text-2xl font-bold">Access Denied</CardTitle>
             <CardDescription>
-              Please sign in to view your subscription details.
+              Please sign in to view your purchase details.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full">
+            <Button asChild className="w-full" size="lg">
               <Link to="/sign-in">Sign In</Link>
             </Button>
           </CardContent>
         </Card>
-      </section>
+      </div>
     );
   }
 
-  if (!subscription) {
+  // While loading initial data or waiting for webhook
+  if (lastPurchase === undefined || (isWaitingForWebhook && !recentPurchase)) {
     return (
-      <section className="flex flex-col items-center justify-center min-h-screen px-4">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Loading your subscription details...</span>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <div className="text-center space-y-2">
+            <h3 className="text-xl font-semibold">Processing Payment</h3>
+            <p className="text-muted-foreground">Please wait while we confirm your transaction...</p>
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-screen px-4">
-      <Card className="max-w-2xl w-full text-center">
-        <CardHeader className="pb-6">
-          <div className="mx-auto mb-4">
-            <CheckCircle className="h-16 w-16 text-green-500" />
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50/50 dark:bg-slate-950/50 p-4">
+      <Card className="max-w-lg w-full border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        
+        <CardHeader className="pb-2 text-center pt-12">
+          <div className="mx-auto mb-6 bg-green-100 dark:bg-green-900/30 p-4 rounded-full w-fit shadow-inner">
+            <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
           </div>
-          <CardTitle className="text-3xl font-bold">
-            Welcome to your subscription!
+          <CardTitle className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            Payment Successful!
           </CardTitle>
-          <CardDescription className="text-lg">
-            Your payment was successful and your subscription is now active.
+          <CardDescription className="text-lg mt-2 text-slate-600 dark:text-slate-400">
+             {recentPurchase 
+               ? "Your credits have been instantly added to your account."
+               : "Your payment was received and credits will be added shortly."}
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-6">
-          <div className="bg-muted rounded-lg p-6 text-left">
-            <h3 className="font-semibold text-lg mb-4">Subscription Details</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Status:</span>
-                <span className="font-medium capitalize">{subscription.status}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount:</span>
-                <span className="font-medium">
-                  ${subscription.amount ? (subscription.amount / 100).toFixed(2) : '0.00'} {subscription.currency ? subscription.currency.toUpperCase() : 'USD'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Billing Cycle:</span>
-                <span className="font-medium capitalize">{subscription.interval}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Next Billing:</span>
-                <span className="font-medium">
-                  {subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}
-                </span>
-              </div>
+        <CardContent className="p-8 space-y-8">
+          {/* Purchase Details Card */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 space-y-4 border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Total Credits</span>
+              <span className="text-slate-900 dark:text-slate-100 font-bold text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                {recentPurchase ? recentPurchase.amount : "Updating..."}
+              </span>
+            </div>
+            
+            <div className="h-px bg-slate-200 dark:bg-slate-700" />
+            
+            <div className="flex items-center justify-between">
+               <span className="text-slate-500 dark:text-slate-400 font-medium">Transaction Date</span>
+               <span className="text-slate-900 dark:text-slate-100 font-medium">
+                 {recentPurchase 
+                   ? new Date(recentPurchase.createdAt).toLocaleDateString(undefined, { 
+                       year: 'numeric', 
+                       month: 'long', 
+                       day: 'numeric' 
+                     }) 
+                   : new Date().toLocaleDateString(undefined, { 
+                       year: 'numeric', 
+                       month: 'long', 
+                       day: 'numeric' 
+                     })}
+               </span>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">What's Next?</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Button asChild className="w-full">
-                <Link to={subscription?.status === 'active' ? "/dashboard" : "/pricing"}>
-                  {subscription?.status === 'active' ? (
-                    <>
-                      Go to Dashboard
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  ) : (
-                    "View Pricing"
-                  )}
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/">
-                  Back to Home
-                </Link>
-              </Button>
-            </div>
+          {/* Actions */}
+          <div className="space-y-3">
+            <Button asChild className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/20 transition-all duration-300">
+              <Link to="/dashboard">
+                Go to Dashboard
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full h-12 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <Link to="/">
+                Return Home
+              </Link>
+            </Button>
           </div>
 
-          <div className="pt-6 border-t">
-            <p className="text-sm text-muted-foreground">
-              {subscription?.status === 'active' ? (
-                "You'll receive a confirmation email shortly. If you have any questions, feel free to contact our support team."
-              ) : (
-                "Your payment is processing. It may take a few minutes for your subscription to activate. Please refresh the page or try again shortly."
-              )}
+          <div className="text-center pt-2">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              A receipt has been sent to your email address. 
+              <br />
+              If you have any questions, please contact support.
             </p>
           </div>
         </CardContent>
       </Card>
-    </section>
+    </div>
   );
 }
