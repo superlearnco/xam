@@ -12,6 +12,7 @@ export default [
   route("pricing", "routes/pricing.tsx"),
   route("success", "routes/success.tsx"),
   route("subscription-required", "routes/subscription-required.tsx"),
+  route("sentry-test", "routes/sentry-test.tsx"),
   route("test/:id", "routes/test/$id.tsx"),
   layout("routes/dashboard/layout.tsx", [
     route("dashboard", "routes/dashboard/index.tsx"),

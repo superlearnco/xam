@@ -8,6 +8,8 @@ import {
   useLocation,
 } from "react-router";
 
+import * as Sentry from "@sentry/react-router";
+
 import { ClerkProvider, useAuth } from "@clerk/react-router";
 import { rootAuthLoader } from "@clerk/react-router/ssr.server";
 import { ConvexReactClient } from "convex/react";
@@ -199,10 +201,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       error.status === 404
         ? "The requested page could not be found."
         : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    errorType = "javascript_error";
-    details = error.message;
-    stack = error.stack;
+  } else if (error && error instanceof Error) {
+    Sentry.captureException(error);
+    if (import.meta.env.DEV) {
+      errorType = "javascript_error";
+      details = error.message;
+      stack = error.stack;
+    }
   }
 
   // Track error event in Mixpanel

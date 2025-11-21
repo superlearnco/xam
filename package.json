@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
+    "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router dev",
+    "start": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
@@ -32,6 +32,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",
+    "@sentry/react-router": "^10.26.0",
     "@tabler/icons-react": "^3.33.0",
     "@tanstack/react-table": "^8.21.3",
     "@types/katex": "^0.16.7",
