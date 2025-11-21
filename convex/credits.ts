@@ -387,3 +387,90 @@ export const debugUserCredits = query({
     return user;
   },
 });
+
+// Check if user has already claimed free credits
+export const hasClaimedFreeCredits = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { hasClaimed: false };
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) {
+      return { hasClaimed: false };
+    }
+
+    // Check if user has already claimed free credits
+    const existingClaim = await ctx.db
+      .query("creditTransactions")
+      .withIndex("userId", (q) => q.eq("userId", user.tokenIdentifier))
+      .filter((q) => q.eq(q.field("description"), "Free credits claim"))
+      .first();
+
+    return { hasClaimed: !!existingClaim };
+  },
+});
+
+// Claim free credits (10 credits)
+export const claimFreeCredits = mutation({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    // Create user if they don't exist yet
+    if (!user) {
+      const userId = await ctx.db.insert("users", {
+        name: identity.name,
+        email: identity.email,
+        tokenIdentifier: identity.subject,
+        credits: 0,
+      });
+      user = await ctx.db.get(userId);
+      if (!user) {
+        throw new Error("Failed to create user");
+      }
+    }
+
+    // Check if user has already claimed free credits
+    const existingClaim = await ctx.db
+      .query("creditTransactions")
+      .withIndex("userId", (q) => q.eq("userId", user.tokenIdentifier))
+      .filter((q) => q.eq(q.field("description"), "Free credits claim"))
+      .first();
+
+    if (existingClaim) {
+      throw new Error("You have already claimed your free credits");
+    }
+
+    const currentCredits = user.credits || 0;
+    const newCredits = currentCredits + 10;
+
+    // Update user credits
+    await ctx.db.patch(user._id, {
+      credits: newCredits,
+    });
+
+    // Create transaction record
+    await ctx.db.insert("creditTransactions", {
+      userId: user.tokenIdentifier,
+      amount: 10,
+      type: "purchase",
+      description: "Free credits claim",
+      createdAt: Date.now(),
+    });
+
+    return { credits: newCredits, success: true };
+  },
+});

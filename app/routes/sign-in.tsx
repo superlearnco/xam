@@ -1,5 +1,6 @@
 import type { Route } from "./+types/sign-in";
 import { SignIn } from "@clerk/react-router";
+import { useSearchParams } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,9 +9,12 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function SignInPage() {
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect_url") || "/";
+
   return (
     <div className="flex items-center justify-center h-screen">
-      <SignIn />
+      <SignIn redirectUrl={redirectUrl} />
     </div>
   );
 }

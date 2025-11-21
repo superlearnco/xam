@@ -16,6 +16,7 @@ export default [
   route("success", "routes/success.tsx"),
   route("subscription-required", "routes/subscription-required.tsx"),
   route("sentry-test", "routes/sentry-test.tsx"),
+  route("claim", "routes/claim.tsx"),
   route("test/:id", "routes/test/$id.tsx"),
   layout("routes/dashboard/layout.tsx", [
     route("dashboard", "routes/dashboard/index.tsx"),
