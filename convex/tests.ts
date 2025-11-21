@@ -18,11 +18,27 @@ export const listTests = query({
       return [];
     }
 
-    // Query all tests for this user
-    const tests = await ctx.db
-      .query("tests")
-      .withIndex("userId", (q) => q.eq("userId", identity.subject))
-      .collect();
+    // Determine the index and sort order based on sortBy
+    let tests;
+    const baseQuery = ctx.db.query("tests");
+
+    if (args.sortBy === "name") {
+      tests = await baseQuery.withIndex("by_user_name", (q) => 
+        q.eq("userId", identity.subject)
+      ).collect();
+    } else if (args.sortBy === "recency") {
+      tests = await baseQuery.withIndex("by_user_created", (q) => 
+        q.eq("userId", identity.subject)
+      ).order("desc").collect();
+    } else if (args.sortBy === "lastEdited") {
+      tests = await baseQuery.withIndex("by_user_last_edited", (q) => 
+        q.eq("userId", identity.subject)
+      ).order("desc").collect();
+    } else {
+      tests = await baseQuery.withIndex("userId", (q) => 
+        q.eq("userId", identity.subject)
+      ).collect();
+    }
 
     // Filter by search term (case-insensitive)
     let filteredTests = tests;
@@ -36,19 +52,6 @@ export const listTests = query({
     // Filter by type
     if (args.type) {
       filteredTests = filteredTests.filter((test) => test.type === args.type);
-    }
-
-    // Sort
-    if (args.sortBy === "name") {
-      filteredTests.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (args.sortBy === "recency") {
-      filteredTests.sort((a, b) => b.createdAt - a.createdAt);
-    } else if (args.sortBy === "lastEdited") {
-      filteredTests.sort((a, b) => {
-        const aLastEdited = a.lastEdited ?? a.createdAt;
-        const bLastEdited = b.lastEdited ?? b.createdAt;
-        return bLastEdited - aLastEdited;
-      });
     }
 
     return filteredTests;
@@ -537,7 +540,8 @@ export const getTestSubmissions = query({
     // Get all submissions for this test
     const submissions = await ctx.db
       .query("testSubmissions")
-      .withIndex("testId", (q) => q.eq("testId", args.testId))
+      .withIndex("by_test_submitted", (q) => q.eq("testId", args.testId))
+      .order("desc")
       .collect();
 
     // Calculate statistics

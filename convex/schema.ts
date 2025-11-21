@@ -121,7 +121,10 @@ export default defineSchema({
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
     viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
-  }).index("userId", ["userId"]),
+  })    .index("userId", ["userId"])
+    .index("by_user_created", ["userId", "createdAt"])
+    .index("by_user_last_edited", ["userId", "lastEdited"])
+    .index("by_user_name", ["userId", "name"]),
   testSubmissions: defineTable({
     testId: v.id("tests"),
     respondentName: v.optional(v.string()),
@@ -136,5 +139,6 @@ export default defineSchema({
     fieldMarks: v.optional(v.any()),
   })
     .index("testId", ["testId"])
-    .index("respondentEmail", ["respondentEmail"]),
+    .index("respondentEmail", ["respondentEmail"])
+    .index("by_test_submitted", ["testId", "submittedAt"]),
 });
