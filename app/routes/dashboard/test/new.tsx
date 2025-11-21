@@ -4,7 +4,7 @@ import type { Route } from "./+types/new";
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
@@ -27,7 +27,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -1955,9 +1955,13 @@ function MarkingPage({
   const navigate = useNavigate();
   const submissionsData = useQuery(api.tests.getTestSubmissions, { testId });
   const deleteSubmission = useMutation(api.tests.deleteSubmission);
+  const autoMarkSubmission = useAction((api as any).ai.autoMarkSubmission);
   const [submissionToDelete, setSubmissionToDelete] = useState<Id<"testSubmissions"> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAutoMarking, setIsAutoMarking] = useState(false);
+  const [autoMarkProgress, setAutoMarkProgress] = useState({ current: 0, total: 0 });
   const [activeMarkingCategory, setActiveMarkingCategory] = useState("overview");
+  const [showAutoMarkConfirm, setShowAutoMarkConfirm] = useState(false);
 
   if (submissionsData === undefined) {
     return (
@@ -1968,6 +1972,46 @@ function MarkingPage({
   }
 
   const { submissions, statistics, questionAnalytics } = submissionsData;
+
+  const handleAutoMarkAllClick = () => {
+    if (!submissions) return;
+    const unmarked = submissions.filter((s) => !s.isMarked);
+    
+    if (unmarked.length === 0) {
+      toast.info("No unmarked submissions to auto-mark");
+      return;
+    }
+
+    setShowAutoMarkConfirm(true);
+  };
+
+  const handleAutoMarkAllConfirm = async () => {
+    if (!submissions) return;
+    const unmarked = submissions.filter((s) => !s.isMarked);
+    
+    setShowAutoMarkConfirm(false);
+    setIsAutoMarking(true);
+    setAutoMarkProgress({ current: 0, total: unmarked.length });
+
+    let successCount = 0;
+
+    for (let i = 0; i < unmarked.length; i++) {
+      const sub = unmarked[i];
+      try {
+        await autoMarkSubmission({ submissionId: sub._id });
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to mark submission ${sub._id}:`, error);
+        toast.error(`Failed to mark submission from ${sub.respondentName || "Anonymous"}`);
+      }
+      setAutoMarkProgress((prev) => ({ ...prev, current: i + 1 }));
+    }
+
+    setIsAutoMarking(false);
+    if (successCount > 0) {
+      toast.success(`Successfully auto-marked ${successCount} submissions`);
+    }
+  };
 
   const handleExportCSV = () => {
     if (!submissions || submissions.length === 0) return;
@@ -2242,6 +2286,26 @@ function MarkingPage({
                      <h2 className="text-2xl font-semibold tracking-tight">Submissions</h2>
                      <p className="text-muted-foreground">Manage and mark individual submissions</p>
                 </div>
+                
+                <div className="flex justify-end">
+                   <Button 
+                      onClick={handleAutoMarkAllClick} 
+                      disabled={isAutoMarking || submissions.filter(s => !s.isMarked).length === 0}
+                    >
+                      {isAutoMarking ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Marking {autoMarkProgress.current}/{autoMarkProgress.total}
+                        </>
+                      ) : (
+                        <>
+                          <BrainCircuit className="mr-2 h-4 w-4" />
+                          Auto-Mark All ({submissions.filter(s => !s.isMarked).length})
+                        </>
+                      )}
+                   </Button>
+                </div>
+
                 <Card>
                    <CardContent className="p-0">
                         {submissions.length === 0 ? (
@@ -2398,6 +2462,37 @@ function MarkingPage({
 
         </div>
       </div>
+
+      {/* Auto-Mark Confirmation Dialog */}
+      <Dialog open={showAutoMarkConfirm} onOpenChange={setShowAutoMarkConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Auto-Mark All Submissions</DialogTitle>
+            <DialogDescription>
+              This will mark {submissions?.filter((s) => !s.isMarked).length || 0} unmarked submissions using AI. 
+              Each submission will use at least 1 credit, and more if the token cost is higher based on standard pricing.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAutoMarkConfirm(false)} disabled={isAutoMarking}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAutoMarkAllConfirm}
+              disabled={isAutoMarking}
+            >
+              {isAutoMarking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Continue"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Dialog */}
       <Dialog open={!!submissionToDelete} onOpenChange={(open) => !open && setSubmissionToDelete(null)}>

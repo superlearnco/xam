@@ -26,7 +26,7 @@ export default function QuestionAnalysisPage() {
   const submissionsData = useQuery(api.tests.getTestSubmissions, testId ? { testId } : "skip");
   const test = useQuery(api.tests.getTest, testId ? { testId } : "skip");
 
-  if (submissionsData === undefined || test === undefined) {
+  if (submissionsData === undefined || test === undefined || test === null) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
