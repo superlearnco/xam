@@ -77,6 +77,7 @@ type TestProgressData = {
   testStartedAt?: number | null;
   shuffledFieldIds?: string[];
   shuffledOptionsMapping?: Record<string, number[]>;
+  submissionCompleted?: boolean;
 };
 
 function getTestProgressKey(testId: Id<"tests">): string {
@@ -114,8 +115,30 @@ function clearTestProgress(testId: Id<"tests">): void {
   try {
     const key = getTestProgressKey(testId);
     localStorage.removeItem(key);
+    // Also clear the submission completed flag
+    const submissionKey = `test-submission-completed-${testId}`;
+    localStorage.removeItem(submissionKey);
   } catch (error) {
     console.warn("Failed to clear test progress from localStorage:", error);
+  }
+}
+
+function setSubmissionCompleted(testId: Id<"tests">): void {
+  try {
+    const submissionKey = `test-submission-completed-${testId}`;
+    localStorage.setItem(submissionKey, "true");
+  } catch (error) {
+    console.warn("Failed to set submission completed flag:", error);
+  }
+}
+
+function isSubmissionCompleted(testId: Id<"tests">): boolean {
+  try {
+    const submissionKey = `test-submission-completed-${testId}`;
+    return localStorage.getItem(submissionKey) === "true";
+  } catch (error) {
+    console.warn("Failed to check submission completed flag:", error);
+    return false;
   }
 }
 
@@ -162,6 +185,28 @@ export default function TestPage() {
 
     // Prevent overwriting state with stale localStorage data on subsequent renders
     if (hasInitialLoadCompletedRef.current) {
+      return;
+    }
+
+    // Check if submission was completed (using separate localStorage key)
+    if (testId && isSubmissionCompleted(testId)) {
+      clearTestProgress(testId);
+      // Reset all state to initial values
+      setFormData({});
+      setIsPasswordVerified(false);
+      setIsEmailProvided(false);
+      setIsNameProvided(false);
+      setUserName("");
+      setUserEmail("");
+      setShowTest(false);
+      setTestStartedAt(null);
+      setShuffledFieldIds(undefined);
+      setShuffledOptionsMapping(undefined);
+      setSubmissionResult(null);
+      setIsLoadingSavedState(false);
+      setTimeout(() => {
+        hasInitialLoadCompletedRef.current = true;
+      }, 100);
       return;
     }
 
@@ -1600,6 +1645,8 @@ function TestForm({
         respondentEmail: userEmail,
         startedAt,
       });
+      // Mark submission as completed before clearing progress
+      setSubmissionCompleted(testId);
       clearTestProgress(testId);
       onSubmissionComplete({
         score: result.score,
