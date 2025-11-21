@@ -1,11 +1,10 @@
 import type { ComponentType, SVGProps } from "react";
 import { Link } from "react-router";
-import { ShieldCheck, Activity, Clock3, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Zap, Layout, Users, BookOpen } from "lucide-react";
 
 import { Navbar } from "./navbar";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { cn } from "~/lib/utils";
 
 type LoaderData = {
   isSignedIn: boolean;
@@ -16,130 +15,91 @@ type HeroProps = {
   loaderData?: LoaderData;
 };
 
-const stats = [
-  { label: "Assessments launched", value: "1,200+" },
-  { label: "Average build time", value: "12 min" },
-  { label: "Enterprise NPS", value: "72" },
-];
-
-export default function IntegrationsSection({ loaderData }: HeroProps) {
+export default function HeroSection({ loaderData }: HeroProps) {
   const primaryCta = loaderData?.isSignedIn
-    ? loaderData?.hasActiveSubscription
-      ? { label: "Open dashboard", href: "/dashboard" }
-      : { label: "Choose a plan", href: "/pricing" }
-    : { label: "Start for free", href: "/sign-up" };
+    ? { label: "Open Dashboard", href: "/dashboard" }
+    : { label: "Start for Free", href: "/sign-up" };
 
   const secondaryCta = loaderData?.isSignedIn
-    ? { label: "View pricing", href: "/pricing" }
-    : { label: "Sign in", href: "/sign-in" };
+    ? { label: "Dashboard", href: "/dashboard" }
+    : { label: "Sign In", href: "/sign-in" };
 
   return (
-    <section id="hero" className="relative">
+    <section id="hero" className="relative overflow-hidden bg-background">
       <Navbar loaderData={loaderData} />
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center gap-12 px-4 py-32 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
-          <div className="flex-1 space-y-6">
-            <Badge
-              className="w-fit bg-primary/10 text-primary"
-              variant="outline"
-            >
-              AI-native assessment workspace
-            </Badge>
-            <div className="space-y-4">
-              <h1 className="text-pretty text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Build polished exams, surveys, and reports in minutes.
-              </h1>
-              <p className="text-lg text-muted-foreground sm:text-xl">
-                XAM unifies question design, scoring logic, and delivery into a
-                single, dependable workspace. Collaborate with your team,
-                automate versioning, and ship assessments that people actually
-                understand.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="gap-2">
-                <Link to={primaryCta.href} prefetch="viewport">
-                  {primaryCta.label}
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to={secondaryCta.href} prefetch="viewport">
-                  {secondaryCta.label}
-                </Link>
-              </Button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {stats.map((item) => (
-                <dl
-                  key={item.label}
-                  className="rounded-xl border bg-card px-4 py-3 text-center shadow-sm"
-                >
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {item.label}
-                  </dt>
-                  <dd className="text-2xl font-semibold text-foreground">
-                    {item.value}
-                  </dd>
-                </dl>
-              ))}
-            </div>
+      
+      {/* Abstract background element */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background opacity-40" />
+      
+      <div className="mx-auto flex min-h-[90vh] max-w-6xl flex-col items-center justify-center px-4 py-32 text-center sm:px-6 lg:px-8">
+        
+        <div className="animate-fade-in-up space-y-8">
+          <a 
+            href="https://superlearn.com" 
+            target="_blank" 
+            rel="noreferrer"
+            className="mx-auto inline-flex items-center gap-2 rounded-full border bg-background/50 px-3 py-1.5 text-sm font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-background hover:text-foreground"
+          >
+            <span className="flex h-2 w-2 rounded-full bg-primary" />
+            Made by Superlearn
+          </a>
+
+          <div className="mx-auto max-w-4xl space-y-6">
+            <h1 className="text-balance text-5xl font-bold tracking-tight text-foreground sm:text-6xl md:text-7xl">
+              Create better assessments for your students
+            </h1>
+            <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
+              Design engaging exams, quizzes, and assignments with AI assistance. 
+              XAM helps teachers build credible assessments that truly measure student learning.
+            </p>
           </div>
 
-          <aside className="w-full max-w-md flex-1 rounded-2xl border bg-card p-6 shadow-lg">
-            <div className="space-y-5">
-              <FeatureRow
-                icon={ShieldCheck}
-                title="Role & permissions aware"
-                description="Fine-grained controls let admins, reviewers, and graders focus only on the workflows they own."
-              />
-              <FeatureRow
-                icon={Activity}
-                title="Real-time collaboration"
-                description="See edits as they happen, comment inline, and restore any version instantly."
-              />
-              <FeatureRow
-                icon={Clock3}
-                title="Automated compliance"
-                description="Generate accessibility summaries, shareable audit trails, and PDF exports from a single source."
-              />
-            </div>
-            <div className="mt-8 rounded-xl border bg-background px-5 py-4">
-              <p className="text-sm font-medium text-foreground">
-                “We replaced four internal tools with XAM. Question banks stay
-                organized, approvals are faster, and results look on-brand.”
-              </p>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Alex Rivera · Director of Learning Innovation, NovaU
-              </p>
-            </div>
-          </aside>
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button asChild size="lg" className="h-12 rounded-full px-8 text-base">
+              <Link to={primaryCta.href} prefetch="viewport">
+                {primaryCta.label}
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="h-12 rounded-full px-8 text-base">
+              <Link to={secondaryCta.href} prefetch="viewport">
+                {secondaryCta.label}
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Feature Highlights Grid */}
+        <div className="mt-24 grid w-full gap-8 sm:grid-cols-3">
+          <FeatureHighlight 
+            icon={Layout}
+            title="Visual Builder"
+            description="Create exams with an intuitive drag-and-drop interface. No technical skills required."
+          />
+          <FeatureHighlight 
+            icon={BookOpen}
+            title="Question Library"
+            description="Build a reusable question bank and organize assessments by topic or unit."
+          />
+          <FeatureHighlight 
+            icon={Zap}
+            title="AI Assistance"
+            description="Generate questions, create rubrics, and get suggestions to improve your assessments."
+          />
         </div>
       </div>
     </section>
   );
 }
 
-type FeatureRowProps = {
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
-  title: string;
-  description: string;
-};
-
-function FeatureRow({ icon: Icon, title, description }: FeatureRowProps) {
+function FeatureHighlight({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
   return (
-    <div className="flex gap-4 rounded-xl border px-4 py-3">
-      <div
-        className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-lg border bg-background text-primary"
-        )}
-      >
-        <Icon className="h-5 w-5" aria-hidden />
+    <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card/50 p-6 text-center shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <Icon className="h-6 w-6" />
       </div>
-      <div className="space-y-1">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
