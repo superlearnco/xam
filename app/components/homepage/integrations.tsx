@@ -21,7 +21,7 @@ export default function HeroSection({ loaderData }: HeroProps) {
     : { label: "Start for Free", href: "/sign-up" };
 
   const secondaryCta = loaderData?.isSignedIn
-    ? { label: "Dashboard", href: "/dashboard" }
+    ? { label: "Settings", href: "/dashboard/settings" }
     : { label: "Sign In", href: "/sign-in" };
 
   return (

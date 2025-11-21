@@ -52,7 +52,7 @@ export const Navbar = ({ loaderData }: NavbarProps) => {
     : { label: "Get Started", href: "/sign-up" };
 
   const secondaryCta = isSignedIn
-    ? { label: "Dashboard", href: "/dashboard" }
+    ? { label: "Settings", href: "/dashboard/settings" }
     : { label: "Sign In", href: "/sign-in" };
 
   return (
