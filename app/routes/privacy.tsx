@@ -452,16 +452,24 @@ export default function PrivacyRoute() {
               <p className="mb-4">
                 <strong>Superlearn</strong>
                 <br />
-                Email: privacy@superlearn.com
+                Support Email:{" "}
+                <a
+                  href="mailto:support@superlearn.cc"
+                  className="text-primary hover:underline"
+                >
+                  support@superlearn.cc
+                </a>
+                <br />
+                Privacy Email: privacy@superlearn.com
                 <br />
                 Website:{" "}
                 <a
-                  href="https://superlearn.com"
+                  href="https://superlearn.cc"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  https://superlearn.com
+                  https://superlearn.cc
                 </a>
               </p>
             </section>

@@ -14,6 +14,7 @@ const legalLinks = [
 
 const supportLinks = [
   { label: "Status", href: "https://superlearn.openstatus.dev", external: true },
+  { label: "Support", href: "mailto:support@superlearn.cc", external: true },
 ];
 
 export default function FooterSection() {
