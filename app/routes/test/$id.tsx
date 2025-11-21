@@ -969,7 +969,7 @@ const AnswerKey = ({
   const fieldsWithIndex = useMemo(
     () =>
       ((test.fields || []) as any[]).map(
-        (f, index): TestField & { originalIndex: number } => ({
+        (f, index): TestField & { originalIndex: number; correctAnswers?: number[]; marks?: number } => ({
           id: f.id,
           type: f.type,
           label: f.label,

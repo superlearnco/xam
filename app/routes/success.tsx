@@ -45,7 +45,7 @@ export default function Success() {
     ) {
       // Generate a unique transaction ID (using subscription ID if available)
       const transactionId =
-        subscription.id || `txn_${Date.now()}_${userId.slice(0, 8)}`;
+        subscription.polarId || subscription._id || `txn_${Date.now()}_${userId.slice(0, 8)}`;
 
       trackEvent("Purchase", {
         user_id: userId,

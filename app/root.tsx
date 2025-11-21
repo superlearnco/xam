@@ -10,7 +10,7 @@ import {
 
 import * as Sentry from "@sentry/react-router";
 
-import { ClerkProvider, useAuth } from "@clerk/react-router";
+import { ClerkProvider, useAuth, useUser } from "@clerk/react-router";
 import { rootAuthLoader } from "@clerk/react-router/ssr.server";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
@@ -109,7 +109,8 @@ export default function App({ loaderData }: Route.ComponentProps) {
 
 // Component to track user authentication state and identify users in Mixpanel
 function MixpanelUserTracker({ children }: { children: React.ReactNode }) {
-  const { userId, isSignedIn, user } = useAuth();
+  const { userId, isSignedIn } = useAuth();
+  const { user } = useUser();
   const location = useLocation();
 
   useEffect(() => {

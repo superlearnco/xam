@@ -10,7 +10,6 @@ const quickLinks = [
 const legalLinks = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
-  { label: "Security", href: "/security" },
 ];
 
 export default function FooterSection() {
@@ -26,15 +25,16 @@ export default function FooterSection() {
             >
               <Logo className="h-6 w-auto" uniColor />
               <span className="text-muted-foreground text-sm">by</span>
-              <img 
-                src="/Superlearn.png" 
-                alt="Superlearn" 
-                className="h-5 w-auto opacity-80 grayscale transition-all hover:opacity-100 hover:grayscale-0" 
+              <img
+                src="/Superlearn.png"
+                alt="Superlearn"
+                className="h-5 w-auto opacity-80 grayscale transition-all hover:opacity-100 hover:grayscale-0"
               />
             </Link>
             <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
-              Create better assessments for your students. Design engaging exams, quizzes, and assignments with AI assistance. 
-              Built for teachers by Superlearn.
+              Create better assessments for your students. Design engaging
+              exams, quizzes, and assignments with AI assistance. Built for
+              teachers by Superlearn.
             </p>
           </div>
 
