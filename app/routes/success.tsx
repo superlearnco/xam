@@ -13,7 +13,8 @@ import {
 } from "~/components/ui/card";
 import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { trackEvent } from "~/lib/mixpanel";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -22,9 +23,10 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Success() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
   const subscription = useQuery(api.subscriptions.fetchUserSubscription);
   const upsertUser = useMutation(api.users.upsertUser);
+  const purchaseTrackedRef = useRef(false);
 
   // Ensure user is created/updated when they land on success page
   useEffect(() => {
@@ -32,6 +34,29 @@ export default function Success() {
       upsertUser();
     }
   }, [isSignedIn, upsertUser]);
+
+  // Track Purchase event when subscription is active
+  useEffect(() => {
+    if (
+      subscription &&
+      subscription.status === "active" &&
+      userId &&
+      !purchaseTrackedRef.current
+    ) {
+      // Generate a unique transaction ID (using subscription ID if available)
+      const transactionId =
+        subscription.id || `txn_${Date.now()}_${userId.slice(0, 8)}`;
+
+      trackEvent("Purchase", {
+        user_id: userId,
+        transaction_id: transactionId,
+        revenue: subscription.amount ? subscription.amount / 100 : 0,
+        currency: subscription.currency || "USD",
+      });
+
+      purchaseTrackedRef.current = true;
+    }
+  }, [subscription, userId]);
 
   if (!isSignedIn) {
     return (
