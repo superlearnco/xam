@@ -28,6 +28,7 @@ import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Textarea } from "~/components/ui/textarea";
 import { FileUpload } from "~/components/ui/file-upload";
+import { Tooltip, TooltipTrigger, TooltipContent } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 import type { FieldType } from "./field-types";
 import { FIELD_TYPES } from "./field-types";
@@ -115,6 +116,22 @@ export function FieldRenderer({
   const displayFileUrl = storageId 
     ? (fileUrlFromQuery || (isStorageId ? undefined : field.fileUrl))
     : field.fileUrl;
+
+  const getGenerateDistractorsState = () => {
+    // Check if button should be enabled
+    if (!field.label) {
+      return { disabled: true, message: "Please enter a question first" };
+    }
+    const currentCorrectIndices = field.correctAnswers || [];
+    if (currentCorrectIndices.length === 0) {
+      return { disabled: true, message: "Please mark at least one correct answer" };
+    }
+    const correctOptions = currentCorrectIndices.map(idx => field.options?.[idx]).filter(Boolean) as string[];
+    if (correctOptions.length === 0) {
+      return { disabled: true, message: "Please fill in the correct answer text" };
+    }
+    return { disabled: false, message: "" };
+  };
 
   const handleGenerateDistractors = async () => {
     if (!field.label) {
@@ -425,18 +442,41 @@ export function FieldRenderer({
                   Add Option
                 </Button>
 
-                {isEditable && field.type !== "imageChoice" && field.label && field.correctAnswers && field.correctAnswers.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGenerateDistractors}
-                    disabled={isGenerating}
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 font-medium h-9 px-3 rounded-lg"
-                  >
-                    <Sparkles className={cn("h-3.5 w-3.5 mr-2", isGenerating && "animate-spin")} />
-                    {isGenerating ? "Generating..." : "Generate Distractors"}
-                  </Button>
-                )}
+                {isEditable && field.type !== "imageChoice" && (() => {
+                  const { disabled, message } = getGenerateDistractorsState();
+                  const button = (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleGenerateDistractors}
+                      disabled={isGenerating || disabled}
+                      className={cn(
+                        "text-purple-600 hover:text-purple-700 hover:bg-purple-50 font-medium h-9 px-3 rounded-lg",
+                        disabled && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <Sparkles className={cn("h-3.5 w-3.5 mr-2", isGenerating && "animate-spin")} />
+                      {isGenerating ? "Generating..." : "Generate Distractors"}
+                    </Button>
+                  );
+
+                  if (disabled && message) {
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            {button}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{message}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return button;
+                })()}
               </div>
             </div>
           )}

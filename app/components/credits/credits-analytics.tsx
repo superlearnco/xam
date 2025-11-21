@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Cell } from "recharts";
 import {
   Card,
@@ -29,13 +30,25 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+// Helper function to get computed CSS variable value
+const getComputedColor = (varName: string): string => {
+  if (typeof window === 'undefined') return varName;
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || varName;
+};
+
+const CHART_COLOR_VARS = ['--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-5'];
 
 export function CreditsAnalytics({ dailyUsage, modelUsage }: CreditsAnalyticsProps) {
+  // Resolve CSS variables to actual color values
+  const resolvedColors = useMemo(() => {
+    return CHART_COLOR_VARS.map(varName => getComputedColor(varName));
+  }, []);
+
   const modelChartConfig = modelUsage.reduce((acc, item, index) => {
+    const color = resolvedColors[index % resolvedColors.length];
     acc[item.model] = {
       label: item.model,
-      color: COLORS[index % COLORS.length],
+      color: color,
     };
     return acc;
   }, {} as ChartConfig);
@@ -84,7 +97,7 @@ export function CreditsAnalytics({ dailyUsage, modelUsage }: CreditsAnalyticsPro
                   outerRadius={80}
                 >
                    {modelUsage.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={resolvedColors[index % resolvedColors.length]} />
                   ))}
                 </Pie>
                  <ChartTooltip content={<ChartTooltipContent nameKey="model" hideLabel />} />
