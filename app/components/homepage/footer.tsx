@@ -12,11 +12,16 @@ const legalLinks = [
   { label: "Terms", href: "/terms" },
 ];
 
+const supportLinks = [
+  { label: "Status", href: "https://superlearn.openstatus.dev", external: true },
+  { label: "Support", href: "mailto:support@superlearn.cc", external: true },
+];
+
 export default function FooterSection() {
   return (
     <footer className="border-t bg-background">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-[2fr_1fr_1fr]">
+        <div className="grid gap-8 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="space-y-6">
             <Link
               to="/"
@@ -71,6 +76,36 @@ export default function FooterSection() {
                   >
                     {item.label}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Support
+            </p>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              {supportLinks.map((item) => (
+                <li key={item.label}>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-foreground"
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={item.href}
+                      className="transition-colors hover:text-foreground"
+                      prefetch="viewport"
+                    >
+                      {item.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
