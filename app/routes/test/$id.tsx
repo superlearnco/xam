@@ -115,9 +115,8 @@ function clearTestProgress(testId: Id<"tests">): void {
   try {
     const key = getTestProgressKey(testId);
     localStorage.removeItem(key);
-    // Also clear the submission completed flag
-    const submissionKey = `test-submission-completed-${testId}`;
-    localStorage.removeItem(submissionKey);
+    // Note: We do NOT clear the submission completed flag here
+    // It should persist so we know to reset name/email on revisit
   } catch (error) {
     console.warn("Failed to clear test progress from localStorage:", error);
   }
@@ -191,6 +190,13 @@ export default function TestPage() {
     // Check if submission was completed (using separate localStorage key)
     if (testId && isSubmissionCompleted(testId)) {
       clearTestProgress(testId);
+      // Clear the submission completed flag so they can start a new attempt
+      try {
+        const submissionKey = `test-submission-completed-${testId}`;
+        localStorage.removeItem(submissionKey);
+      } catch (error) {
+        console.warn("Failed to clear submission completed flag:", error);
+      }
       // Reset all state to initial values
       setFormData({});
       setIsPasswordVerified(false);
@@ -216,12 +222,28 @@ export default function TestPage() {
       if (savedProgress.formData) setFormData(savedProgress.formData);
       if (savedProgress.isPasswordVerified !== undefined)
         setIsPasswordVerified(savedProgress.isPasswordVerified);
-      if (savedProgress.isEmailProvided !== undefined)
-        setIsEmailProvided(savedProgress.isEmailProvided);
-      if (savedProgress.isNameProvided !== undefined)
-        setIsNameProvided(savedProgress.isNameProvided);
-      if (savedProgress.userName) setUserName(savedProgress.userName);
-      if (savedProgress.userEmail) setUserEmail(savedProgress.userEmail);
+      // Always reset name/email state on page load - user should provide it again each time they visit
+      // This ensures that even if they revisit a test after submission, they'll be asked for name/email
+      // We only preserve name/email if they're actively in the middle of a test session
+      // (has formData with answers and showTest is true, indicating they're currently taking it)
+      const hasActiveAnswers = savedProgress.formData && Object.keys(savedProgress.formData).length > 0;
+      const isCurrentlyTakingTest = savedProgress.showTest === true && hasActiveAnswers;
+      
+      if (isCurrentlyTakingTest) {
+        // Preserve name/email only if actively taking the test (has answers and test is showing)
+        if (savedProgress.isEmailProvided !== undefined)
+          setIsEmailProvided(savedProgress.isEmailProvided);
+        if (savedProgress.isNameProvided !== undefined)
+          setIsNameProvided(savedProgress.isNameProvided);
+        if (savedProgress.userName) setUserName(savedProgress.userName);
+        if (savedProgress.userEmail) setUserEmail(savedProgress.userEmail);
+      } else {
+        // Reset name/email for new visits or revisits
+        setIsEmailProvided(false);
+        setIsNameProvided(false);
+        setUserName("");
+        setUserEmail("");
+      }
       if (savedProgress.showTest !== undefined)
         setShowTest(savedProgress.showTest);
       if (savedProgress.testStartedAt !== undefined)
