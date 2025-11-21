@@ -106,6 +106,15 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
         description: data.description,
         type: data.type || "test",
         fields: fieldsWithOrder,
+        maxAttempts: data.maxAttempts,
+        estimatedDuration: data.estimatedDuration,
+        timeLimitMinutes: data.timeLimitMinutes,
+        passingGrade: data.passingGrade,
+        instantFeedback: data.instantFeedback,
+        showAnswerKey: data.showAnswerKey,
+        randomizeQuestions: data.randomizeQuestions,
+        shuffleOptions: data.shuffleOptions,
+        viewType: data.viewType,
       });
 
       // 4. Navigate to editor

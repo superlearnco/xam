@@ -125,6 +125,15 @@ export const generateAndCreateTest = mutation({
     name: v.string(),
     type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
     description: v.optional(v.string()),
+    maxAttempts: v.optional(v.number()),
+    estimatedDuration: v.optional(v.number()),
+    timeLimitMinutes: v.optional(v.number()),
+    passingGrade: v.optional(v.number()),
+    instantFeedback: v.optional(v.boolean()),
+    showAnswerKey: v.optional(v.boolean()),
+    randomizeQuestions: v.optional(v.boolean()),
+    shuffleOptions: v.optional(v.boolean()),
+    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
     fields: v.array(
       v.object({
         id: v.string(),
@@ -169,6 +178,15 @@ export const generateAndCreateTest = mutation({
       type: args.type,
       description: args.description,
       fields: args.fields,
+      maxAttempts: args.maxAttempts,
+      estimatedDuration: args.estimatedDuration,
+      timeLimitMinutes: args.timeLimitMinutes,
+      passingGrade: args.passingGrade,
+      instantFeedback: args.instantFeedback,
+      showAnswerKey: args.showAnswerKey,
+      randomizeQuestions: args.randomizeQuestions,
+      shuffleOptions: args.shuffleOptions,
+      viewType: args.viewType,
       createdAt: now,
       lastEdited: now,
     });
@@ -814,6 +832,15 @@ export const generateTestWithAI = action({
       "name": "Test Name",
       "description": "Test Description",
       "type": "test" | "survey" | "essay",
+      "maxAttempts": number (optional, default unlimited),
+      "estimatedDuration": number (optional, in minutes),
+      "timeLimitMinutes": number (optional, in minutes, 0 for unlimited),
+      "passingGrade": number (optional, percentage 0-100),
+      "instantFeedback": boolean (optional),
+      "showAnswerKey": boolean (optional),
+      "randomizeQuestions": boolean (optional),
+      "shuffleOptions": boolean (optional),
+      "viewType": "singlePage" | "oneQuestionPerPage" (optional),
       "fields": [
         {
           "id": "unique_string_id",
@@ -824,13 +851,19 @@ export const generateTestWithAI = action({
           "correctAnswers": [0] (optional, indices of correct options for auto-grading),
           "marks": number (optional, default 1),
           "helpText": "Optional hint",
-          "placeholder": "Optional placeholder"
+          "placeholder": "Optional placeholder",
+          "latexContent": "Optional LaTeX math formula",
+          "minLength": number (optional, for text input),
+          "maxLength": number (optional, for text input),
+          "pattern": "Optional regex pattern",
+          "width": "full" | "half" | "third" (optional, default "full")
         }
       ]
     }
     Ensure the JSON is valid and fields follow this schema.
     For 'id', generate a unique string like 'field-{timestamp}'.
     Default to 'test' type if not specified.
+    Do NOT include any fields related to Access & Security (requireAuth, password, browser restrictions).
     `;
 
     const result = await generateText({
