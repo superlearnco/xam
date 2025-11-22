@@ -154,7 +154,7 @@ export const generateAndCreateTest = mutation({
         required: v.optional(v.boolean()),
         options: v.optional(v.array(v.string())),
         order: v.number(),
-        correctAnswers: v.optional(v.array(v.number())),
+        correctAnswers: v.optional(v.array(v.union(v.number(), v.string()))),
         marks: v.optional(v.number()),
         placeholder: v.optional(v.string()),
         helpText: v.optional(v.string()),
@@ -179,7 +179,15 @@ export const generateAndCreateTest = mutation({
     const sanitizedFields = args.fields.map((field) => ({
       ...field,
       correctAnswers: field.correctAnswers
-        ? field.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans) && typeof ans === 'number')
+        ? field.correctAnswers
+            .map((ans: string | number) => {
+              if (typeof ans === 'string') {
+                const num = Number(ans);
+                return isNaN(num) ? null : num;
+              }
+              return typeof ans === 'number' ? ans : null;
+            })
+            .filter((ans): ans is number => ans !== null && typeof ans === 'number')
         : field.correctAnswers,
     }));
     
@@ -229,7 +237,7 @@ export const updateTest = mutation({
           required: v.optional(v.boolean()),
           options: v.optional(v.array(v.string())),
           order: v.number(),
-          correctAnswers: v.optional(v.array(v.number())),
+          correctAnswers: v.optional(v.array(v.union(v.number(), v.string()))),
           marks: v.optional(v.number()),
           placeholder: v.optional(v.string()),
           helpText: v.optional(v.string()),
@@ -321,7 +329,15 @@ export const updateTest = mutation({
       updates.fields = args.fields.map((field) => ({
         ...field,
         correctAnswers: field.correctAnswers
-          ? field.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans) && typeof ans === 'number')
+          ? field.correctAnswers
+              .map((ans: string | number) => {
+                if (typeof ans === 'string') {
+                  const num = Number(ans);
+                  return isNaN(num) ? null : num;
+                }
+                return typeof ans === 'number' ? ans : null;
+              })
+              .filter((ans): ans is number => ans !== null && typeof ans === 'number')
           : field.correctAnswers,
       }));
     }

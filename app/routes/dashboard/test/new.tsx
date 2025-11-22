@@ -215,7 +215,15 @@ export default function TestEditorPage() {
               order: index,
               // Ensure correctAnswers are numbers, not strings
               correctAnswers: f.correctAnswers 
-                ? f.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans))
+                ? f.correctAnswers
+                    .map((ans: any) => {
+                      if (typeof ans === 'string') {
+                        const num = Number(ans);
+                        return isNaN(num) ? null : num;
+                      }
+                      return typeof ans === 'number' ? ans : null;
+                    })
+                    .filter((ans: any): ans is number => ans !== null && typeof ans === 'number')
                 : f.correctAnswers,
             })),
             maxAttempts: options.maxAttempts,

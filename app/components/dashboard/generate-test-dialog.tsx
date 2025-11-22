@@ -100,7 +100,15 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
         marks: field.marks || 1,
         // Convert correctAnswers from strings to numbers if present
         correctAnswers: field.correctAnswers 
-          ? field.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans))
+          ? field.correctAnswers
+              .map((ans: any) => {
+                if (typeof ans === 'string') {
+                  const num = Number(ans);
+                  return isNaN(num) ? null : num;
+                }
+                return typeof ans === 'number' ? ans : null;
+              })
+              .filter((ans: any): ans is number => ans !== null && typeof ans === 'number')
           : undefined,
       }));
 
