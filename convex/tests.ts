@@ -175,12 +175,20 @@ export const generateAndCreateTest = mutation({
     }
 
     const now = Date.now();
+    // Sanitize correctAnswers: convert strings to numbers
+    const sanitizedFields = args.fields.map((field) => ({
+      ...field,
+      correctAnswers: field.correctAnswers
+        ? field.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans) && typeof ans === 'number')
+        : field.correctAnswers,
+    }));
+    
     const testId = await ctx.db.insert("tests", {
       userId: identity.subject,
       name: args.name,
       type: args.type,
       description: args.description,
-      fields: args.fields,
+      fields: sanitizedFields,
       maxAttempts: args.maxAttempts,
       estimatedDuration: args.estimatedDuration,
       timeLimitMinutes: args.timeLimitMinutes,
@@ -309,7 +317,13 @@ export const updateTest = mutation({
       updates.description = args.description;
     }
     if (args.fields !== undefined) {
-      updates.fields = args.fields;
+      // Sanitize correctAnswers: convert strings to numbers
+      updates.fields = args.fields.map((field) => ({
+        ...field,
+        correctAnswers: field.correctAnswers
+          ? field.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans) && typeof ans === 'number')
+          : field.correctAnswers,
+      }));
     }
     if (args.maxAttempts !== undefined) {
       updates.maxAttempts = args.maxAttempts;

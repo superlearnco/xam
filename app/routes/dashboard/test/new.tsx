@@ -213,6 +213,10 @@ export default function TestEditorPage() {
             fields: fields.map((f, index) => ({
               ...f,
               order: index,
+              // Ensure correctAnswers are numbers, not strings
+              correctAnswers: f.correctAnswers 
+                ? f.correctAnswers.map((ans: any) => typeof ans === 'string' ? Number(ans) : ans).filter((ans: any) => !isNaN(ans))
+                : f.correctAnswers,
             })),
             maxAttempts: options.maxAttempts,
             estimatedDuration: options.estimatedDuration,
