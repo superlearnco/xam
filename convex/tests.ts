@@ -31,9 +31,15 @@ export const listTests = query({
         q.eq("userId", identity.subject)
       ).order("desc").collect();
     } else if (args.sortBy === "lastEdited") {
-      tests = await baseQuery.withIndex("by_user_last_edited", (q) => 
+      // Use userId index and sort in-memory to handle optional lastEdited field
+      tests = await baseQuery.withIndex("userId", (q) => 
         q.eq("userId", identity.subject)
-      ).order("desc").collect();
+      ).collect();
+      tests.sort((a, b) => {
+        const aLastEdited = a.lastEdited ?? a.createdAt;
+        const bLastEdited = b.lastEdited ?? b.createdAt;
+        return bLastEdited - aLastEdited;
+      });
     } else {
       tests = await baseQuery.withIndex("userId", (q) => 
         q.eq("userId", identity.subject)
