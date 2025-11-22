@@ -20,6 +20,7 @@ import "./app.css";
 import { Analytics } from "@vercel/analytics/react";
 import { initMixpanel, identifyUser, trackEvent, resetMixpanel } from "~/lib/mixpanel";
 import { useEffect } from "react";
+import { ConsentManagerProvider, CookieBanner } from "@c15t/react";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -88,22 +89,31 @@ export default function App({ loaderData }: Route.ComponentProps) {
   }, []);
 
   return (
-    <ClerkProvider
-      loaderData={loaderData}
-      signUpFallbackRedirectUrl="/"
-      signInFallbackRedirectUrl="/"
-      afterSignUpUrl="/"
-      afterSignInUrl="/"
+    <ConsentManagerProvider
+      options={{
+        mode: 'c15t',
+        backendURL: import.meta.env.PUBLIC_C15T_URL as string,
+        consentCategories: ['necessary', 'marketing', 'analytics'],
+      }}
     >
-      <MixpanelUserTracker>
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <PageViewTracker>
-            <Outlet />
-          </PageViewTracker>
-          <Toaster />
-        </ConvexProviderWithClerk>
-      </MixpanelUserTracker>
-    </ClerkProvider>
+      <ClerkProvider
+        loaderData={loaderData}
+        signUpFallbackRedirectUrl="/"
+        signInFallbackRedirectUrl="/"
+        afterSignUpUrl="/"
+        afterSignInUrl="/"
+      >
+        <MixpanelUserTracker>
+          <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+            <PageViewTracker>
+              <Outlet />
+            </PageViewTracker>
+            <Toaster />
+          </ConvexProviderWithClerk>
+        </MixpanelUserTracker>
+      </ClerkProvider>
+      <CookieBanner />
+    </ConsentManagerProvider>
   );
 }
 

@@ -18,11 +18,33 @@ export const listTests = query({
       return [];
     }
 
-    // Query all tests for this user
-    const tests = await ctx.db
-      .query("tests")
-      .withIndex("userId", (q) => q.eq("userId", identity.subject))
-      .collect();
+    // Determine the index and sort order based on sortBy
+    let tests;
+    const baseQuery = ctx.db.query("tests");
+
+    if (args.sortBy === "name") {
+      tests = await baseQuery.withIndex("by_user_name", (q) => 
+        q.eq("userId", identity.subject)
+      ).collect();
+    } else if (args.sortBy === "recency") {
+      tests = await baseQuery.withIndex("by_user_created", (q) => 
+        q.eq("userId", identity.subject)
+      ).order("desc").collect();
+    } else if (args.sortBy === "lastEdited") {
+      // Use userId index and sort in-memory to handle optional lastEdited field
+      tests = await baseQuery.withIndex("userId", (q) => 
+        q.eq("userId", identity.subject)
+      ).collect();
+      tests.sort((a, b) => {
+        const aLastEdited = a.lastEdited ?? a.createdAt;
+        const bLastEdited = b.lastEdited ?? b.createdAt;
+        return bLastEdited - aLastEdited;
+      });
+    } else {
+      tests = await baseQuery.withIndex("userId", (q) => 
+        q.eq("userId", identity.subject)
+      ).collect();
+    }
 
     // Filter by search term (case-insensitive)
     let filteredTests = tests;
@@ -36,19 +58,6 @@ export const listTests = query({
     // Filter by type
     if (args.type) {
       filteredTests = filteredTests.filter((test) => test.type === args.type);
-    }
-
-    // Sort
-    if (args.sortBy === "name") {
-      filteredTests.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (args.sortBy === "recency") {
-      filteredTests.sort((a, b) => b.createdAt - a.createdAt);
-    } else if (args.sortBy === "lastEdited") {
-      filteredTests.sort((a, b) => {
-        const aLastEdited = a.lastEdited ?? a.createdAt;
-        const bLastEdited = b.lastEdited ?? b.createdAt;
-        return bLastEdited - aLastEdited;
-      });
     }
 
     return filteredTests;
@@ -151,7 +160,7 @@ export const generateAndCreateTest = mutation({
         required: v.optional(v.boolean()),
         options: v.optional(v.array(v.string())),
         order: v.number(),
-        correctAnswers: v.optional(v.array(v.number())),
+        correctAnswers: v.optional(v.array(v.union(v.number(), v.string()))),
         marks: v.optional(v.number()),
         placeholder: v.optional(v.string()),
         helpText: v.optional(v.string()),
@@ -172,12 +181,28 @@ export const generateAndCreateTest = mutation({
     }
 
     const now = Date.now();
+    // Sanitize correctAnswers: convert strings to numbers
+    const sanitizedFields = args.fields.map((field) => ({
+      ...field,
+      correctAnswers: field.correctAnswers
+        ? field.correctAnswers
+            .map((ans: string | number) => {
+              if (typeof ans === 'string') {
+                const num = Number(ans);
+                return isNaN(num) ? null : num;
+              }
+              return typeof ans === 'number' ? ans : null;
+            })
+            .filter((ans): ans is number => ans !== null && typeof ans === 'number')
+        : field.correctAnswers,
+    }));
+    
     const testId = await ctx.db.insert("tests", {
       userId: identity.subject,
       name: args.name,
       type: args.type,
       description: args.description,
-      fields: args.fields,
+      fields: sanitizedFields,
       maxAttempts: args.maxAttempts,
       estimatedDuration: args.estimatedDuration,
       timeLimitMinutes: args.timeLimitMinutes,
@@ -218,7 +243,7 @@ export const updateTest = mutation({
           required: v.optional(v.boolean()),
           options: v.optional(v.array(v.string())),
           order: v.number(),
-          correctAnswers: v.optional(v.array(v.number())),
+          correctAnswers: v.optional(v.array(v.union(v.number(), v.string()))),
           marks: v.optional(v.number()),
           placeholder: v.optional(v.string()),
           helpText: v.optional(v.string()),
@@ -306,7 +331,21 @@ export const updateTest = mutation({
       updates.description = args.description;
     }
     if (args.fields !== undefined) {
-      updates.fields = args.fields;
+      // Sanitize correctAnswers: convert strings to numbers
+      updates.fields = args.fields.map((field) => ({
+        ...field,
+        correctAnswers: field.correctAnswers
+          ? field.correctAnswers
+              .map((ans: string | number) => {
+                if (typeof ans === 'string') {
+                  const num = Number(ans);
+                  return isNaN(num) ? null : num;
+                }
+                return typeof ans === 'number' ? ans : null;
+              })
+              .filter((ans): ans is number => ans !== null && typeof ans === 'number')
+          : field.correctAnswers,
+      }));
     }
     if (args.maxAttempts !== undefined) {
       updates.maxAttempts = args.maxAttempts;
@@ -537,7 +576,8 @@ export const getTestSubmissions = query({
     // Get all submissions for this test
     const submissions = await ctx.db
       .query("testSubmissions")
-      .withIndex("testId", (q) => q.eq("testId", args.testId))
+      .withIndex("by_test_submitted", (q) => q.eq("testId", args.testId))
+      .order("desc")
       .collect();
 
     // Calculate statistics

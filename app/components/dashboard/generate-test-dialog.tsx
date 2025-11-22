@@ -91,13 +91,25 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
         throw new Error("Invalid response from AI");
       }
 
-      // Ensure fields have order
+      // Ensure fields have order and convert correctAnswers to numbers
       const fieldsWithOrder = data.fields.map((field: any, index: number) => ({
         ...field,
         order: index,
         // Ensure required fields for schema
         id: field.id || `field-${Date.now()}-${index}`,
         marks: field.marks || 1,
+        // Convert correctAnswers from strings to numbers if present
+        correctAnswers: field.correctAnswers 
+          ? field.correctAnswers
+              .map((ans: any) => {
+                if (typeof ans === 'string') {
+                  const num = Number(ans);
+                  return isNaN(num) ? null : num;
+                }
+                return typeof ans === 'number' ? ans : null;
+              })
+              .filter((ans: any): ans is number => ans !== null && typeof ans === 'number')
+          : undefined,
       }));
 
       // 3. Create test in database
