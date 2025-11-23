@@ -251,9 +251,9 @@ export default function TestEditorPage() {
     [updateTest]
   );
 
-  // Auto-save when test data changes
+  // Auto-save when test data changes (only after initial load to prevent loops)
   useEffect(() => {
-    if (testId && test) {
+    if (testId && isLoaded) {
       debouncedUpdate(testId, testName, testDescription, fields, {
         maxAttempts,
         estimatedDuration,
@@ -295,7 +295,7 @@ export default function TestEditorPage() {
     shuffleOptions,
     viewType,
     debouncedUpdate,
-    test,
+    isLoaded,
   ]);
 
   const handleDragStart = (event: DragStartEvent) => {

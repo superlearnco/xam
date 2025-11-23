@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "./+types/index";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
@@ -93,11 +93,17 @@ export default function DashboardIndex() {
     "lastEdited"
   );
 
-  const tests = useQuery(api.tests.listTests, {
-    search: search.trim() || undefined,
-    type: typeFilter === "all" ? undefined : typeFilter,
-    sortBy,
-  });
+  // Memoize query arguments to prevent unnecessary refetches
+  const queryArgs = useMemo(() => {
+    const trimmedSearch = search.trim();
+    return {
+      search: trimmedSearch || undefined,
+      type: typeFilter === "all" ? undefined : typeFilter,
+      sortBy,
+    };
+  }, [search, typeFilter, sortBy]);
+
+  const tests = useQuery(api.tests.listTests, queryArgs);
 
   const deleteTest = useMutation(api.tests.deleteTest);
   const updateTest = useMutation(api.tests.updateTest);
