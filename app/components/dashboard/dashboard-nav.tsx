@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/react-router";
-import { Coins, Menu, LayoutDashboard } from "lucide-react";
+import { Coins, Menu, LayoutDashboard, Bug } from "lucide-react";
 import { Link, NavLink } from "react-router";
 import { useState } from "react";
 import { useQuery } from "convex/react";
@@ -11,6 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 import { Logo } from "~/components/logo";
+import { BugReportDialog } from "./bug-report-dialog";
 
 type TabItem = {
   label: string;
@@ -25,6 +26,7 @@ type DashboardNavProps = {
 
 export function DashboardNav({ tabs }: DashboardNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [bugDialogOpen, setBugDialogOpen] = useState(false);
   const userCredits = useQuery(api.credits.getUserCredits);
   const credits = userCredits?.credits ?? 0;
 
@@ -70,6 +72,15 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
         ) : null}
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex"
+            onClick={() => setBugDialogOpen(true)}
+            aria-label="Report a bug or suggest a feature"
+          >
+            <Bug className="h-4 w-4" />
+          </Button>
           <Link
             to="/dashboard/credits"
             className="hidden md:flex items-center gap-3 rounded-2xl border bg-card px-3 py-1.5 shadow-sm transition-colors hover:bg-accent"
@@ -130,6 +141,17 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
                 ))}
               </div>
             ) : null}
+            <Button
+              variant="ghost"
+              className="w-full justify-start rounded-xl px-3 py-2 text-sm font-medium"
+              onClick={() => {
+                setMobileOpen(false);
+                setBugDialogOpen(true);
+              }}
+            >
+              <Bug className="mr-2 h-4 w-4" />
+              Report Bug / Feature
+            </Button>
             <Link
               to="/dashboard/credits"
               className="flex items-center justify-between rounded-xl border bg-card px-3 py-2 text-sm font-medium"
@@ -142,6 +164,7 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
           </div>
         </div>
       )}
+      <BugReportDialog open={bugDialogOpen} onOpenChange={setBugDialogOpen} />
     </header>
   );
 }

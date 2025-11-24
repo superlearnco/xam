@@ -492,6 +492,18 @@ export default function MarkingPage() {
         </div>
       </header>
 
+      {/* Tab Switch Warning */}
+      {submission.tabSwitchCount !== undefined && submission.tabSwitchCount > 0 && (
+        <div className="px-6 py-3 bg-yellow-50 border-b border-yellow-200">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              Warning: This test taker switched tabs {submission.tabSwitchCount} time{submission.tabSwitchCount !== 1 ? 's' : ''} during the assessment.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar - Navigation */}
         <aside className="w-80 border-r bg-muted/10 flex flex-col overflow-hidden">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -84,11 +85,18 @@ export function FieldRenderer({
   const {
     attributes,
     listeners,
-    setNodeRef,
+    setNodeRef: setSortableRef,
     transform,
     transition,
     isDragging,
   } = useSortable({ id: field.id });
+
+  const {
+    setNodeRef: setDroppableRef,
+    isOver,
+  } = useDroppable({
+    id: field.id,
+  });
 
   const [isGenerating, setIsGenerating] = useState(false);
   const generateDummyAnswers = useAction(api.tests.generateDummyAnswers);
@@ -235,7 +243,8 @@ export function FieldRenderer({
   const isInputOrChoiceType = isQuestionType || field.type === "shortInput" || field.type === "longInput";
 
   const combinedRef = (el: HTMLDivElement | null) => {
-    setNodeRef(el);
+    setSortableRef(el);
+    setDroppableRef(el);
     fieldRef?.(el);
   };
 
@@ -247,7 +256,8 @@ export function FieldRenderer({
         "group relative p-6 transition-all duration-200 rounded-2xl border bg-white",
         isDragging 
           ? "opacity-90 border-primary shadow-xl scale-[1.02] z-50 rotate-1" 
-          : "border-slate-200 hover:border-primary/30 hover:shadow-md"
+          : "border-slate-200 hover:border-primary/30 hover:shadow-md",
+        isOver && !isDragging && "ring-2 ring-primary/30 ring-inset bg-primary/5"
       )}
     >
       <div className="flex items-start gap-5">

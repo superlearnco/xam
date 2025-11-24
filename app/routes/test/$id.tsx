@@ -6,9 +6,7 @@ import { useParams, useNavigate } from "react-router";
 import { api } from "../../../convex/_generated/api";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Take Test | XAM" },
-  ];
+  return [{ title: "Take Test | XAM" }];
 }
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -32,6 +30,8 @@ import {
   AlertCircle,
   ChevronRight,
   ChevronLeft,
+  Calculator,
+  X,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
@@ -141,6 +141,157 @@ function isSubmissionCompleted(testId: Id<"tests">): boolean {
   }
 }
 
+// Desmos Calculator Component
+function DesmosCalculator({
+  type,
+  isOpen,
+  onClose,
+}: {
+  type: "basic" | "scientific";
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const calculatorRef = useRef<any>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  // Initialize position on first open (bottom-right corner)
+  useEffect(() => {
+    if (isOpen && position.x === 0 && position.y === 0) {
+      const calcWidth = 320;
+      const calcHeight = 500;
+      const padding = 16;
+      setPosition({
+        x: window.innerWidth - calcWidth - padding,
+        y: window.innerHeight - calcHeight - padding,
+      });
+    }
+  }, [isOpen, position]);
+
+  useEffect(() => {
+    if (
+      isOpen &&
+      containerRef.current &&
+      !calculatorRef.current &&
+      (window as any).Desmos
+    ) {
+      const elt = containerRef.current;
+
+      if (type === "basic") {
+        // @ts-ignore
+        calculatorRef.current = (window as any).Desmos.FourFunctionCalculator(
+          elt
+        );
+      } else {
+        // @ts-ignore
+        calculatorRef.current = (window as any).Desmos.ScientificCalculator(
+          elt
+        );
+      }
+    }
+
+    return () => {
+      // Desmos calculators don't have a destroy method in the public API usually, but we can clear the container or just let it unmount.
+      // However, checking docs, they do have destroy().
+      if (
+        calculatorRef.current &&
+        typeof calculatorRef.current.destroy === "function"
+      ) {
+        calculatorRef.current.destroy();
+        calculatorRef.current = null;
+      }
+    };
+  }, [isOpen, type]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) {
+      return; // Don't drag if clicking on the close button
+    }
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const calcWidth = 320;
+      const calcHeight = 500;
+      const padding = 16;
+
+      let newX = e.clientX - dragStart.x;
+      let newY = e.clientY - dragStart.y;
+
+      // Constrain to viewport bounds
+      newX = Math.max(
+        padding,
+        Math.min(newX, window.innerWidth - calcWidth - padding)
+      );
+      newY = Math.max(
+        padding,
+        Math.min(newY, window.innerHeight - calcHeight - padding)
+      );
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none"; // Prevent text selection while dragging
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+    };
+  }, [isDragging, dragStart]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-[320px] h-[500px] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in-0 duration-300"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        cursor: isDragging ? "grabbing" : "default",
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-4 py-2 bg-slate-100 border-b border-slate-200 cursor-move select-none"
+        onMouseDown={handleMouseDown}
+      >
+        <span className="font-medium text-sm text-slate-700">
+          {type === "basic" ? "Basic Calculator" : "Scientific Calculator"}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div ref={containerRef} className="flex-1 w-full h-full bg-white" />
+    </div>
+  );
+}
+
 export default function TestPage() {
   const params = useParams();
   const navigate = useNavigate();
@@ -148,6 +299,7 @@ export default function TestPage() {
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -174,6 +326,22 @@ export default function TestPage() {
   const authScreenAnimatedRef = useRef<string | null>(null);
 
   const test = useQuery(api.tests.getPublicTest, testId ? { testId } : "skip");
+
+  // Load Desmos Script
+  useEffect(() => {
+    if (test?.enableCalculator) {
+      const scriptId = "desmos-calculator-script";
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement("script");
+        script.id = scriptId;
+        // Public testing API key from Desmos docs
+        script.src =
+          "https://www.desmos.com/api/v1.3/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6";
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [test?.enableCalculator]);
 
   // Load saved progress
   useEffect(() => {
@@ -226,9 +394,12 @@ export default function TestPage() {
       // This ensures that even if they revisit a test after submission, they'll be asked for name/email
       // We only preserve name/email if they're actively in the middle of a test session
       // (has formData with answers and showTest is true, indicating they're currently taking it)
-      const hasActiveAnswers = savedProgress.formData && Object.keys(savedProgress.formData).length > 0;
-      const isCurrentlyTakingTest = savedProgress.showTest === true && hasActiveAnswers;
-      
+      const hasActiveAnswers =
+        savedProgress.formData &&
+        Object.keys(savedProgress.formData).length > 0;
+      const isCurrentlyTakingTest =
+        savedProgress.showTest === true && hasActiveAnswers;
+
       if (isCurrentlyTakingTest) {
         // Preserve name/email only if actively taking the test (has answers and test is showing)
         if (savedProgress.isEmailProvided !== undefined)
@@ -841,7 +1012,9 @@ export default function TestPage() {
                 <AnswerKey
                   test={test}
                   formData={formData}
-                  shuffledOptionsMapping={submissionResult.shuffledOptionsMapping}
+                  shuffledOptionsMapping={
+                    submissionResult.shuffledOptionsMapping
+                  }
                   shuffledFieldIds={shuffledFieldIds}
                 />
               )}
@@ -969,7 +1142,14 @@ const AnswerKey = ({
   const fieldsWithIndex = useMemo(
     () =>
       ((test.fields || []) as any[]).map(
-        (f, index): TestField & { originalIndex: number; correctAnswers?: number[]; marks?: number } => ({
+        (
+          f,
+          index
+        ): TestField & {
+          originalIndex: number;
+          correctAnswers?: number[];
+          marks?: number;
+        } => ({
           id: f.id,
           type: f.type,
           label: f.label,
@@ -991,18 +1171,30 @@ const AnswerKey = ({
     [test.fields]
   );
 
-  const sortedFields: (TestField & { correctAnswers?: number[]; marks?: number })[] = useMemo(() => {
+  const sortedFields: (TestField & {
+    correctAnswers?: number[];
+    marks?: number;
+  })[] = useMemo(() => {
     if (shuffledFieldIds) {
       const fieldMap = new Map(fieldsWithIndex.map((f) => [f.id, f]));
       const shuffledWithIndex = shuffledFieldIds
         .map((id) => fieldMap.get(id))
         .filter(
-          (f): f is TestField & { originalIndex: number; correctAnswers?: number[]; marks?: number } => f !== undefined
+          (
+            f
+          ): f is TestField & {
+            originalIndex: number;
+            correctAnswers?: number[];
+            marks?: number;
+          } => f !== undefined
         );
 
       return (
         shuffledWithIndex.length > 0 ? shuffledWithIndex : fieldsWithIndex
-      ).map(({ originalIndex, ...field }) => field) as (TestField & { correctAnswers?: number[]; marks?: number })[];
+      ).map(({ originalIndex, ...field }) => field) as (TestField & {
+        correctAnswers?: number[];
+        marks?: number;
+      })[];
     } else {
       return fieldsWithIndex
         .sort((a, b) =>
@@ -1010,7 +1202,10 @@ const AnswerKey = ({
             ? a.order - b.order
             : a.originalIndex - b.originalIndex
         )
-        .map(({ originalIndex, ...field }) => field) as (TestField & { correctAnswers?: number[]; marks?: number })[];
+        .map(({ originalIndex, ...field }) => field) as (TestField & {
+        correctAnswers?: number[];
+        marks?: number;
+      })[];
     }
   }, [fieldsWithIndex, shuffledFieldIds]);
 
@@ -1024,7 +1219,9 @@ const AnswerKey = ({
     return map;
   }, [sortedFields]);
 
-  const getCorrectAnswerDisplay = (field: TestField & { correctAnswers?: number[] }) => {
+  const getCorrectAnswerDisplay = (
+    field: TestField & { correctAnswers?: number[] }
+  ) => {
     if (!field.correctAnswers || field.correctAnswers.length === 0) {
       return null;
     }
@@ -1044,7 +1241,9 @@ const AnswerKey = ({
         const options = field.correctAnswers
           .map((idx) => field.options?.[idx])
           .filter(Boolean);
-        return options.length > 0 ? options : field.correctAnswers.map((idx) => `Option ${idx + 1}`);
+        return options.length > 0
+          ? options
+          : field.correctAnswers.map((idx) => `Option ${idx + 1}`);
       }
 
       case "shortInput":
@@ -1065,7 +1264,11 @@ const AnswerKey = ({
 
   const getUserAnswerDisplay = (field: TestField) => {
     const userResponse = formData[field.id];
-    if (userResponse === undefined || userResponse === null || userResponse === "") {
+    if (
+      userResponse === undefined ||
+      userResponse === null ||
+      userResponse === ""
+    ) {
       return "No answer provided";
     }
 
@@ -1075,7 +1278,9 @@ const AnswerKey = ({
     const getOriginalOptionIndex = (shuffledIndex: number): number => {
       if (shuffledOptionsMapping && shuffledOptionsMapping[field.id]) {
         const shuffledMapping = shuffledOptionsMapping[field.id];
-        const originalIndex = shuffledMapping.findIndex((val) => val === shuffledIndex);
+        const originalIndex = shuffledMapping.findIndex(
+          (val) => val === shuffledIndex
+        );
         return originalIndex !== -1 ? originalIndex : shuffledIndex;
       }
       return shuffledIndex;
@@ -1084,7 +1289,10 @@ const AnswerKey = ({
     switch (field.type) {
       case "multipleChoice":
       case "dropdown": {
-        const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+        const responseIndex =
+          typeof userResponse === "string"
+            ? parseInt(userResponse, 10)
+            : userResponse;
         const originalIndex = getOriginalOptionIndex(responseIndex);
         const option = field.options?.[originalIndex];
         return option || `Option ${originalIndex + 1}`;
@@ -1093,13 +1301,21 @@ const AnswerKey = ({
       case "checkboxes":
       case "imageChoice": {
         const selectedIndices = Array.isArray(userResponse)
-          ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
-          : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+          ? userResponse.map((v) =>
+              typeof v === "string" ? parseInt(v, 10) : v
+            )
+          : [
+              typeof userResponse === "string"
+                ? parseInt(userResponse, 10)
+                : userResponse,
+            ];
         const originalIndices = selectedIndices.map(getOriginalOptionIndex);
         const options = originalIndices
           .map((idx) => field.options?.[idx])
           .filter(Boolean);
-        return options.length > 0 ? options.join(", ") : originalIndices.map((idx) => `Option ${idx + 1}`).join(", ");
+        return options.length > 0
+          ? options.join(", ")
+          : originalIndices.map((idx) => `Option ${idx + 1}`).join(", ");
       }
 
       case "shortInput":
@@ -1113,7 +1329,11 @@ const AnswerKey = ({
   };
 
   const markableFields = sortedFields.filter(
-    (f) => f.type !== "pageBreak" && f.type !== "infoBlock" && f.correctAnswers && f.correctAnswers.length > 0
+    (f) =>
+      f.type !== "pageBreak" &&
+      f.type !== "infoBlock" &&
+      f.correctAnswers &&
+      f.correctAnswers.length > 0
   );
 
   if (markableFields.length === 0) {
@@ -1134,52 +1354,98 @@ const AnswerKey = ({
           const questionNumber = questionNumberMap.get(field.id);
           const correctAnswer = getCorrectAnswerDisplay(field);
           const userAnswer = getUserAnswerDisplay(field);
-          const isCorrect = field.correctAnswers && field.correctAnswers.length > 0
-            ? (() => {
-                const userResponse = formData[field.id];
-                if (userResponse === undefined || userResponse === null || userResponse === "") {
+          const isCorrect =
+            field.correctAnswers && field.correctAnswers.length > 0
+              ? (() => {
+                  const userResponse = formData[field.id];
+                  if (
+                    userResponse === undefined ||
+                    userResponse === null ||
+                    userResponse === ""
+                  ) {
+                    return false;
+                  }
+
+                  // Map user's shuffled indices back to original indices for comparison
+                  const getOriginalOptionIndex = (
+                    shuffledIndex: number
+                  ): number => {
+                    if (
+                      shuffledOptionsMapping &&
+                      shuffledOptionsMapping[field.id]
+                    ) {
+                      const shuffledMapping = shuffledOptionsMapping[field.id];
+                      const originalIndex = shuffledMapping.findIndex(
+                        (val) => val === shuffledIndex
+                      );
+                      return originalIndex !== -1
+                        ? originalIndex
+                        : shuffledIndex;
+                    }
+                    return shuffledIndex;
+                  };
+
+                  if (
+                    field.type === "multipleChoice" ||
+                    field.type === "dropdown"
+                  ) {
+                    const responseIndex =
+                      typeof userResponse === "string"
+                        ? parseInt(userResponse, 10)
+                        : userResponse;
+                    const originalIndex = getOriginalOptionIndex(responseIndex);
+                    return field.correctAnswers.includes(originalIndex);
+                  } else if (
+                    field.type === "checkboxes" ||
+                    field.type === "imageChoice"
+                  ) {
+                    const selectedIndices = Array.isArray(userResponse)
+                      ? userResponse.map((v) =>
+                          typeof v === "string" ? parseInt(v, 10) : v
+                        )
+                      : [
+                          typeof userResponse === "string"
+                            ? parseInt(userResponse, 10)
+                            : userResponse,
+                        ];
+                    const originalIndices = selectedIndices.map(
+                      getOriginalOptionIndex
+                    );
+                    const correctSet = new Set(field.correctAnswers);
+                    const selectedSet = new Set(originalIndices);
+                    const allCorrectSelected = field.correctAnswers.every(
+                      (idx) => selectedSet.has(idx)
+                    );
+                    const noExtraAnswers = originalIndices.every((idx) =>
+                      correctSet.has(idx)
+                    );
+                    return allCorrectSelected && noExtraAnswers;
+                  } else if (
+                    field.type === "shortInput" ||
+                    field.type === "longInput"
+                  ) {
+                    if (field.options && field.options.length > 0) {
+                      const responseText = String(userResponse)
+                        .toLowerCase()
+                        .trim();
+                      return field.correctAnswers.some((idx) => {
+                        const correctOption = field.options?.[idx];
+                        return (
+                          correctOption &&
+                          correctOption.toLowerCase().trim() === responseText
+                        );
+                      });
+                    }
+                  }
                   return false;
-                }
-
-                // Map user's shuffled indices back to original indices for comparison
-                const getOriginalOptionIndex = (shuffledIndex: number): number => {
-                  if (shuffledOptionsMapping && shuffledOptionsMapping[field.id]) {
-                    const shuffledMapping = shuffledOptionsMapping[field.id];
-                    const originalIndex = shuffledMapping.findIndex((val) => val === shuffledIndex);
-                    return originalIndex !== -1 ? originalIndex : shuffledIndex;
-                  }
-                  return shuffledIndex;
-                };
-
-                if (field.type === "multipleChoice" || field.type === "dropdown") {
-                  const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
-                  const originalIndex = getOriginalOptionIndex(responseIndex);
-                  return field.correctAnswers.includes(originalIndex);
-                } else if (field.type === "checkboxes" || field.type === "imageChoice") {
-                  const selectedIndices = Array.isArray(userResponse)
-                    ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
-                    : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
-                  const originalIndices = selectedIndices.map(getOriginalOptionIndex);
-                  const correctSet = new Set(field.correctAnswers);
-                  const selectedSet = new Set(originalIndices);
-                  const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
-                  const noExtraAnswers = originalIndices.every((idx) => correctSet.has(idx));
-                  return allCorrectSelected && noExtraAnswers;
-                } else if (field.type === "shortInput" || field.type === "longInput") {
-                  if (field.options && field.options.length > 0) {
-                    const responseText = String(userResponse).toLowerCase().trim();
-                    return field.correctAnswers.some((idx) => {
-                      const correctOption = field.options?.[idx];
-                      return correctOption && correctOption.toLowerCase().trim() === responseText;
-                    });
-                  }
-                }
-                return false;
-              })()
-            : null;
+                })()
+              : null;
 
           return (
-            <Card key={field.id} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <Card
+              key={field.id}
+              className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden"
+            >
               <div className="p-6 md:p-8 bg-white">
                 <div className="flex gap-5">
                   {questionNumber !== undefined && (
@@ -1191,7 +1457,7 @@ const AnswerKey = ({
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-3 mb-4 sm:hidden">
-                       {questionNumber !== undefined && (
+                      {questionNumber !== undefined && (
                         <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 font-mono border border-slate-200 shrink-0">
                           {questionNumber}
                         </div>
@@ -1239,7 +1505,7 @@ const AnswerKey = ({
                       </div>
 
                       {correctAnswer && (
-                         <div className="flex items-start gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100">
+                        <div className="flex items-start gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100">
                           <span className="text-sm font-medium text-green-700 min-w-[100px] pt-0.5">
                             Correct Answer:
                           </span>
@@ -1255,9 +1521,9 @@ const AnswerKey = ({
 
                       {field.marks && field.marks > 0 && (
                         <div className="flex items-center justify-end pt-2">
-                            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-                              {field.marks} point{field.marks !== 1 ? "s" : ""}
-                            </div>
+                          <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                            {field.marks} point{field.marks !== 1 ? "s" : ""}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1305,7 +1571,7 @@ const QuestionWrapper = ({
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-3 mb-4 sm:hidden">
-                 {questionNumber !== undefined && (
+                {questionNumber !== undefined && (
                   <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 font-mono border border-slate-200 shrink-0">
                     {questionNumber}
                   </div>
@@ -1315,7 +1581,11 @@ const QuestionWrapper = ({
                   className="text-lg font-semibold text-slate-900 block leading-tight"
                 >
                   {label}
-                  {required && <span className="text-red-500 ml-1" title="Required">*</span>}
+                  {required && (
+                    <span className="text-red-500 ml-1" title="Required">
+                      *
+                    </span>
+                  )}
                 </Label>
               </div>
 
@@ -1337,15 +1607,23 @@ const QuestionWrapper = ({
                   className="text-xl font-semibold text-slate-900 block leading-normal"
                 >
                   {label}
-                  {required && <span className="text-red-500 ml-1" title="Required">*</span>}
+                  {required && (
+                    <span className="text-red-500 ml-1" title="Required">
+                      *
+                    </span>
+                  )}
                 </Label>
                 {helpText && (
-                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">{helpText}</p>
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                    {helpText}
+                  </p>
                 )}
               </div>
-               {helpText && (
-                  <p className="text-sm text-slate-500 mb-4 sm:hidden leading-relaxed">{helpText}</p>
-                )}
+              {helpText && (
+                <p className="text-sm text-slate-500 mb-4 sm:hidden leading-relaxed">
+                  {helpText}
+                </p>
+              )}
               <div className="space-y-4">{children}</div>
             </div>
           </div>
@@ -1388,6 +1666,7 @@ function TestForm({
   const [currentPage, setCurrentPage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const submitTest = useMutation(api.tests.submitTest);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -1490,8 +1769,10 @@ function TestForm({
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden)
+      if (document.hidden && test.blockTabSwitching) {
+        setTabSwitchCount((prev) => prev + 1);
         toast.warning("Please do not switch tabs during the assessment.");
+      }
     };
 
     const handleFullscreenChange = () => {
@@ -1646,6 +1927,24 @@ function TestForm({
     return { isValid: missingFields.length === 0, missingFields };
   };
 
+  const [showCalculator, setShowCalculator] = useState(false);
+
+  // Load Desmos Script
+  useEffect(() => {
+    if (test?.enableCalculator) {
+      const scriptId = "desmos-calculator-script";
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement("script");
+        script.id = scriptId;
+        // Public testing API key from Desmos docs
+        script.src =
+          "https://www.desmos.com/api/v1.3/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6";
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [test?.enableCalculator]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const allFields = sortedFields.filter(
@@ -1666,6 +1965,7 @@ function TestForm({
         respondentName: userName,
         respondentEmail: userEmail,
         startedAt,
+        tabSwitchCount: test.blockTabSwitching ? tabSwitchCount : undefined,
       });
       // Mark submission as completed before clearing progress
       setSubmissionCompleted(testId);
@@ -1756,7 +2056,9 @@ function TestForm({
                 id={field.id}
                 value={rawValue != null ? String(rawValue) : ""}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
-                placeholder={field.placeholder || "Type your detailed answer here..."}
+                placeholder={
+                  field.placeholder || "Type your detailed answer here..."
+                }
                 required={field.required}
                 className="min-h-[140px] text-base resize-y rounded-xl border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm p-4"
               />
@@ -1777,7 +2079,10 @@ function TestForm({
                       onClick={() => {
                         setFormData((prev) => {
                           const currentValue = prev[field.id];
-                          if (currentValue === valueStr || currentValue === idx) {
+                          if (
+                            currentValue === valueStr ||
+                            currentValue === idx
+                          ) {
                             return prev;
                           }
                           return { ...prev, [field.id]: valueStr };
@@ -1802,7 +2107,14 @@ function TestForm({
                           <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
                         )}
                       </div>
-                      <span className={cn("text-base transition-colors", isSelected ? "text-primary font-medium" : "text-slate-700")}>
+                      <span
+                        className={cn(
+                          "text-base transition-colors",
+                          isSelected
+                            ? "text-primary font-medium"
+                            : "text-slate-700"
+                        )}
+                      >
                         {option || `Option ${idx + 1}`}
                       </span>
                     </div>
@@ -1868,7 +2180,14 @@ function TestForm({
                       >
                         {isChecked && <CheckCircle className="w-4 h-4" />}
                       </div>
-                      <span className={cn("text-base transition-colors", isChecked ? "text-primary font-medium" : "text-slate-700")}>
+                      <span
+                        className={cn(
+                          "text-base transition-colors",
+                          isChecked
+                            ? "text-primary font-medium"
+                            : "text-slate-700"
+                        )}
+                      >
                         {option || `Option ${idx + 1}`}
                       </span>
                     </div>
@@ -1891,7 +2210,11 @@ function TestForm({
                 </SelectTrigger>
                 <SelectContent>
                   {getOptionDisplayOrder(field.options).map((idx) => (
-                    <SelectItem key={idx} value={String(idx)} className="text-base py-3 cursor-pointer">
+                    <SelectItem
+                      key={idx}
+                      value={String(idx)}
+                      className="text-base py-3 cursor-pointer"
+                    >
                       {field.options?.[idx] || `Option ${idx + 1}`}
                     </SelectItem>
                   ))}
@@ -1960,15 +2283,19 @@ function TestForm({
                             Option {idx + 1}
                           </div>
                         )}
-                        <div className={cn(
+                        <div
+                          className={cn(
                             "absolute inset-0 flex items-center justify-center transition-all duration-200",
-                            isSelected ? "bg-primary/20 backdrop-blur-[2px]" : "opacity-0 group-hover:opacity-100 bg-black/5"
-                        )}>
-                            {isSelected && (
-                                <div className="bg-primary text-white rounded-full p-2 shadow-lg transform scale-110">
-                                <CheckCircle className="w-8 h-8" />
-                                </div>
-                            )}
+                            isSelected
+                              ? "bg-primary/20 backdrop-blur-[2px]"
+                              : "opacity-0 group-hover:opacity-100 bg-black/5"
+                          )}
+                        >
+                          {isSelected && (
+                            <div className="bg-primary text-white rounded-full p-2 shadow-lg transform scale-110">
+                              <CheckCircle className="w-8 h-8" />
+                            </div>
+                          )}
                         </div>
                       </div>
                       {!isUrl && (
@@ -2039,6 +2366,28 @@ function TestForm({
           </div>
 
           <div className="flex items-center gap-4">
+            {test.enableCalculator && (
+              <Button
+                variant={showCalculator ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowCalculator(!showCalculator)}
+                className="gap-2 hidden sm:flex"
+              >
+                <Calculator className="w-4 h-4" />
+                {showCalculator ? "Hide Calculator" : "Calculator"}
+              </Button>
+            )}
+            {test.enableCalculator && (
+              <Button
+                variant={showCalculator ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setShowCalculator(!showCalculator)}
+                className="sm:hidden"
+              >
+                <Calculator className="w-4 h-4" />
+              </Button>
+            )}
+
             {test.timeLimitMinutes && timeRemaining !== null && (
               <div
                 className={cn(
@@ -2136,6 +2485,14 @@ function TestForm({
           </form>
         </div>
       </div>
+
+      {test.enableCalculator && (
+        <DesmosCalculator
+          type={(test.calculatorType as "basic" | "scientific") || "basic"}
+          isOpen={showCalculator}
+          onClose={() => setShowCalculator(false)}
+        />
+      )}
     </div>
   );
 }
