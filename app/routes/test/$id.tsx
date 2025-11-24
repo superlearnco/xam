@@ -1388,6 +1388,7 @@ function TestForm({
   const [currentPage, setCurrentPage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const submitTest = useMutation(api.tests.submitTest);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -1490,8 +1491,10 @@ function TestForm({
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden)
+      if (document.hidden && test.blockTabSwitching) {
+        setTabSwitchCount((prev) => prev + 1);
         toast.warning("Please do not switch tabs during the assessment.");
+      }
     };
 
     const handleFullscreenChange = () => {
@@ -1666,6 +1669,7 @@ function TestForm({
         respondentName: userName,
         respondentEmail: userEmail,
         startedAt,
+        tabSwitchCount: test.blockTabSwitching ? tabSwitchCount : undefined,
       });
       // Mark submission as completed before clearing progress
       setSubmissionCompleted(testId);

@@ -27,7 +27,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -37,6 +37,7 @@ import { Separator } from "~/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
@@ -2347,9 +2348,26 @@ function MarkingPage({
                                       {new Date(submission.submittedAt).toLocaleDateString()}
                                     </TableCell>
                                     <TableCell>
-                                      <Badge variant={submission.isMarked ? "default" : "secondary"}>
-                                        {submission.isMarked ? "Marked" : "Submitted"}
-                                      </Badge>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant={submission.isMarked ? "default" : "secondary"}>
+                                          {submission.isMarked ? "Marked" : "Submitted"}
+                                        </Badge>
+                                        {submission.tabSwitchCount !== undefined && submission.tabSwitchCount > 0 && (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div className="flex items-center gap-1 text-yellow-600">
+                                                  <AlertCircle className="h-4 w-4" />
+                                                  <span className="text-xs font-medium">{submission.tabSwitchCount}</span>
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Tab switched {submission.tabSwitchCount} time{submission.tabSwitchCount !== 1 ? 's' : ''} during assessment</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell>
                                       {submission.percentage !== undefined
