@@ -299,7 +299,6 @@ export default function TestPage() {
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [showCalculator, setShowCalculator] = useState(false);
 
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
