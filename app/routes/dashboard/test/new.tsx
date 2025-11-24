@@ -16,7 +16,7 @@ export function meta({}: Route.MetaArgs) {
 import {
   DndContext,
   DragOverlay,
-  closestCenter,
+  closestCorners,
   PointerSensor,
   useSensor,
   useSensors,
@@ -984,7 +984,7 @@ export default function TestEditorPage() {
       {activeTab === "editor" && (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >

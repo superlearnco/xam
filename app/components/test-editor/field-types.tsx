@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import {
   Type,
@@ -87,6 +88,8 @@ interface DraggableFieldTypeProps {
 }
 
 export function DraggableFieldType({ fieldType, onClick }: DraggableFieldTypeProps) {
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `field-type-${fieldType.type}`,
@@ -104,13 +107,36 @@ export function DraggableFieldType({ fieldType, onClick }: DraggableFieldTypePro
 
   const Icon = fieldType.icon;
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if mouse didn't move much (not a drag)
+    if (dragStartPos.current) {
+      const deltaX = Math.abs(e.clientX - dragStartPos.current.x);
+      const deltaY = Math.abs(e.clientY - dragStartPos.current.y);
+      const moved = deltaX > 5 || deltaY > 5;
+      
+      if (moved || isDragging) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragStartPos.current = null;
+        return;
+      }
+    }
+    onClick?.();
+    dragStartPos.current = null;
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
-      onClick={onClick}
+      onMouseDown={handleMouseDown}
+      onClick={handleClick}
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:border-primary/50 hover:-translate-y-0.5",
         isDragging && "opacity-50 ring-2 ring-primary/20 shadow-xl rotate-2"
