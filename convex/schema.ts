@@ -121,6 +121,8 @@ export default defineSchema({
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
     viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    enableCalculator: v.optional(v.boolean()),
+    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
   })    .index("userId", ["userId"])
     .index("by_user_created", ["userId", "createdAt"])
     .index("by_user_last_edited", ["userId", "lastEdited"])

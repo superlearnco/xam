@@ -143,6 +143,8 @@ export const generateAndCreateTest = mutation({
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
     viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    enableCalculator: v.optional(v.boolean()),
+    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
     fields: v.array(
       v.object({
         id: v.string(),
@@ -212,6 +214,8 @@ export const generateAndCreateTest = mutation({
       randomizeQuestions: args.randomizeQuestions,
       shuffleOptions: args.shuffleOptions,
       viewType: args.viewType,
+      enableCalculator: args.enableCalculator,
+      calculatorType: args.calculatorType,
       createdAt: now,
       lastEdited: now,
     });
@@ -271,6 +275,8 @@ export const updateTest = mutation({
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
     viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    enableCalculator: v.optional(v.boolean()),
+    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -322,6 +328,8 @@ export const updateTest = mutation({
       randomizeQuestions?: boolean;
       shuffleOptions?: boolean;
       viewType?: "singlePage" | "oneQuestionPerPage";
+      enableCalculator?: boolean;
+      calculatorType?: "basic" | "scientific";
     } = {};
 
     if (args.name !== undefined) {
@@ -391,6 +399,12 @@ export const updateTest = mutation({
     }
     if (args.viewType !== undefined) {
       updates.viewType = args.viewType;
+    }
+    if (args.enableCalculator !== undefined) {
+      updates.enableCalculator = args.enableCalculator;
+    }
+    if (args.calculatorType !== undefined) {
+      updates.calculatorType = args.calculatorType;
     }
 
     // Always update lastEdited when any field is updated
@@ -885,6 +899,8 @@ export const generateTestWithAI = action({
       "randomizeQuestions": boolean (optional),
       "shuffleOptions": boolean (optional),
       "viewType": "singlePage" | "oneQuestionPerPage" (optional),
+      "enableCalculator": boolean (optional),
+      "calculatorType": "basic" | "scientific" (optional),
       "fields": [
         {
           "id": "unique_string_id",

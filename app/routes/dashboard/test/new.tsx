@@ -27,7 +27,7 @@ import { TestBuilder, type TestField } from "~/components/test-editor/test-build
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle, Calculator } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -107,6 +107,8 @@ export default function TestEditorPage() {
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
   const [viewType, setViewType] = useState<"singlePage" | "oneQuestionPerPage">("singlePage");
+  const [enableCalculator, setEnableCalculator] = useState(false);
+  const [calculatorType, setCalculatorType] = useState<"basic" | "scientific">("basic");
   const [copied, setCopied] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
@@ -175,6 +177,8 @@ export default function TestEditorPage() {
       setRandomizeQuestions(test.randomizeQuestions || false);
       setShuffleOptions(test.shuffleOptions || false);
       setViewType((test.viewType as "singlePage" | "oneQuestionPerPage") || "singlePage");
+      setEnableCalculator(test.enableCalculator || false);
+      setCalculatorType((test.calculatorType as "basic" | "scientific") || "basic");
       setIsLoaded(true);
     }
   }, [test, testId, isLoaded]);
@@ -204,6 +208,8 @@ export default function TestEditorPage() {
           randomizeQuestions: boolean;
           shuffleOptions: boolean;
           viewType: "singlePage" | "oneQuestionPerPage";
+          enableCalculator: boolean;
+          calculatorType: "basic" | "scientific";
         }
       ) => {
         try {
@@ -242,6 +248,8 @@ export default function TestEditorPage() {
             randomizeQuestions: options.randomizeQuestions,
             shuffleOptions: options.shuffleOptions,
             viewType: options.viewType,
+            enableCalculator: options.enableCalculator,
+            calculatorType: options.calculatorType,
           });
         } catch (error) {
           console.error("Failed to update test:", error);
@@ -272,6 +280,8 @@ export default function TestEditorPage() {
         randomizeQuestions,
         shuffleOptions,
         viewType,
+        enableCalculator,
+        calculatorType,
       });
     }
   }, [
@@ -295,6 +305,8 @@ export default function TestEditorPage() {
     randomizeQuestions,
     shuffleOptions,
     viewType,
+    enableCalculator,
+    calculatorType,
     debouncedUpdate,
     isLoaded,
   ]);
@@ -1097,6 +1109,18 @@ export default function TestEditorPage() {
                 <GraduationCap className="h-4 w-4" />
                 Marking & Grading
               </button>
+              <button
+                onClick={() => setActiveOptionCategory("tools")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
+                  activeOptionCategory === "tools" 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <Calculator className="h-4 w-4" />
+                Tools
+              </button>
             </nav>
           </div>
 
@@ -1104,6 +1128,52 @@ export default function TestEditorPage() {
           <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
             <div className="max-w-2xl mx-auto space-y-6">
               
+              {/* Tools Category */}
+              {activeOptionCategory === "tools" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Tools</CardTitle>
+                    <CardDescription>Enable helper tools for students during the test</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="enable-calculator" className="text-base font-medium">Enable Calculator</Label>
+                          <p className="text-sm text-muted-foreground">Allow students to use an on-screen calculator</p>
+                        </div>
+                        <Checkbox
+                          id="enable-calculator"
+                          checked={enableCalculator}
+                          onCheckedChange={(checked) => setEnableCalculator(checked === true)}
+                        />
+                      </div>
+
+                      {enableCalculator && (
+                        <div className="space-y-2 pt-2 pl-4 border-l-2 border-slate-200 ml-2">
+                          <Label>Calculator Type</Label>
+                          <Select
+                            value={calculatorType}
+                            onValueChange={(value) => setCalculatorType(value as "basic" | "scientific")}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="basic">Basic (Four Function)</SelectItem>
+                              <SelectItem value="scientific">Scientific</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-sm text-muted-foreground">
+                            Choose the type of calculator available to students.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Share Category */}
               {activeOptionCategory === "share" && (
                 <Card>
