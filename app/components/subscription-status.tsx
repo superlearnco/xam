@@ -71,21 +71,7 @@ export default function SubscriptionStatus() {
   }
 
   if (!subscriptionStatus?.hasActiveSubscription) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscription Status</CardTitle>
-          <CardDescription>
-            You don't have an active subscription
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild className="w-full">
-            <a href="/pricing">View Plans</a>
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const getStatusColor = (status: string) => {
