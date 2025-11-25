@@ -140,6 +140,7 @@ export default defineSchema({
     isMarked: v.optional(v.boolean()),
     fieldMarks: v.optional(v.any()),
     tabSwitchCount: v.optional(v.number()),
+    copyPasteCount: v.optional(v.number()),
   })
     .index("testId", ["testId"])
     .index("respondentEmail", ["respondentEmail"])

@@ -1667,6 +1667,7 @@ function TestForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [copyPasteCount, setCopyPasteCount] = useState(0);
   const submitTest = useMutation(api.tests.submitTest);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -1740,19 +1741,29 @@ function TestForm({
 
   // Browser restrictions (Copy/Paste/Tab)
   useEffect(() => {
-    const handleCopyPaste = (e: ClipboardEvent) => {
-      // Allow all clipboard events on input/textarea elements for usability
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        // Allow all clipboard operations in form fields to enable typing
-        return;
-      }
+    const handleCopy = (e: ClipboardEvent) => {
+      // Prevent copy when disabled
       e.preventDefault();
       e.stopPropagation();
+      return false;
+    };
+
+    const handleCut = (e: ClipboardEvent) => {
+      // Prevent cut when disabled
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const handlePaste = (e: ClipboardEvent) => {
+      // Prevent paste when disabled and track attempts
+      if (test.disableCopyPaste) {
+        e.preventDefault();
+        e.stopPropagation();
+        setCopyPasteCount((prev) => prev + 1);
+        toast.warning("Copy/paste is disabled for this assessment.");
+        return false;
+      }
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -1785,9 +1796,9 @@ function TestForm({
     };
 
     if (test.disableCopyPaste) {
-      document.addEventListener("copy", handleCopyPaste as any);
-      document.addEventListener("cut", handleCopyPaste as any);
-      document.addEventListener("paste", handleCopyPaste as any);
+      document.addEventListener("copy", handleCopy as any);
+      document.addEventListener("cut", handleCut as any);
+      document.addEventListener("paste", handlePaste as any);
       document.addEventListener("contextmenu", handleContextMenu as any);
     }
 
@@ -1800,10 +1811,12 @@ function TestForm({
     }
 
     return () => {
-      document.removeEventListener("copy", handleCopyPaste as any);
-      document.removeEventListener("cut", handleCopyPaste as any);
-      document.removeEventListener("paste", handleCopyPaste as any);
-      document.removeEventListener("contextmenu", handleContextMenu as any);
+      if (test.disableCopyPaste) {
+        document.removeEventListener("copy", handleCopy as any);
+        document.removeEventListener("cut", handleCut as any);
+        document.removeEventListener("paste", handlePaste as any);
+        document.removeEventListener("contextmenu", handleContextMenu as any);
+      }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
@@ -1966,6 +1979,7 @@ function TestForm({
         respondentEmail: userEmail,
         startedAt,
         tabSwitchCount: test.blockTabSwitching ? tabSwitchCount : undefined,
+        copyPasteCount: test.disableCopyPaste ? copyPasteCount : undefined,
       });
       // Mark submission as completed before clearing progress
       setSubmissionCompleted(testId);
@@ -2041,6 +2055,13 @@ function TestForm({
                 id={field.id}
                 value={rawValue != null ? String(rawValue) : ""}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
+                onPaste={(e) => {
+                  if (test.disableCopyPaste) {
+                    e.preventDefault();
+                    setCopyPasteCount((prev) => prev + 1);
+                    toast.warning("Copy/paste is disabled for this assessment.");
+                  }
+                }}
                 placeholder={field.placeholder || "Type your answer here..."}
                 required={field.required}
                 className="max-w-xl text-base h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
@@ -2056,6 +2077,13 @@ function TestForm({
                 id={field.id}
                 value={rawValue != null ? String(rawValue) : ""}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
+                onPaste={(e) => {
+                  if (test.disableCopyPaste) {
+                    e.preventDefault();
+                    setCopyPasteCount((prev) => prev + 1);
+                    toast.warning("Copy/paste is disabled for this assessment.");
+                  }
+                }}
                 placeholder={
                   field.placeholder || "Type your detailed answer here..."
                 }

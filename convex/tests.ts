@@ -445,6 +445,7 @@ export const submitTest = mutation({
     respondentEmail: v.optional(v.string()),
     startedAt: v.number(),
     tabSwitchCount: v.optional(v.number()),
+    copyPasteCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Get the test
@@ -561,6 +562,7 @@ export const submitTest = mutation({
       submittedAt: Date.now(),
       startedAt: args.startedAt,
       tabSwitchCount: args.tabSwitchCount,
+      copyPasteCount: args.copyPasteCount,
     });
 
     return {
@@ -672,6 +674,7 @@ export const getTestSubmissions = query({
         isMarked: s.isMarked || false,
         fieldMarks: s.fieldMarks,
         tabSwitchCount: s.tabSwitchCount,
+        copyPasteCount: s.copyPasteCount,
       })),
       statistics: {
         total,
@@ -720,6 +723,7 @@ export const getSubmissionForMarking = query({
         isMarked: submission.isMarked || false,
         fieldMarks: submission.fieldMarks || {},
         tabSwitchCount: submission.tabSwitchCount,
+        copyPasteCount: submission.copyPasteCount,
       },
       test: {
         _id: test._id,
