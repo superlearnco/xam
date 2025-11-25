@@ -2437,6 +2437,21 @@ function MarkingPage({
                                             </Tooltip>
                                           </TooltipProvider>
                                         )}
+                                        {submission.copyPasteCount !== undefined && submission.copyPasteCount > 0 && (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div className="flex items-center gap-1 text-red-600">
+                                                  <AlertCircle className="h-4 w-4" />
+                                                  <span className="text-xs font-medium">{submission.copyPasteCount}</span>
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Copy/paste attempted {submission.copyPasteCount} time{submission.copyPasteCount !== 1 ? 's' : ''} during assessment</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
                                       </div>
                                     </TableCell>
                                     <TableCell>
