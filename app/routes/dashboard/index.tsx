@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "./+types/index";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
@@ -70,6 +70,7 @@ import {
 } from "~/components/ui/tooltip";
 import { NewTestDialog } from "~/components/dashboard/new-test-dialog";
 import { GenerateTestDialog } from "~/components/dashboard/generate-test-dialog";
+import { OnboardingFlow } from "~/components/dashboard/onboarding-flow";
 import { cn } from "~/lib/utils";
 
 export default function DashboardIndex() {
@@ -92,6 +93,17 @@ export default function DashboardIndex() {
   const [sortBy, setSortBy] = useState<"name" | "recency" | "lastEdited">(
     "lastEdited"
   );
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check onboarding status
+  const onboardingStatus = useQuery(api.users.getOnboardingStatus);
+  
+  // Show onboarding when status is loaded and user hasn't completed it
+  useEffect(() => {
+    if (onboardingStatus && !onboardingStatus.hasCompletedOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [onboardingStatus]);
 
   // Memoize query arguments to prevent unnecessary refetches
   const queryArgs = useMemo(() => {
@@ -198,6 +210,7 @@ export default function DashboardIndex() {
                 onClick={() => setGenerateDialogOpen(true)} 
                 variant="outline" 
                 className="gap-2 shadow-sm"
+                data-onboarding="ai-generate-btn"
               >
                 <Sparkles className="h-4 w-4 text-indigo-500" />
                 Generate with AI
@@ -205,6 +218,7 @@ export default function DashboardIndex() {
               <Button 
                 onClick={() => setDialogOpen(true)} 
                 className="gap-2 shadow-sm"
+                data-onboarding="create-new-btn"
               >
                 <Plus className="h-4 w-4" />
                 Create New
@@ -217,7 +231,10 @@ export default function DashboardIndex() {
       {/* Main Content */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters Bar */}
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-card p-4 rounded-xl border shadow-sm">
+        <div 
+          className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-card p-4 rounded-xl border shadow-sm"
+          data-onboarding="dashboard-filters"
+        >
           <div className="relative flex-1 md:max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -354,6 +371,11 @@ export default function DashboardIndex() {
 
       <NewTestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <GenerateTestDialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen} />
+      
+      {/* Onboarding Flow */}
+      {showOnboarding && (
+        <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={handleEditClose}>

@@ -26,6 +26,7 @@ import { FieldTypesSidebar, type FieldType } from "~/components/test-editor/fiel
 import { TestBuilder, type TestField } from "~/components/test-editor/test-builder";
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
+import { EditorWelcome } from "~/components/dashboard/editor-welcome";
 import { Button } from "~/components/ui/button";
 import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle, Calculator } from "lucide-react";
 import { Input } from "~/components/ui/input";
@@ -973,6 +974,7 @@ export default function TestEditorPage() {
   return (
     <>
       <DashboardNav tabs={tabs} />
+      <EditorWelcome />
       <div className="flex flex-1 flex-col min-h-0">
       <div className="border-b px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-4">

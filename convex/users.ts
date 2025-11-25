@@ -59,6 +59,7 @@ export const upsertUser = mutation({
       email: identity.email,
       tokenIdentifier: identity.subject,
       credits: 0,
+      hasCompletedOnboarding: false,
     });
 
     return await ctx.db.get(userId);
@@ -99,5 +100,69 @@ export const getLastPurchase = query({
       .first();
 
     return lastPurchase;
+  },
+});
+
+export const getOnboardingStatus = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    return {
+      hasCompletedOnboarding: user?.hasCompletedOnboarding ?? false,
+    };
+  },
+});
+
+export const markOnboardingComplete = mutation({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      hasCompletedOnboarding: true,
+    });
+
+    return { success: true };
+  },
+});
+
+export const resetOnboarding = mutation({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      hasCompletedOnboarding: false,
+    });
+
+    return { success: true };
   },
 });

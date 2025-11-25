@@ -8,6 +8,7 @@ export default defineSchema({
     image: v.optional(v.string()),
     tokenIdentifier: v.string(),
     credits: v.optional(v.number()),
+    hasCompletedOnboarding: v.optional(v.boolean()),
   }).index("by_token", ["tokenIdentifier"]),
   subscriptions: defineTable({
     userId: v.optional(v.string()),
