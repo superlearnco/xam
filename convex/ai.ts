@@ -130,7 +130,7 @@ Ensure the JSON is valid and contains only the marking data.
     }
 
     const result = await generateText({
-      model: "xai/grok-4-fast-reasoning",
+      model: "xai/grok-4.1-fast-reasoning",
       system: systemPrompt,
       prompt: userPrompt,
     });
@@ -164,7 +164,7 @@ Ensure the JSON is valid and contains only the marking data.
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI Auto-Marking (${inputTokens} in + ${outputTokens} out)`,
-      aiModel: "xai/grok-4-fast-reasoning",
+      aiModel: "xai/grok-4.1-fast-reasoning",
     });
 
     // Parse marks
