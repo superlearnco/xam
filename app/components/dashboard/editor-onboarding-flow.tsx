@@ -99,7 +99,7 @@ export function EditorOnboardingFlow({ onComplete, forceShow }: EditorOnboarding
     } else {
       setCurrentStepIndex((prev) => prev + 1);
     }
-  }, [isLastStep]);
+  }, [isLastStep, handleComplete]);
 
   const handlePrevious = useCallback(() => {
     if (!isFirstStep) {
