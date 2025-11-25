@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { RotateCcw, HelpCircle } from "lucide-react";
-import { resetEditorWelcome } from "~/components/dashboard/editor-welcome";
+import { resetEditorOnboarding } from "~/components/dashboard/editor-onboarding-flow";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -43,8 +43,8 @@ export default function Page() {
     setIsResetting(true);
     try {
       await resetOnboarding();
-      // Also reset the editor welcome dialog
-      resetEditorWelcome();
+      // Also reset the editor onboarding tour
+      resetEditorOnboarding();
       setConfirmDialogOpen(false);
       // Navigate to dashboard to show onboarding
       navigate("/dashboard");

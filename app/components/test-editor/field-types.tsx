@@ -85,9 +85,10 @@ export const FIELD_TYPES: FieldTypeConfig[] = [
 interface DraggableFieldTypeProps {
   fieldType: FieldTypeConfig;
   onClick?: () => void;
+  isFirstItem?: boolean;
 }
 
-export function DraggableFieldType({ fieldType, onClick }: DraggableFieldTypeProps) {
+export function DraggableFieldType({ fieldType, onClick, isFirstItem }: DraggableFieldTypeProps) {
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -141,6 +142,7 @@ export function DraggableFieldType({ fieldType, onClick }: DraggableFieldTypePro
         "flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:border-primary/50 hover:-translate-y-0.5",
         isDragging && "opacity-50 ring-2 ring-primary/20 shadow-xl rotate-2"
       )}
+      {...(isFirstItem ? { "data-onboarding": "field-type-item" } : {})}
     >
       <div className="p-2 rounded-lg bg-primary/5 text-primary ring-1 ring-inset ring-primary/10">
         <Icon className="h-5 w-5" />
@@ -161,7 +163,10 @@ interface FieldTypesSidebarProps {
 
 export function FieldTypesSidebar({ onFieldTypeClick }: FieldTypesSidebarProps) {
   return (
-    <div className="w-80 border-r bg-slate-50/50 hidden lg:block flex flex-col flex-shrink-0 overflow-hidden h-full">
+    <div 
+      className="w-80 border-r bg-slate-50/50 hidden lg:block flex flex-col flex-shrink-0 overflow-hidden h-full"
+      data-onboarding="field-types-sidebar"
+    >
       <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0 max-h-full">
         <div>
           <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -172,11 +177,12 @@ export function FieldTypesSidebar({ onFieldTypeClick }: FieldTypesSidebarProps) 
           </p>
         </div>
         <div className="space-y-3">
-          {FIELD_TYPES.map((fieldType) => (
+          {FIELD_TYPES.map((fieldType, index) => (
             <DraggableFieldType 
               key={fieldType.type} 
               fieldType={fieldType}
               onClick={() => onFieldTypeClick?.(fieldType.type)}
+              isFirstItem={index === 0}
             />
           ))}
         </div>

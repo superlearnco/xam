@@ -18,6 +18,7 @@ type TabItem = {
   value: string;
   onClick: () => void;
   active: boolean;
+  dataOnboarding?: string;
 };
 
 type DashboardNavProps = {
@@ -53,11 +54,12 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
         </div>
 
         {tabs?.length ? (
-          <div className="hidden rounded-full border bg-background/70 p-1 md:flex">
+          <div className="hidden rounded-full border bg-background/70 p-1 md:flex" data-onboarding="editor-tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.value}
                 onClick={tab.onClick}
+                data-onboarding={tab.dataOnboarding}
                 className={cn(
                   "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
                   tab.active
