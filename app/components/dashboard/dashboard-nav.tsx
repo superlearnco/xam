@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/react-router";
-import { Coins, Menu, LayoutDashboard, Bug } from "lucide-react";
+import { Coins, Menu, LayoutDashboard, Bug, Settings } from "lucide-react";
 import { Link, NavLink } from "react-router";
 import { useState } from "react";
 import { useQuery } from "convex/react";
@@ -18,6 +18,7 @@ type TabItem = {
   value: string;
   onClick: () => void;
   active: boolean;
+  dataOnboarding?: string;
 };
 
 type DashboardNavProps = {
@@ -53,11 +54,12 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
         </div>
 
         {tabs?.length ? (
-          <div className="hidden rounded-full border bg-background/70 p-1 md:flex">
+          <div className="hidden rounded-full border bg-background/70 p-1 md:flex" data-onboarding="editor-tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.value}
                 onClick={tab.onClick}
+                data-onboarding={tab.dataOnboarding}
                 className={cn(
                   "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
                   tab.active
@@ -72,6 +74,22 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
         ) : null}
 
         <div className="flex items-center gap-3">
+          <NavLink
+            to="/dashboard/settings"
+            data-onboarding="nav-settings"
+            className={({ isActive }) =>
+              cn(
+                "hidden md:flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              )
+            }
+            prefetch="viewport"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </NavLink>
           <Button
             variant="ghost"
             size="icon"
@@ -83,6 +101,7 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
           </Button>
           <Link
             to="/dashboard/credits"
+            data-onboarding="nav-credits"
             className="hidden md:flex items-center gap-3 rounded-2xl border bg-card px-3 py-1.5 shadow-sm transition-colors hover:bg-accent"
             prefetch="viewport"
           >
@@ -116,6 +135,21 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
             >
               <LayoutDashboard className="h-4 w-4" />
               Overview
+            </NavLink>
+            <NavLink
+              to="/dashboard/settings"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+              onClick={() => setMobileOpen(false)}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
             </NavLink>
             {tabs?.length ? (
               <div className="rounded-2xl border p-2">

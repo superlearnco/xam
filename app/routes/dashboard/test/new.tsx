@@ -26,6 +26,7 @@ import { FieldTypesSidebar, type FieldType } from "~/components/test-editor/fiel
 import { TestBuilder, type TestField } from "~/components/test-editor/test-builder";
 import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-panel";
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
+import { EditorOnboardingFlow } from "~/components/dashboard/editor-onboarding-flow";
 import { Button } from "~/components/ui/button";
 import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle, Calculator } from "lucide-react";
 import { Input } from "~/components/ui/input";
@@ -912,24 +913,28 @@ export default function TestEditorPage() {
       label: "Editor",
       active: activeTab === "editor",
       onClick: () => setActiveTab("editor"),
+      dataOnboarding: "tab-editor",
     },
     {
       value: "preview",
       label: "Preview",
       active: activeTab === "preview",
       onClick: () => setActiveTab("preview"),
+      dataOnboarding: "tab-preview",
     },
     {
       value: "options",
       label: "Options",
       active: activeTab === "options",
       onClick: () => setActiveTab("options"),
+      dataOnboarding: "tab-options",
     },
     {
       value: "marking",
       label: "Marking",
       active: activeTab === "marking",
       onClick: () => setActiveTab("marking"),
+      dataOnboarding: "tab-marking",
     },
   ];
 
@@ -973,6 +978,7 @@ export default function TestEditorPage() {
   return (
     <>
       <DashboardNav tabs={tabs} />
+      <EditorOnboardingFlow />
       <div className="flex flex-1 flex-col min-h-0">
       <div className="border-b px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-4">
@@ -987,6 +993,7 @@ export default function TestEditorPage() {
               variant="outline"
               onClick={handlePrint}
               className="ml-auto"
+              data-onboarding="print-btn"
             >
               <Printer className="h-4 w-4 mr-2" />
               Print Worksheet
@@ -2433,6 +2440,21 @@ function MarkingPage({
                                               </TooltipTrigger>
                                               <TooltipContent>
                                                 <p>Tab switched {submission.tabSwitchCount} time{submission.tabSwitchCount !== 1 ? 's' : ''} during assessment</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
+                                        {submission.copyPasteCount !== undefined && submission.copyPasteCount > 0 && (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div className="flex items-center gap-1 text-red-600">
+                                                  <AlertCircle className="h-4 w-4" />
+                                                  <span className="text-xs font-medium">{submission.copyPasteCount}</span>
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Copy/paste attempted {submission.copyPasteCount} time{submission.copyPasteCount !== 1 ? 's' : ''} during assessment</p>
                                               </TooltipContent>
                                             </Tooltip>
                                           </TooltipProvider>

@@ -46,6 +46,7 @@ export function TestBuilder({
       <div className="max-w-3xl w-full flex flex-col relative mx-auto">
         <div
           ref={setNodeRef}
+          data-onboarding="test-canvas"
           className={cn(
             "flex-1 space-y-6 pb-24",
             isOver && "bg-slate-100/50 ring-2 ring-primary/20 ring-inset rounded-xl transition-all duration-200"

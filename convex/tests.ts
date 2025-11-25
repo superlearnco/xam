@@ -445,6 +445,7 @@ export const submitTest = mutation({
     respondentEmail: v.optional(v.string()),
     startedAt: v.number(),
     tabSwitchCount: v.optional(v.number()),
+    copyPasteCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Get the test
@@ -561,6 +562,7 @@ export const submitTest = mutation({
       submittedAt: Date.now(),
       startedAt: args.startedAt,
       tabSwitchCount: args.tabSwitchCount,
+      copyPasteCount: args.copyPasteCount,
     });
 
     return {
@@ -672,6 +674,7 @@ export const getTestSubmissions = query({
         isMarked: s.isMarked || false,
         fieldMarks: s.fieldMarks,
         tabSwitchCount: s.tabSwitchCount,
+        copyPasteCount: s.copyPasteCount,
       })),
       statistics: {
         total,
@@ -720,6 +723,7 @@ export const getSubmissionForMarking = query({
         isMarked: submission.isMarked || false,
         fieldMarks: submission.fieldMarks || {},
         tabSwitchCount: submission.tabSwitchCount,
+        copyPasteCount: submission.copyPasteCount,
       },
       test: {
         _id: test._id,
@@ -927,7 +931,7 @@ export const generateTestWithAI = action({
     `;
 
     const result = await generateText({
-      model: "xai/grok-4-fast-reasoning", // AI Gateway format: provider/model-name
+      model: "xai/grok-4.1-fast-reasoning", // AI Gateway format: provider/model-name
       system: systemPrompt,
       prompt: args.prompt,
     });
@@ -969,7 +973,7 @@ export const generateTestWithAI = action({
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI test generation (${inputTokens} input + ${outputTokens} output tokens)`,
-      aiModel: "xai/grok-4-fast-reasoning",
+      aiModel: "xai/grok-4.1-fast-reasoning",
     });
 
     // Parse the JSON response
@@ -1034,7 +1038,7 @@ export const generateDummyAnswers = action({
     }
 
     const result = await generateText({
-      model: "xai/grok-4-fast-non-reasoning", 
+      model: "xai/grok-4.1-fast-non-reasoning", 
       system: systemPrompt,
       prompt: "Generate distractors.",
     });
@@ -1068,7 +1072,7 @@ export const generateDummyAnswers = action({
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI distractor generation (${inputTokens} in + ${outputTokens} out)`,
-      aiModel: "xai/grok-4-fast-non-reasoning",
+      aiModel: "xai/grok-4.1-fast-non-reasoning",
     });
 
     // Parse the JSON response

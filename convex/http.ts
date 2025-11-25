@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { paymentWebhook } from "./subscriptions";
 import { httpAction } from "./_generated/server";
-import { streamText, generateText } from "ai";
+import { generateText } from "ai";
 import { api } from "./_generated/api";
 
 const INPUT_CREDITS_PER_TOKEN = 0.00005;
@@ -129,7 +129,7 @@ export const generateTest = httpAction(async (ctx, req) => {
     `;
 
   const { text, usage } = await generateText({
-    model: 'xai/grok-4-fast-reasoning', // AI Gateway format: provider/model-name
+    model: 'xai/grok-4.1-fast-reasoning', // AI Gateway format: provider/model-name
     system: systemPrompt,
     prompt,
   });
@@ -163,56 +163,7 @@ export const generateTest = httpAction(async (ctx, req) => {
   });
 });
 
-export const chat = httpAction(async (ctx, req) => {
-  // Extract the `messages` from the body of the request
-  const { messages } = await req.json();
-
-  const result = streamText({
-    model: 'openai/gpt-4o', // AI Gateway format: provider/model-name
-    messages,
-    async onFinish({ text }) {
-      // implement your own logic here, e.g. for storing messages
-      // or recording token usage
-    },
-  });
-
-  // Respond with the stream
-  return result.toTextStreamResponse({
-    headers: getCorsHeaders(req),
-  });
-});
-
 const http = httpRouter();
-
-http.route({
-  path: "/api/chat",
-  method: "POST",
-  handler: chat,
-});
-
-http.route({
-  path: "/api/chat",
-  method: "OPTIONS",
-  handler: httpAction(async (_, request) => {
-    // Make sure the necessary headers are present
-    // for this to be a valid pre-flight request
-    const headers = request.headers;
-    if (
-      headers.get("Origin") !== null &&
-      headers.get("Access-Control-Request-Method") !== null &&
-      headers.get("Access-Control-Request-Headers") !== null
-    ) {
-      return new Response(null, {
-        headers: new Headers({
-          ...getCorsHeaders(request),
-          "Access-Control-Max-Age": "86400",
-        }),
-      });
-    } else {
-      return new Response();
-    }
-  }),
-});
 
 http.route({
   path: "/api/auth/webhook",

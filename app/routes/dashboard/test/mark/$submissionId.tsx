@@ -503,6 +503,17 @@ export default function MarkingPage() {
           </div>
         </div>
       )}
+      {/* Copy/Paste Warning */}
+      {submission.copyPasteCount !== undefined && submission.copyPasteCount > 0 && (
+        <div className="px-6 py-3 bg-red-50 border-b border-red-200">
+          <div className="flex items-center gap-2 text-red-800">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              Warning: This test taker attempted to copy/paste {submission.copyPasteCount} time{submission.copyPasteCount !== 1 ? 's' : ''} during the assessment.
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar - Navigation */}
