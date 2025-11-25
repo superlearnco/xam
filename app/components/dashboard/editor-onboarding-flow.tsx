@@ -93,6 +93,18 @@ export function EditorOnboardingFlow({ onComplete, forceShow }: EditorOnboarding
     };
   }, [updateTargetRect, isVisible]);
 
+  const handleComplete = useCallback(() => {
+    setIsVisible(false);
+    localStorage.setItem(EDITOR_ONBOARDING_KEY, "true");
+    onComplete?.();
+  }, [onComplete]);
+
+  const handleSkip = useCallback(() => {
+    setIsVisible(false);
+    localStorage.setItem(EDITOR_ONBOARDING_KEY, "true");
+    onComplete?.();
+  }, [onComplete]);
+
   const handleNext = useCallback(() => {
     if (isLastStep) {
       handleComplete();
@@ -106,18 +118,6 @@ export function EditorOnboardingFlow({ onComplete, forceShow }: EditorOnboarding
       setCurrentStepIndex((prev) => prev - 1);
     }
   }, [isFirstStep]);
-
-  const handleSkip = useCallback(() => {
-    setIsVisible(false);
-    localStorage.setItem(EDITOR_ONBOARDING_KEY, "true");
-    onComplete?.();
-  }, [onComplete]);
-
-  const handleComplete = useCallback(() => {
-    setIsVisible(false);
-    localStorage.setItem(EDITOR_ONBOARDING_KEY, "true");
-    onComplete?.();
-  }, [onComplete]);
 
   const getTooltipPosition = useCallback(
     (position: TooltipPosition = "bottom"): React.CSSProperties => {
