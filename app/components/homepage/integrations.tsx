@@ -105,7 +105,7 @@ export default function HeroSection({ loaderData }: HeroProps) {
             <div className="relative aspect-[4/3] w-full rounded-3xl bg-gradient-to-br from-purple-100 to-blue-100 p-4 shadow-2xl dark:from-slate-800 dark:to-slate-900">
               <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl bg-white shadow-inner dark:bg-slate-950">
                  <img 
-                   src="/xam full.png" 
+                   src="/hero image.png" 
                    alt="XAM Dashboard Interface" 
                    className="h-full w-full object-cover object-top opacity-95 transition-opacity hover:opacity-100"
                  />
