@@ -45,7 +45,7 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
             <Menu className="h-4 w-4" />
           </Button>
           <Link
-            to="/dashboard"
+            to="/home"
             className="flex items-center gap-2 font-semibold tracking-tight"
             prefetch="viewport"
           >
