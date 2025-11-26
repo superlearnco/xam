@@ -1,6 +1,11 @@
+"use client";
+
 import type { Route } from "./+types/pricing";
-import { useLoaderData, Link } from "react-router";
-import { getAuth } from "@clerk/react-router/ssr.server";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { useAction } from "convex/react";
+import { useAuth } from "@clerk/react-router";
+import { api } from "../../convex/_generated/api";
 
 import { Navbar } from "~/components/homepage/navbar";
 import PricingSection from "~/components/homepage/pricing";
@@ -8,109 +13,47 @@ import FooterSection from "~/components/homepage/footer";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 
-const MARKETING_PLANS = [
-  {
-    id: "starter",
-    name: "Starter",
-    description: "Launch compliant assessments with built-in guardrails.",
-    isRecurring: true,
-    prices: [
-      {
-        id: "starter-monthly",
-        amount: 2900,
-        currency: "usd",
-        interval: "month",
-      },
-    ],
-    features: ["Unlimited drafts", "Live preview", "Standard exports"],
-  },
-  {
-    id: "scale",
-    name: "Scale",
-    description: "Everything teams need to collaborate with reviewers.",
-    isRecurring: true,
-    prices: [
-      {
-        id: "scale-monthly",
-        amount: 7900,
-        currency: "usd",
-        interval: "month",
-      },
-    ],
-    features: [
-      "Collaboration spaces",
-      "Audit history",
-      "Priority support",
-      "AI authoring seats",
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    description: "Custom integrations, governance, and white-glove onboarding.",
-    isRecurring: true,
-    prices: [
-      {
-        id: "enterprise-monthly",
-        amount: 24900,
-        currency: "usd",
-        interval: "month",
-      },
-    ],
-    features: [
-      "Dedicated CSM",
-      "SSO & SCIM",
-      "Custom data retention",
-      "Security reviews & SLAs",
-    ],
-  },
-] as const;
-
-export async function loader(args: Route.LoaderArgs) {
-  const { userId } = await getAuth(args);
-
-  return {
-    isSignedIn: Boolean(userId),
-    pricing: {
-      plans: {
-        items: MARKETING_PLANS,
-      },
-      subscription: userId
-        ? {
-            status: "inactive",
-            amount: 0,
-          }
-        : undefined,
-    },
-  };
-}
-
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Pricing | XAM" },
     {
       name: "description",
       content:
-        "Predictable pricing tiers for assessment teams of every size. Start free and scale to enterprise governance when you’re ready.",
+        "Purchase credits to power your AI-powered test generation. Flexible credit packages to suit your needs.",
     },
   ];
 }
 
 export default function PricingRoute() {
-  const { isSignedIn, pricing } = useLoaderData<typeof loader>();
+  const { isSignedIn } = useAuth();
+  const getCreditProducts = useAction(api.subscriptions.getCreditProducts);
+  const [products, setProducts] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCreditProducts()
+      .then((result) => {
+        setProducts(result);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch credit products:", error);
+        setLoading(false);
+      });
+  }, [getCreditProducts]);
 
   return (
     <>
       <Hero isSignedIn={isSignedIn} />
-      <PricingSection loaderData={pricing} />
+      <PricingSection products={products} loading={loading} />
       <FooterSection />
     </>
   );
 }
 
 function Hero({ isSignedIn }: { isSignedIn: boolean }) {
-  const primaryCta = isSignedIn ? "/dashboard" : "/sign-up";
-  const secondaryCta = isSignedIn ? "/contact" : "/pricing#faq";
+  const primaryCta = isSignedIn ? "/dashboard/credits" : "/sign-up";
+  const secondaryCta = isSignedIn ? "/dashboard" : "/sign-up";
 
   return (
     <>
@@ -125,23 +68,21 @@ function Hero({ isSignedIn }: { isSignedIn: boolean }) {
           </Badge>
           <div className="space-y-4">
             <h1 className="text-pretty text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-              Flexible plans for modern assessment teams
+              Purchase credits to power your AI test generation
             </h1>
             <p className="text-lg text-muted-foreground sm:text-xl">
-              Start building with collaborative tooling, add reviewer seats when
-              you need them, and scale to enterprise governance without
-              switching platforms.
+              Buy credits to generate AI-powered tests. Credits never expire and can be used anytime for test generation and analysis.
             </p>
           </div>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link to={primaryCta} prefetch="viewport">
-                {isSignedIn ? "Open dashboard" : "Start for free"}
+                {isSignedIn ? "View Credits" : "Get Started"}
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link to={secondaryCta} prefetch="viewport">
-                {isSignedIn ? "Talk to sales" : "View FAQs"}
+                {isSignedIn ? "Go to Dashboard" : "Sign Up Free"}
               </Link>
             </Button>
           </div>

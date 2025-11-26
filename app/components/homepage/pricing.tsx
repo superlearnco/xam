@@ -1,6 +1,10 @@
-import { useMemo } from "react";
-import { Link } from "react-router";
-import { ArrowUpRight, Check, Loader2 } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { useAction } from "convex/react";
+import { useAuth } from "@clerk/react-router";
+import { Check, Loader2 } from "lucide-react";
+import { api } from "../../../convex/_generated/api";
 
 import {
   Card,
@@ -13,263 +17,163 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 
-type EmbeddedPrice = {
-  id: string;
-  amount: number;
-  currency: string;
-  interval?: string;
-};
-
-type EmbeddedPlan = {
+type CreditProduct = {
   id: string;
   name: string;
   description: string;
-  isRecurring?: boolean;
-  prices: EmbeddedPrice[];
-  features?: string[];
-};
-
-type EmbeddedPlansPayload = {
-  items: EmbeddedPlan[];
-};
-
-type PricingLoaderData = {
-  plans?: EmbeddedPlansPayload;
-  subscription?: {
-    status?: string;
-    amount?: number;
-  };
+  prices: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    credits: number;
+  }>;
 };
 
 type PricingSectionProps = {
-  loaderData?: PricingLoaderData;
+  products: { items: CreditProduct[] } | null;
+  loading: boolean;
 };
 
-type NormalizedPlan = {
-  id: string;
-  name: string;
-  description: string;
-  priceLabel: string;
-  currencyLabel: string;
-  badge?: string;
-  features: string[];
-  buttonLabel: string;
-  intervalLabel?: string;
-  isPopular: boolean;
-  isCurrent: boolean;
-};
+export default function PricingSection({ products, loading }: PricingSectionProps) {
+  const { isSignedIn } = useAuth();
+  const createCheckout = useAction(api.subscriptions.createCheckoutSession);
+  const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-const FALLBACK_PLANS: EmbeddedPlan[] = [
-  {
-    id: "starter",
-    name: "Starter",
-    description: "Launch your first assessments with guided templates.",
-    isRecurring: true,
-    prices: [
-      {
-        id: "starter-monthly",
-        amount: 2900,
-        currency: "usd",
-        interval: "month",
-      },
-    ],
-    features: [
-      "Unlimited drafts",
-      "Library of question types",
-      "Automatic scoring rules",
-    ],
-  },
-  {
-    id: "scale",
-    name: "Scale",
-    description: "Advanced workflows for cross-functional teams.",
-    isRecurring: true,
-    prices: [
-      {
-        id: "scale-monthly",
-        amount: 7900,
-        currency: "usd",
-        interval: "month",
-      },
-    ],
-    features: [
-      "Collaboration spaces",
-      "API + webhooks",
-      "Adaptive scoring engine",
-      "Priority support",
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    description: "Custom governance, controls, and onboarding.",
-    isRecurring: true,
-    prices: [
-      {
-        id: "enterprise-yearly",
-        amount: 24900,
-        currency: "usd",
-        interval: "month",
-      },
-    ],
-    features: [
-      "Dedicated CSM",
-      "Security reviews & SLAs",
-      "Custom data retention",
-      "SSO & provisioning",
-    ],
-  },
-];
+  const handlePurchase = async (priceId: string) => {
+    if (!isSignedIn) {
+      setError("Please sign in to purchase credits");
+      return;
+    }
 
-export default function PricingSection({ loaderData }: PricingSectionProps) {
-  const normalizedPlans = useMemo<NormalizedPlan[]>(() => {
-    const sourcePlans = loaderData?.plans?.items?.length
-      ? loaderData.plans.items
-      : FALLBACK_PLANS;
+    setLoadingPriceId(priceId);
+    setError(null);
 
-    const currentAmount = loaderData?.subscription?.amount ?? 0;
-    const activeStatus = loaderData?.subscription?.status;
+    try {
+      const checkoutUrl = await createCheckout({ priceId });
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      }
+    } catch (error) {
+      console.error("Failed to create checkout:", error);
+      setError("Failed to create checkout session. Please try again.");
+      setLoadingPriceId(null);
+    }
+  };
 
-    return sourcePlans.map((plan, index) => {
-      const price = plan.prices[0];
-      const amount = price?.amount ?? 0;
-      const currency = (price?.currency ?? "USD").toUpperCase();
-      const interval = price?.interval ?? (plan.isRecurring ? "month" : "");
-      const priceLabel =
-        amount > 0 ? `$${(amount / 100).toFixed(0)}` : "Custom";
-
-      const badge =
-        amount === 0
-          ? "Free forever"
-          : index === 1
-          ? "Most popular"
-          : undefined;
-
-      const isCurrent =
-        Boolean(currentAmount) &&
-        amount > 0 &&
-        amount === currentAmount &&
-        activeStatus === "active";
-
-      return {
-        id: plan.id,
-        name: plan.name,
-        description: plan.description,
-        priceLabel,
-        currencyLabel: currency,
-        badge,
-        features: plan.features ?? [],
-        buttonLabel: isCurrent ? "Current plan" : "Choose plan",
-        intervalLabel: interval ? `/${interval}` : undefined,
-        isPopular: badge === "Most popular",
-        isCurrent,
-      };
-    });
-  }, [loaderData]);
-
-  const isLoading = !loaderData?.plans && loaderData !== undefined;
+  const creditProducts = products?.items || [];
 
   return (
     <section id="pricing" className="py-24">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 sm:px-6 lg:px-8">
-        <header className="space-y-4 text-center md:text-left">
+        <header className="space-y-4 text-center">
           <p className="text-sm font-semibold uppercase tracking-wide text-primary">
             Pricing
           </p>
           <div className="space-y-3">
             <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Transparent plans built for assessment teams.
+              Flexible credit packages for AI-powered test generation
             </h2>
             <p className="text-lg text-muted-foreground">
-              Start free, add collaboration when you need it, and scale to
-              enterprise governance without migrating tools.
+              Purchase credits to power your AI test generation. Credits never expire and can be used anytime.
             </p>
           </div>
         </header>
 
-        {isLoading && (
-          <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading live plans…
+        {error && (
+          <div className="mx-auto max-w-2xl rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {normalizedPlans.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`flex flex-col ${
-                plan.isPopular ? "border-primary" : ""
-              } ${plan.isCurrent ? "border-green-500 bg-green-50/40" : ""}`}
-            >
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{plan.name}</CardTitle>
-                  {plan.badge && (
-                    <Badge variant="outline" className="text-primary">
-                      {plan.badge}
-                    </Badge>
-                  )}
-                  {plan.isCurrent && (
-                    <Badge variant="outline" className="text-green-600">
-                      Active
-                    </Badge>
-                  )}
-                </div>
-                <CardDescription>{plan.description}</CardDescription>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-4xl font-semibold">
-                    {plan.priceLabel}
-                  </span>
-                  {plan.intervalLabel && (
-                    <span className="text-sm text-muted-foreground">
-                      {plan.intervalLabel}
-                    </span>
-                  )}
-                  <span className="text-sm text-muted-foreground">
-                    {plan.currencyLabel}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
-                {plan.features.length === 0 && (
-                  <p>Includes everything in the previous plan plus:</p>
-                )}
-                <ul className="space-y-2">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-primary" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter className="mt-auto flex flex-col gap-2">
-                <Button
-                  asChild
-                  variant={plan.isCurrent ? "secondary" : "default"}
-                  className="w-full"
-                >
-                  <Link to="/pricing" prefetch="viewport" className="gap-1.5">
-                    {plan.buttonLabel}
-                    {!plan.isCurrent && (
-                      <ArrowUpRight className="h-4 w-4" aria-hidden />
+        {loading && (
+          <div className="flex items-center justify-center gap-2 rounded-xl border bg-card px-4 py-12 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading credit packages…
+          </div>
+        )}
+
+        {!loading && creditProducts.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            No credit packages available at this time.
+          </div>
+        )}
+
+        {!loading && creditProducts.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {creditProducts.map((product) =>
+              product.prices.map((price, priceIndex) => {
+                const isPopular = priceIndex === Math.floor(product.prices.length / 2);
+                const credits = price.credits || Math.floor((price.amount / 100) * 10);
+                
+                return (
+                  <Card
+                    key={price.id}
+                    className={`flex flex-col relative overflow-hidden ${
+                      isPopular ? "border-primary shadow-lg" : "border-primary/10"
+                    } hover:shadow-md transition-shadow`}
+                  >
+                    {isPopular && (
+                      <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <div className="h-24 w-24 rounded-full bg-primary blur-3xl" />
+                      </div>
                     )}
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="ghost"
-                  className="w-full text-muted-foreground"
-                >
-                  <Link to="/contact" prefetch="viewport">
-                    Talk to sales
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>{product.name}</CardTitle>
+                        {isPopular && (
+                          <Badge variant="outline" className="text-primary">
+                            Popular
+                          </Badge>
+                        )}
+                      </div>
+                      <CardDescription>{product.description}</CardDescription>
+                      <div className="mt-4 flex items-baseline gap-2">
+                        <span className="text-4xl font-semibold">
+                          ${(price.amount / 100).toFixed(2)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          one-time
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span className="font-semibold">
+                          {credits.toLocaleString()} Credits
+                        </span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        <p className="text-xs">
+                          ${((price.amount / 100) / credits).toFixed(3)} per credit
+                        </p>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="mt-auto">
+                      <Button
+                        className="w-full"
+                        onClick={() => handlePurchase(price.id)}
+                        disabled={loadingPriceId === price.id || !isSignedIn}
+                      >
+                        {loadingPriceId === price.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : !isSignedIn ? (
+                          "Sign in to purchase"
+                        ) : (
+                          "Purchase Now"
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
