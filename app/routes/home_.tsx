@@ -34,7 +34,7 @@ export default function HomeRoute() {
   return (
     <>
       <IntegrationsSection loaderData={hero} />
-      <main className="bg-background text-foreground">
+      <main className="text-foreground">
         <ContentSection />
       </main>
       <FooterSection />

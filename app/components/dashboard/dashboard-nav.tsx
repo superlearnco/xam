@@ -54,7 +54,10 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
         </div>
 
         {tabs?.length ? (
-          <div className="hidden rounded-full border bg-background/70 p-1 md:flex" data-onboarding="editor-tabs">
+          <div
+            className="hidden rounded-full border bg-background/70 p-1 md:flex"
+            data-onboarding="editor-tabs"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.value}
