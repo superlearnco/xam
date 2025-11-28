@@ -159,9 +159,15 @@ export default function TestEditorPage() {
     if (test && testId && !isLoaded) {
       setTestName(test.name);
       setTestDescription(test.description || "");
-      setFields(
-        (test.fields || []).sort((a, b) => a.order - b.order) as TestField[]
-      );
+      // Ensure all fields have valid IDs that start with "field-"
+      const loadedFields = (test.fields || []).sort((a, b) => a.order - b.order).map((field, index) => ({
+        ...field,
+        // Ensure ID starts with "field-" for drag and drop compatibility
+        id: field.id && field.id.startsWith("field-") 
+          ? field.id 
+          : generateFieldId(),
+      })) as TestField[];
+      setFields(loadedFields);
       setMaxAttempts(test.maxAttempts);
       setEstimatedDuration(test.estimatedDuration);
       setRequireAuth(test.requireAuth || false);

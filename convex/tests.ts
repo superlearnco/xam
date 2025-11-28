@@ -912,6 +912,170 @@ export const deleteSubmission = mutation({
 const INPUT_CREDITS_PER_TOKEN = 0.00005;
 const OUTPUT_CREDITS_PER_TOKEN = 0.00015;
 
+/**
+ * Fixes common LaTeX errors in AI-generated content.
+ * Replaces common mistakes like "imes" with "\times" and ensures proper LaTeX syntax.
+ */
+function fixLatexContent(content: string): string {
+  if (!content || typeof content !== "string") {
+    return content;
+  }
+
+  // Fix common LaTeX command mistakes (missing backslashes)
+  // These patterns match common AI mistakes where backslashes were lost
+  const fixes: Array<[RegExp, string]> = [
+    // Multiplication
+    [/\bimes\b/g, "\\times"],
+    // Division
+    [/\bdiv(?![i])\b/g, "\\div"], // Avoid matching "divide", "divisible" etc
+    // Plus/minus
+    [/\bpm(?![a-z])\b/g, "\\pm"], // Avoid matching "pm" in words like "simple"
+    [/\bmp(?![a-z])\b/g, "\\mp"],
+    // Fractions
+    [/\bfrac\{/g, "\\frac{"],
+    // Square root
+    [/\bsqrt\{/g, "\\sqrt{"],
+    [/\bsqrt\[/g, "\\sqrt["],
+    // Operators
+    [/\bsum(?![a-z])\b/g, "\\sum"], // Avoid matching "summary", etc
+    [/\bprod(?![a-z])\b/g, "\\prod"], // Avoid matching "product", etc
+    [/\bint(?![a-z])\b/g, "\\int"], // Avoid matching "integer", "integral", etc
+    // Relations
+    [/\bleq(?![a-z])\b/g, "\\leq"], // Avoid matching "lequation", etc
+    [/\bgeq(?![a-z])\b/g, "\\geq"],
+    [/\bneq(?![a-z])\b/g, "\\neq"],
+    [/\bapprox(?![a-z])\b/g, "\\approx"],
+    // Greek letters (common ones)
+    [/\balpha(?![a-z])\b/g, "\\alpha"],
+    [/\bbeta(?![a-z])\b/g, "\\beta"],
+    [/\bgamma(?![a-z])\b/g, "\\gamma"],
+    [/\bdelta(?![a-z])\b/g, "\\delta"],
+    [/\bepsilon(?![a-z])\b/g, "\\epsilon"],
+    [/\btheta(?![a-z])\b/g, "\\theta"],
+    [/\blambda(?![a-z])\b/g, "\\lambda"],
+    [/\bmu(?![a-z])\b/g, "\\mu"],
+    [/\bpi(?![a-z])\b/g, "\\pi"],
+    [/\bsigma(?![a-z])\b/g, "\\sigma"],
+    [/\bomega(?![a-z])\b/g, "\\omega"],
+    // Sets
+    [/\bin(?![a-z])\b(?=\s*\{)/g, "\\in"], // Only when followed by { (like "in {1,2}")
+    [/\bsubset(?![a-z])\b/g, "\\subset"],
+    [/\bsupset(?![a-z])\b/g, "\\supset"],
+    // Arrows
+    [/\brightarrow(?![a-z])\b/g, "\\rightarrow"],
+    [/\bleftarrow(?![a-z])\b/g, "\\leftarrow"],
+    [/\bleftrightarrow(?![a-z])\b/g, "\\leftrightarrow"],
+  ];
+
+  let fixed = content;
+  for (const [pattern, replacement] of fixes) {
+    fixed = fixed.replace(pattern, replacement);
+  }
+
+  return fixed;
+}
+
+/**
+ * Removes $$ delimiters from labels and moves display math to latexContent
+ */
+function cleanLabelAndMoveLatex(field: any): any {
+  if (!field || typeof field !== "object") {
+    return field;
+  }
+
+  const cleaned = { ...field };
+
+  // Handle label field - remove $$ delimiters and extract display math
+  if (cleaned.label && typeof cleaned.label === "string") {
+    let label = cleaned.label;
+
+    // Find all $$...$$ patterns
+    const displayMathPattern = /\$\$([^$]+?)\$\$/g;
+    const displayMathBlocks: string[] = [];
+    let match;
+
+    // Extract all $$...$$ blocks
+    while ((match = displayMathPattern.exec(label)) !== null) {
+      displayMathBlocks.push(match[1].trim());
+    }
+
+    // Remove all $$...$$ from label
+    label = label.replace(displayMathPattern, "").trim();
+
+    // If we found display math blocks and latexContent doesn't exist or is empty
+    if (displayMathBlocks.length > 0) {
+      // Combine multiple display math blocks or use the first one
+      const combinedMath = displayMathBlocks.join(" \\\\ "); // Join with line breaks
+      
+      // Only set latexContent if it's empty or doesn't exist
+      if (!cleaned.latexContent || cleaned.latexContent.trim() === "") {
+        cleaned.latexContent = combinedMath;
+      }
+    }
+
+    // Clean up the label - remove extra spaces and fix LaTeX commands
+    label = label.replace(/\s+/g, " ").trim();
+    cleaned.label = fixLatexContent(label);
+
+    // Also clean latexContent if it exists
+    if (cleaned.latexContent && typeof cleaned.latexContent === "string") {
+      // Remove $$ delimiters from latexContent if present
+      cleaned.latexContent = cleaned.latexContent.replace(/^\$\$|\$\$$/g, "").trim();
+      cleaned.latexContent = fixLatexContent(cleaned.latexContent);
+    }
+  }
+
+  return cleaned;
+}
+
+/**
+ * Recursively cleans LaTeX content in a test object (fields, labels, options, etc.)
+ */
+function cleanLatexInTestData(data: any): any {
+  if (typeof data === "string") {
+    // Remove $$ delimiters from strings (shouldn't have them in JSON values)
+    let cleaned = data.replace(/^\$\$|\$\$$/g, "").trim();
+    return fixLatexContent(cleaned);
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(cleanLatexInTestData);
+  }
+  
+  if (data && typeof data === "object") {
+    // Check if this is a test object with fields array
+    if (data.fields && Array.isArray(data.fields)) {
+      const cleaned = { ...data };
+      // Clean each field specially to handle label -> latexContent migration
+      cleaned.fields = data.fields.map((field: any) => {
+        const cleanedField = cleanLabelAndMoveLatex(field);
+        // Also clean options if they exist
+        if (cleanedField.options && Array.isArray(cleanedField.options)) {
+          cleanedField.options = cleanedField.options.map((opt: any) => {
+            if (typeof opt === "string") {
+              // Remove $$ delimiters from options (should use $...$ for inline math)
+              let cleanedOpt = opt.replace(/\$\$/g, "$");
+              return fixLatexContent(cleanedOpt);
+            }
+            return cleanLatexInTestData(opt);
+          });
+        }
+        return cleanedField;
+      });
+      return cleaned;
+    }
+
+    // For other objects, clean recursively
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      cleaned[key] = cleanLatexInTestData(value);
+    }
+    return cleaned;
+  }
+  
+  return data;
+}
+
 // Generate test using AI
 export const generateTestWithAI = action({
   args: {
@@ -1010,7 +1174,7 @@ export const generateTestWithAI = action({
           "marks": number (optional, default 1),
           "helpText": "Optional hint",
           "placeholder": "Optional placeholder",
-          "latexContent": "Optional LaTeX math formula (use $$...$$ for display math)",
+          "latexContent": "Optional LaTeX math formula for questions - USE THIS FIELD for math equations/formulas (NO $$ delimiters needed, e.g., \"x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}\")",
           "minLength": number (optional, for text input),
           "maxLength": number (optional, for text input),
           "pattern": "Optional regex pattern",
@@ -1023,12 +1187,37 @@ export const generateTestWithAI = action({
     Default to 'test' type if not specified.
     Do NOT include any fields related to Access & Security (requireAuth, password, browser restrictions).
     
-    IMPORTANT - LaTeX Support:
-    - For mathematical expressions in answer options, use LaTeX syntax wrapped in dollar signs:
-      * Use $...$ for inline math in options (e.g., "Option with $x^2 + y^2 = z^2$ formula")
-      * Use $$...$$ for display math in the latexContent field (e.g., "$$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$")
-    - When creating math-related questions, use LaTeX in options for mathematical expressions, formulas, equations, or symbols.
-    - Example option with LaTeX: "$x = 5$" or "The solution is $\\sqrt{16} = 4$"
+    CRITICAL - LaTeX Support and JSON Escaping:
+    When writing LaTeX in JSON strings, you MUST escape backslashes by doubling them (\\). 
+    After JSON parsing, \\ becomes \ which is correct LaTeX syntax.
+    
+    Examples of CORRECT LaTeX in JSON:
+    - latexContent: "x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}" (NO $$ delimiters - added automatically during rendering)
+    - label: "Multiply the following:" (plain text in label, math goes in latexContent)
+    - options: ["$\\\\sqrt{16}$", "$4^2$"] (becomes ["$\\sqrt{16}$", "$4^2$"] after parsing - use single $ for inline math)
+    
+    Common LaTeX commands that need double backslashes in JSON:
+    - \\times for multiplication (×)
+    - \\div for division (÷)
+    - \\pm for plus/minus (±)
+    - \\frac{a}{b} for fractions
+    - \\sqrt{x} for square root
+    - \\leq, \\geq, \\neq for inequalities
+    - Greek letters: \\alpha, \\beta, \\pi, \\theta, etc.
+    
+    - For math formulas/equations in QUESTIONS: ALWAYS use the latexContent field (WITHOUT $$ delimiters)
+      * Example: latexContent: "x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}"
+      * Keep the label text simple (e.g., "Solve for x:") and put the formula in latexContent
+      * DO NOT put $$ delimiters in latexContent - they are added automatically during rendering
+    - For inline math within question labels: Use $...$ format in the label text itself (single $ delimiters)
+      * Example: "What is the value of $x$ when $y = 3$?"
+      * DO NOT use $$ in labels - use latexContent field for display math instead
+    - For math in answer options: Use $...$ inline format in options
+      * Example: ["$x = 5$", "$x = -5$", "$x = 0$"] 
+      * Example: ["$\\\\sqrt{16} = 4$", "$4^2 = 16$"] (double backslashes for commands)
+    - When creating math questions: Use latexContent field for formulas/equations, $...$ for small inline expressions
+    
+    REMEMBER: In JSON, every single backslash must be doubled. \\times in JSON becomes \times in LaTeX.
     `;
 
     const result = await generateText({
@@ -1084,13 +1273,18 @@ export const generateTestWithAI = action({
 
     // Parse the JSON response
     try {
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
+      // Clean LaTeX content to fix common AI-generated errors
+      data = cleanLatexInTestData(data);
       return data;
     } catch (error) {
       // If parsing fails, try to extract JSON from the text
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        let data = JSON.parse(jsonMatch[0]);
+        // Clean LaTeX content to fix common AI-generated errors
+        data = cleanLatexInTestData(data);
+        return data;
       }
       throw new Error("Failed to parse AI response as JSON");
     }
@@ -1128,7 +1322,14 @@ export const generateDummyAnswers = action({
     Return ONLY a JSON array of strings containing 3 incorrect options.
     Example: ["Incorrect Option 1", "Incorrect Option 2", "Incorrect Option 3"]
     Do not include the correct answer in the output.
-    Ensure the JSON is valid.`;
+    Ensure the JSON is valid.
+    
+    CRITICAL - If the question or answers contain LaTeX math (using $...$ or $$...$$):
+    - When writing LaTeX in JSON strings, you MUST escape backslashes by doubling them (\\)
+    - Example: If you want to output "$$23 \\times 47$$", write it as "$$23 \\\\times 47$$" in the JSON
+    - Common LaTeX commands: \\\\times (×), \\\\div (÷), \\\\pm (±), \\\\sqrt{}, \\\\frac{}{}, etc.
+    - Preserve any existing LaTeX formatting from the question/answers in your distractors
+    - REMEMBER: In JSON, every single backslash must be doubled.`;
 
     // Estimate credits needed (rough estimate)
     const estimatedInputTokens = Math.ceil(
@@ -1187,20 +1388,25 @@ export const generateDummyAnswers = action({
 
     // Parse the JSON response
     try {
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
       if (Array.isArray(data)) {
-        return data;
+        // Clean LaTeX content in distractors
+        return cleanLatexInTestData(data);
       }
       // Try to find array in text if not direct JSON
       const arrayMatch = text.match(/\[[\s\S]*\]/);
       if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+        let data = JSON.parse(arrayMatch[0]);
+        // Clean LaTeX content in distractors
+        return cleanLatexInTestData(data);
       }
       throw new Error("Invalid response format");
     } catch (error) {
       const arrayMatch = text.match(/\[[\s\S]*\]/);
       if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+        let data = JSON.parse(arrayMatch[0]);
+        // Clean LaTeX content in distractors
+        return cleanLatexInTestData(data);
       }
       throw new Error("Failed to parse AI response as JSON");
     }
