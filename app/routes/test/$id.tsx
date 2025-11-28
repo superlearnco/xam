@@ -1464,7 +1464,7 @@ const AnswerKey = ({
                         </div>
                       )}
                       <h4 className="text-lg font-semibold text-slate-900 leading-tight">
-                        {field.label}
+                        <LatexTextRenderer text={field.label} />
                       </h4>
                     </div>
 
@@ -1481,7 +1481,7 @@ const AnswerKey = ({
                       />
                     )}
                     <h4 className="text-xl font-semibold text-slate-900 mb-6 hidden sm:block">
-                      {field.label}
+                      <LatexTextRenderer text={field.label} />
                     </h4>
 
                     <div className="space-y-4">
@@ -1592,7 +1592,7 @@ const QuestionWrapper = ({
                   htmlFor={labelFor}
                   className="text-lg font-semibold text-slate-900 block leading-tight"
                 >
-                  {label}
+                  <LatexTextRenderer text={label} />
                   {required && (
                     <span className="text-red-500 ml-1" title="Required">
                       *
@@ -1618,7 +1618,7 @@ const QuestionWrapper = ({
                   htmlFor={labelFor}
                   className="text-xl font-semibold text-slate-900 block leading-normal"
                 >
-                  {label}
+                  <LatexTextRenderer text={label} />
                   {required && (
                     <span className="text-red-500 ml-1" title="Required">
                       *
@@ -2378,7 +2378,7 @@ function TestForm({
                 />
               )}
               <h3 className="text-xl font-bold text-slate-900 mb-3">
-                {field.label}
+                <LatexTextRenderer text={field.label} />
               </h3>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed">
                 {/* Additional info content could go here if we had a description field */}

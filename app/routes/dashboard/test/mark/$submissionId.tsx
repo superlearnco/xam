@@ -19,6 +19,7 @@ import { ScrollArea } from "~/components/ui/scroll-area";
 import { cn } from "~/lib/utils";
 import { Toggle } from "~/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
+import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -551,7 +552,7 @@ export default function MarkingPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className={cn("text-sm font-medium line-clamp-2", isSelected ? "text-primary" : "text-foreground")}>
-                        {index + 1}. {field.label}
+                        {index + 1}. <LatexTextRenderer text={field.label} />
                       </span>
                       {maxMark > 0 && (
                         <Badge variant={isMarked ? "default" : "secondary"} className="shrink-0 text-[10px] h-5">

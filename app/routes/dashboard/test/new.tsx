@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
 import {
   Dialog,
   DialogContent,
@@ -1706,7 +1707,7 @@ function TestPreview({
                     </div>
                   )}
                   <Label className="text-lg font-semibold text-slate-900 block leading-tight">
-                    {field.label}
+                    <LatexTextRenderer text={field.label} />
                     {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
                   </Label>
                 </div>
@@ -1735,7 +1736,7 @@ function TestPreview({
 
                 <div className="mb-6 hidden sm:block">
                   <Label className="text-xl font-semibold text-slate-900 block leading-normal">
-                    {field.label}
+                    <LatexTextRenderer text={field.label} />
                     {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
                   </Label>
                   {field.helpText && (
@@ -1990,7 +1991,7 @@ function TestPreview({
               />
             )}
             <h3 className="text-xl font-bold text-slate-900 mb-3">
-              {field.label}
+              <LatexTextRenderer text={field.label} />
             </h3>
           </div>
         );
