@@ -119,13 +119,21 @@ export const generateTest = httpAction(async (ctx, req) => {
           "correctAnswers": [0] (optional, indices of correct options for auto-grading),
           "marks": number (optional, default 1),
           "helpText": "Optional hint",
-          "placeholder": "Optional placeholder"
+          "placeholder": "Optional placeholder",
+          "latexContent": "Optional LaTeX math formula (use $$...$$ for display math)"
         }
       ]
     }
     Ensure the JSON is valid and fields follow this schema.
     For 'id', generate a unique string like 'field-{timestamp}'.
     Default to 'test' type if not specified.
+    
+    IMPORTANT - LaTeX Support:
+    - For mathematical expressions in answer options, use LaTeX syntax wrapped in dollar signs:
+      * Use $...$ for inline math in options (e.g., "Option with $x^2 + y^2 = z^2$ formula")
+      * Use $$...$$ for display math in the latexContent field (e.g., "$$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$")
+    - When creating math-related questions, use LaTeX in options for mathematical expressions, formulas, equations, or symbols.
+    - Example option with LaTeX: "$x = 5$" or "The solution is $\\sqrt{16} = 4$"
     `;
 
   const { text, usage } = await generateText({

@@ -36,6 +36,7 @@ import { FIELD_TYPES } from "./field-types";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { toast } from "sonner";
+import { LatexTextRenderer } from "./latex-text-renderer";
 
 export interface TestField {
   id: string;
@@ -428,6 +429,11 @@ export function FieldRenderer({
                             isCorrect && "border-green-200 bg-green-50/30 text-green-900 font-medium"
                         )}
                         />
+                        {option && (option.includes('$') || option.includes('$$')) && (
+                          <div className="mt-1.5 px-3.5 py-1.5 rounded-md bg-slate-50 border border-slate-100 text-sm">
+                            <LatexTextRenderer text={option} />
+                          </div>
+                        )}
                     </div>
                     <Button
                       variant="ghost"
