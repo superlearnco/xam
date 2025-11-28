@@ -129,7 +129,7 @@ export const generateTest = httpAction(async (ctx, req) => {
     `;
 
   const { text, usage } = await generateText({
-    model: 'xai/grok-4.1-fast-reasoning', // AI Gateway format: provider/model-name
+    model: 'xai/grok-4-fast-reasoning', // AI Gateway format: provider/model-name
     system: systemPrompt,
     prompt,
   });

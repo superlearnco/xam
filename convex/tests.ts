@@ -7,8 +7,12 @@ import { api } from "./_generated/api";
 export const listTests = query({
   args: {
     search: v.optional(v.string()),
-    type: v.optional(v.union(v.literal("test"), v.literal("survey"), v.literal("essay"))),
-    sortBy: v.optional(v.union(v.literal("name"), v.literal("recency"), v.literal("lastEdited"))), // Supports name, recency, or lastEdited
+    type: v.optional(
+      v.union(v.literal("test"), v.literal("survey"), v.literal("essay"))
+    ),
+    sortBy: v.optional(
+      v.union(v.literal("name"), v.literal("recency"), v.literal("lastEdited"))
+    ), // Supports name, recency, or lastEdited
   },
   handler: async (ctx, args) => {
     // Get the authenticated user
@@ -23,27 +27,28 @@ export const listTests = query({
     const baseQuery = ctx.db.query("tests");
 
     if (args.sortBy === "name") {
-      tests = await baseQuery.withIndex("by_user_name", (q) => 
-        q.eq("userId", identity.subject)
-      ).collect();
+      tests = await baseQuery
+        .withIndex("by_user_name", (q) => q.eq("userId", identity.subject))
+        .collect();
     } else if (args.sortBy === "recency") {
-      tests = await baseQuery.withIndex("by_user_created", (q) => 
-        q.eq("userId", identity.subject)
-      ).order("desc").collect();
+      tests = await baseQuery
+        .withIndex("by_user_created", (q) => q.eq("userId", identity.subject))
+        .order("desc")
+        .collect();
     } else if (args.sortBy === "lastEdited") {
       // Use userId index and sort in-memory to handle optional lastEdited field
-      tests = await baseQuery.withIndex("userId", (q) => 
-        q.eq("userId", identity.subject)
-      ).collect();
+      tests = await baseQuery
+        .withIndex("userId", (q) => q.eq("userId", identity.subject))
+        .collect();
       tests.sort((a, b) => {
         const aLastEdited = a.lastEdited ?? a.createdAt;
         const bLastEdited = b.lastEdited ?? b.createdAt;
         return bLastEdited - aLastEdited;
       });
     } else {
-      tests = await baseQuery.withIndex("userId", (q) => 
-        q.eq("userId", identity.subject)
-      ).collect();
+      tests = await baseQuery
+        .withIndex("userId", (q) => q.eq("userId", identity.subject))
+        .collect();
     }
 
     // Filter by search term (case-insensitive)
@@ -142,9 +147,13 @@ export const generateAndCreateTest = mutation({
     showAnswerKey: v.optional(v.boolean()),
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
-    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    viewType: v.optional(
+      v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))
+    ),
     enableCalculator: v.optional(v.boolean()),
-    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
+    calculatorType: v.optional(
+      v.union(v.literal("basic"), v.literal("scientific"))
+    ),
     fields: v.array(
       v.object({
         id: v.string(),
@@ -189,16 +198,18 @@ export const generateAndCreateTest = mutation({
       correctAnswers: field.correctAnswers
         ? field.correctAnswers
             .map((ans: string | number) => {
-              if (typeof ans === 'string') {
+              if (typeof ans === "string") {
                 const num = Number(ans);
                 return isNaN(num) ? null : num;
               }
-              return typeof ans === 'number' ? ans : null;
+              return typeof ans === "number" ? ans : null;
             })
-            .filter((ans): ans is number => ans !== null && typeof ans === 'number')
+            .filter(
+              (ans): ans is number => ans !== null && typeof ans === "number"
+            )
         : field.correctAnswers,
     }));
-    
+
     const testId = await ctx.db.insert("tests", {
       userId: identity.subject,
       name: args.name,
@@ -274,9 +285,13 @@ export const updateTest = mutation({
     timeLimitMinutes: v.optional(v.number()),
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
-    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    viewType: v.optional(
+      v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))
+    ),
     enableCalculator: v.optional(v.boolean()),
-    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
+    calculatorType: v.optional(
+      v.union(v.literal("basic"), v.literal("scientific"))
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -296,7 +311,15 @@ export const updateTest = mutation({
       description?: string;
       fields?: Array<{
         id: string;
-        type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "pageBreak" | "infoBlock";
+        type:
+          | "shortInput"
+          | "longInput"
+          | "multipleChoice"
+          | "checkboxes"
+          | "dropdown"
+          | "imageChoice"
+          | "pageBreak"
+          | "infoBlock";
         label: string;
         required?: boolean;
         options?: string[];
@@ -345,13 +368,15 @@ export const updateTest = mutation({
         correctAnswers: field.correctAnswers
           ? field.correctAnswers
               .map((ans: string | number) => {
-                if (typeof ans === 'string') {
+                if (typeof ans === "string") {
                   const num = Number(ans);
                   return isNaN(num) ? null : num;
                 }
-                return typeof ans === 'number' ? ans : null;
+                return typeof ans === "number" ? ans : null;
               })
-              .filter((ans): ans is number => ans !== null && typeof ans === 'number')
+              .filter(
+                (ans): ans is number => ans !== null && typeof ans === "number"
+              )
           : field.correctAnswers,
       }));
     }
@@ -462,18 +487,21 @@ export const submitTest = mutation({
     let isMarked: boolean | undefined;
 
     // Check if test has any text input fields (shortInput or longInput)
-    const hasTextInputFields = test.fields?.some(
-      (f) => f.type === "shortInput" || f.type === "longInput"
-    ) || false;
+    const hasTextInputFields =
+      test.fields?.some(
+        (f) => f.type === "shortInput" || f.type === "longInput"
+      ) || false;
 
     // Calculate marks if instant feedback is enabled OR if there are no text input fields (auto-mark)
     if ((test.instantFeedback || !hasTextInputFields) && test.fields) {
       let earnedMarks = 0;
       let totalMarks = 0;
       const calculatedFieldMarks: Record<string, number> = {};
-      
+
       // Only count fields that are actually markable (exclude pageBreak and infoBlock)
-      const markableFields = test.fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
+      const markableFields = test.fields.filter(
+        (f) => f.type !== "pageBreak" && f.type !== "infoBlock"
+      );
 
       for (const field of markableFields) {
         // Only process fields with marks
@@ -484,39 +512,70 @@ export const submitTest = mutation({
 
           // Only calculate score for fields with correctAnswers defined
           if (field.correctAnswers && field.correctAnswers.length > 0) {
-            if (userResponse !== undefined && userResponse !== null && userResponse !== "") {
+            if (
+              userResponse !== undefined &&
+              userResponse !== null &&
+              userResponse !== ""
+            ) {
               let isCorrect = false;
 
               // Handle different field types
-              if (field.type === "multipleChoice" || field.type === "dropdown") {
+              if (
+                field.type === "multipleChoice" ||
+                field.type === "dropdown"
+              ) {
                 // Single answer - check if response matches any correct answer
-                const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+                const responseIndex =
+                  typeof userResponse === "string"
+                    ? parseInt(userResponse, 10)
+                    : userResponse;
                 isCorrect = field.correctAnswers.includes(responseIndex);
-              } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+              } else if (
+                field.type === "checkboxes" ||
+                field.type === "imageChoice"
+              ) {
                 // Multiple answers - check if all correct answers are selected
                 const selectedIndices = Array.isArray(userResponse)
-                  ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
-                  : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+                  ? userResponse.map((v) =>
+                      typeof v === "string" ? parseInt(v, 10) : v
+                    )
+                  : [
+                      typeof userResponse === "string"
+                        ? parseInt(userResponse, 10)
+                        : userResponse,
+                    ];
 
                 // Check if all correct answers are selected and no incorrect ones
                 const correctSet = new Set(field.correctAnswers);
                 const selectedSet = new Set(selectedIndices);
 
                 // All correct answers must be selected
-                const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
+                const allCorrectSelected = field.correctAnswers.every((idx) =>
+                  selectedSet.has(idx)
+                );
                 // No extra incorrect answers
-                const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
+                const noExtraAnswers = selectedIndices.every((idx) =>
+                  correctSet.has(idx)
+                );
 
                 isCorrect = allCorrectSelected && noExtraAnswers;
-              } else if (field.type === "shortInput" || field.type === "longInput") {
+              } else if (
+                field.type === "shortInput" ||
+                field.type === "longInput"
+              ) {
                 // Text input - compare with correct answers (assuming correctAnswers contains indices to options array)
                 // For text inputs, we might need to compare text directly
                 // For now, if correctAnswers is defined, we'll check if response matches any option at those indices
                 if (field.options && field.options.length > 0) {
-                  const responseText = String(userResponse).toLowerCase().trim();
+                  const responseText = String(userResponse)
+                    .toLowerCase()
+                    .trim();
                   isCorrect = field.correctAnswers.some((idx) => {
                     const correctOption = field.options?.[idx];
-                    return correctOption && correctOption.toLowerCase().trim() === responseText;
+                    return (
+                      correctOption &&
+                      correctOption.toLowerCase().trim() === responseText
+                    );
                   });
                 }
               }
@@ -528,7 +587,7 @@ export const submitTest = mutation({
             }
           }
           // If field has marks but no correctAnswers, mark stays at 0 (requires manual marking)
-          
+
           // Store the mark for this field
           calculatedFieldMarks[field.id] = mark;
         }
@@ -536,8 +595,9 @@ export const submitTest = mutation({
 
       score = earnedMarks;
       maxScore = totalMarks;
-      percentage = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
-      
+      percentage =
+        totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
+
       // If there are no text input fields, automatically mark the submission
       if (!hasTextInputFields) {
         fieldMarks = calculatedFieldMarks;
@@ -604,23 +664,36 @@ export const getTestSubmissions = query({
     const unmarked = total - marked;
 
     // Calculate mean percentage for marked submissions only
-    const markedSubmissions = submissions.filter((s) => s.isMarked === true && s.percentage !== undefined);
-    const meanPercentage = markedSubmissions.length > 0
-      ? Math.round(
-        markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / markedSubmissions.length
-      )
-      : 0;
+    const markedSubmissions = submissions.filter(
+      (s) => s.isMarked === true && s.percentage !== undefined
+    );
+    const meanPercentage =
+      markedSubmissions.length > 0
+        ? Math.round(
+            markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) /
+              markedSubmissions.length
+          )
+        : 0;
 
     // Calculate question-level stats
-    const questionStats: Record<string, {
-      totalScore: number;
-      maxScore: number;
-      count: number;
-    }> = {};
+    const questionStats: Record<
+      string,
+      {
+        totalScore: number;
+        maxScore: number;
+        count: number;
+      }
+    > = {};
 
     const fields = test.fields || [];
     // Filter for markable fields
-    const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock" && f.marks && f.marks > 0);
+    const markableFields = fields.filter(
+      (f) =>
+        f.type !== "pageBreak" &&
+        f.type !== "infoBlock" &&
+        f.marks &&
+        f.marks > 0
+    );
 
     // Initialize stats for all markable fields
     for (const field of markableFields) {
@@ -632,7 +705,9 @@ export const getTestSubmissions = query({
     }
 
     for (const submission of markedSubmissions) {
-      const fieldMarks = submission.fieldMarks as Record<string, number> | undefined;
+      const fieldMarks = submission.fieldMarks as
+        | Record<string, number>
+        | undefined;
       if (fieldMarks) {
         for (const field of markableFields) {
           const mark = fieldMarks[field.id];
@@ -647,20 +722,26 @@ export const getTestSubmissions = query({
     }
 
     // Format for return
-    const questionAnalytics = markableFields.map(field => {
-      const stats = questionStats[field.id];
-      const averageScore = stats.count > 0 ? stats.totalScore / stats.count : 0;
-      const averagePercentage = stats.maxScore > 0 ? Math.round((averageScore / stats.maxScore) * 100) : 0;
-      
-      return {
-        fieldId: field.id,
-        label: field.label,
-        averageScore,
-        maxScore: stats.maxScore,
-        averagePercentage,
-        count: stats.count
-      };
-    }).sort((a, b) => a.averagePercentage - b.averagePercentage); // Sort by most missed (lowest percentage) first
+    const questionAnalytics = markableFields
+      .map((field) => {
+        const stats = questionStats[field.id];
+        const averageScore =
+          stats.count > 0 ? stats.totalScore / stats.count : 0;
+        const averagePercentage =
+          stats.maxScore > 0
+            ? Math.round((averageScore / stats.maxScore) * 100)
+            : 0;
+
+        return {
+          fieldId: field.id,
+          label: field.label,
+          averageScore,
+          maxScore: stats.maxScore,
+          averagePercentage,
+          count: stats.count,
+        };
+      })
+      .sort((a, b) => a.averagePercentage - b.averagePercentage); // Sort by most missed (lowest percentage) first
 
     return {
       submissions: submissions.map((s) => ({
@@ -762,7 +843,9 @@ export const updateSubmissionMarks = mutation({
     // Validate and calculate marks
     const fields = test.fields || [];
     // Only count fields that are actually markable (exclude pageBreak and infoBlock)
-    const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
+    const markableFields = fields.filter(
+      (f) => f.type !== "pageBreak" && f.type !== "infoBlock"
+    );
     let totalScore = 0;
     let maxScore = 0;
     const fieldMarksObj = args.fieldMarks as Record<string, number>;
@@ -779,7 +862,8 @@ export const updateSubmissionMarks = mutation({
       }
     }
 
-    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const percentage =
+      maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     // Update submission
     await ctx.db.patch(args.submissionId, {
@@ -874,7 +958,14 @@ export const generateTestWithAI = action({
     const configParts: string[] = [];
     if (args.gradeLevel) {
       const gradeNum = parseInt(args.gradeLevel);
-      const gradeSuffix = gradeNum === 1 ? "st" : gradeNum === 2 ? "nd" : gradeNum === 3 ? "rd" : "th";
+      const gradeSuffix =
+        gradeNum === 1
+          ? "st"
+          : gradeNum === 2
+          ? "nd"
+          : gradeNum === 3
+          ? "rd"
+          : "th";
       configParts.push(`Grade Level: ${gradeNum}${gradeSuffix} grade`);
     }
     if (args.category) {
@@ -883,10 +974,13 @@ export const generateTestWithAI = action({
     if (args.complexity) {
       configParts.push(`Complexity: ${args.complexity}`);
     }
-    
-    const configContext = configParts.length > 0
-      ? `\n\nIMPORTANT: The following configuration should guide the test creation:\n${configParts.join("\n")}\n\n- Adjust the difficulty and vocabulary to match the specified grade level.\n- Align all questions with the specified category.\n- Set question complexity based on the specified level (Low: basic concepts, Medium: application of concepts, High: analysis and synthesis).`
-      : "";
+
+    const configContext =
+      configParts.length > 0
+        ? `\n\nIMPORTANT: The following configuration should guide the test creation:\n${configParts.join(
+            "\n"
+          )}\n\n- Adjust the difficulty and vocabulary to match the specified grade level.\n- Align all questions with the specified category.\n- Set question complexity based on the specified level (Low: basic concepts, Medium: application of concepts, High: analysis and synthesis).`
+        : "";
 
     const systemPrompt = `You are an expert exam creator. Create a test based on the user's prompt.${configContext}
     Return a JSON object with the following structure:
@@ -931,7 +1025,7 @@ export const generateTestWithAI = action({
     `;
 
     const result = await generateText({
-      model: "xai/grok-4.1-fast-reasoning", // AI Gateway format: provider/model-name
+      model: "xai/grok-4-fast-reasoning", // AI Gateway format: provider/model-name
       system: systemPrompt,
       prompt: args.prompt,
     });
@@ -941,7 +1035,10 @@ export const generateTestWithAI = action({
 
     // Debug: Log the usage object structure to understand its format
     console.log("Usage object:", JSON.stringify(usage, null, 2));
-    console.log("Usage object keys:", usage ? Object.keys(usage) : "usage is null/undefined");
+    console.log(
+      "Usage object keys:",
+      usage ? Object.keys(usage) : "usage is null/undefined"
+    );
 
     // Calculate actual credits used
     // The Vercel AI SDK v5 usage object should have promptTokens and completionTokens
@@ -953,18 +1050,20 @@ export const generateTestWithAI = action({
       // Try standard Vercel AI SDK format
       inputTokens = usageObj.promptTokens ?? usageObj.inputTokens ?? 0;
       outputTokens = usageObj.completionTokens ?? usageObj.outputTokens ?? 0;
-      
+
       // If still 0, try nested structure
       if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
-        inputTokens = usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
-        outputTokens = usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
+        inputTokens =
+          usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
+        outputTokens =
+          usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
       }
     }
-    
+
     const creditsUsedRaw =
       inputTokens * INPUT_CREDITS_PER_TOKEN +
       outputTokens * OUTPUT_CREDITS_PER_TOKEN;
-    
+
     // Ensure at least 1 credit is charged if there was any usage, and always round up
     const creditsUsed = Math.max(1, Math.ceil(creditsUsedRaw));
 
@@ -973,7 +1072,7 @@ export const generateTestWithAI = action({
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI test generation (${inputTokens} input + ${outputTokens} output tokens)`,
-      aiModel: "xai/grok-4.1-fast-reasoning",
+      aiModel: "xai/grok-4-fast-reasoning",
     });
 
     // Parse the JSON response
@@ -1025,7 +1124,9 @@ export const generateDummyAnswers = action({
     Ensure the JSON is valid.`;
 
     // Estimate credits needed (rough estimate)
-    const estimatedInputTokens = Math.ceil((systemPrompt.length + args.question.length) / 4);
+    const estimatedInputTokens = Math.ceil(
+      (systemPrompt.length + args.question.length) / 4
+    );
     const estimatedOutputTokens = 100; // Short response
     const estimatedCreditsRaw =
       estimatedInputTokens * INPUT_CREDITS_PER_TOKEN +
@@ -1034,11 +1135,11 @@ export const generateDummyAnswers = action({
 
     // Check if user has enough credits (with buffer)
     if (creditCheck.credits < estimatedCredits) {
-       // minimal check, usually 1 credit is enough
+      // minimal check, usually 1 credit is enough
     }
 
     const result = await generateText({
-      model: "xai/grok-4.1-fast-non-reasoning", 
+      model: "xai/grok-4-fast-non-reasoning",
       system: systemPrompt,
       prompt: "Generate distractors.",
     });
@@ -1054,16 +1155,18 @@ export const generateDummyAnswers = action({
     if (usageObj) {
       inputTokens = usageObj.promptTokens ?? usageObj.inputTokens ?? 0;
       outputTokens = usageObj.completionTokens ?? usageObj.outputTokens ?? 0;
-       if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
-        inputTokens = usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
-        outputTokens = usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
+      if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
+        inputTokens =
+          usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
+        outputTokens =
+          usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
       }
     }
-    
+
     const creditsUsedRaw =
       inputTokens * INPUT_CREDITS_PER_TOKEN +
       outputTokens * OUTPUT_CREDITS_PER_TOKEN;
-    
+
     // Ensure at least 1 credit is charged if there was any usage, and always round up
     const creditsUsed = Math.max(1, Math.ceil(creditsUsedRaw));
 
@@ -1072,14 +1175,14 @@ export const generateDummyAnswers = action({
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI distractor generation (${inputTokens} in + ${outputTokens} out)`,
-      aiModel: "xai/grok-4.1-fast-non-reasoning",
+      aiModel: "xai/grok-4-fast-non-reasoning",
     });
 
     // Parse the JSON response
     try {
       const data = JSON.parse(text);
       if (Array.isArray(data)) {
-          return data;
+        return data;
       }
       // Try to find array in text if not direct JSON
       const arrayMatch = text.match(/\[[\s\S]*\]/);
@@ -1088,7 +1191,7 @@ export const generateDummyAnswers = action({
       }
       throw new Error("Invalid response format");
     } catch (error) {
-       const arrayMatch = text.match(/\[[\s\S]*\]/);
+      const arrayMatch = text.match(/\[[\s\S]*\]/);
       if (arrayMatch) {
         return JSON.parse(arrayMatch[0]);
       }
@@ -1096,4 +1199,3 @@ export const generateDummyAnswers = action({
     }
   },
 });
-
