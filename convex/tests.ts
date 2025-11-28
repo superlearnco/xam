@@ -7,8 +7,12 @@ import { api } from "./_generated/api";
 export const listTests = query({
   args: {
     search: v.optional(v.string()),
-    type: v.optional(v.union(v.literal("test"), v.literal("survey"), v.literal("essay"))),
-    sortBy: v.optional(v.union(v.literal("name"), v.literal("recency"), v.literal("lastEdited"))), // Supports name, recency, or lastEdited
+    type: v.optional(
+      v.union(v.literal("test"), v.literal("survey"), v.literal("essay"))
+    ),
+    sortBy: v.optional(
+      v.union(v.literal("name"), v.literal("recency"), v.literal("lastEdited"))
+    ), // Supports name, recency, or lastEdited
   },
   handler: async (ctx, args) => {
     // Get the authenticated user
@@ -23,27 +27,28 @@ export const listTests = query({
     const baseQuery = ctx.db.query("tests");
 
     if (args.sortBy === "name") {
-      tests = await baseQuery.withIndex("by_user_name", (q) => 
-        q.eq("userId", identity.subject)
-      ).collect();
+      tests = await baseQuery
+        .withIndex("by_user_name", (q) => q.eq("userId", identity.subject))
+        .collect();
     } else if (args.sortBy === "recency") {
-      tests = await baseQuery.withIndex("by_user_created", (q) => 
-        q.eq("userId", identity.subject)
-      ).order("desc").collect();
+      tests = await baseQuery
+        .withIndex("by_user_created", (q) => q.eq("userId", identity.subject))
+        .order("desc")
+        .collect();
     } else if (args.sortBy === "lastEdited") {
       // Use userId index and sort in-memory to handle optional lastEdited field
-      tests = await baseQuery.withIndex("userId", (q) => 
-        q.eq("userId", identity.subject)
-      ).collect();
+      tests = await baseQuery
+        .withIndex("userId", (q) => q.eq("userId", identity.subject))
+        .collect();
       tests.sort((a, b) => {
         const aLastEdited = a.lastEdited ?? a.createdAt;
         const bLastEdited = b.lastEdited ?? b.createdAt;
         return bLastEdited - aLastEdited;
       });
     } else {
-      tests = await baseQuery.withIndex("userId", (q) => 
-        q.eq("userId", identity.subject)
-      ).collect();
+      tests = await baseQuery
+        .withIndex("userId", (q) => q.eq("userId", identity.subject))
+        .collect();
     }
 
     // Filter by search term (case-insensitive)
@@ -142,9 +147,13 @@ export const generateAndCreateTest = mutation({
     showAnswerKey: v.optional(v.boolean()),
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
-    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    viewType: v.optional(
+      v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))
+    ),
     enableCalculator: v.optional(v.boolean()),
-    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
+    calculatorType: v.optional(
+      v.union(v.literal("basic"), v.literal("scientific"))
+    ),
     fields: v.array(
       v.object({
         id: v.string(),
@@ -189,16 +198,18 @@ export const generateAndCreateTest = mutation({
       correctAnswers: field.correctAnswers
         ? field.correctAnswers
             .map((ans: string | number) => {
-              if (typeof ans === 'string') {
+              if (typeof ans === "string") {
                 const num = Number(ans);
                 return isNaN(num) ? null : num;
               }
-              return typeof ans === 'number' ? ans : null;
+              return typeof ans === "number" ? ans : null;
             })
-            .filter((ans): ans is number => ans !== null && typeof ans === 'number')
+            .filter(
+              (ans): ans is number => ans !== null && typeof ans === "number"
+            )
         : field.correctAnswers,
     }));
-    
+
     const testId = await ctx.db.insert("tests", {
       userId: identity.subject,
       name: args.name,
@@ -274,9 +285,13 @@ export const updateTest = mutation({
     timeLimitMinutes: v.optional(v.number()),
     randomizeQuestions: v.optional(v.boolean()),
     shuffleOptions: v.optional(v.boolean()),
-    viewType: v.optional(v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))),
+    viewType: v.optional(
+      v.union(v.literal("singlePage"), v.literal("oneQuestionPerPage"))
+    ),
     enableCalculator: v.optional(v.boolean()),
-    calculatorType: v.optional(v.union(v.literal("basic"), v.literal("scientific"))),
+    calculatorType: v.optional(
+      v.union(v.literal("basic"), v.literal("scientific"))
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -296,7 +311,15 @@ export const updateTest = mutation({
       description?: string;
       fields?: Array<{
         id: string;
-        type: "shortInput" | "longInput" | "multipleChoice" | "checkboxes" | "dropdown" | "imageChoice" | "pageBreak" | "infoBlock";
+        type:
+          | "shortInput"
+          | "longInput"
+          | "multipleChoice"
+          | "checkboxes"
+          | "dropdown"
+          | "imageChoice"
+          | "pageBreak"
+          | "infoBlock";
         label: string;
         required?: boolean;
         options?: string[];
@@ -345,13 +368,15 @@ export const updateTest = mutation({
         correctAnswers: field.correctAnswers
           ? field.correctAnswers
               .map((ans: string | number) => {
-                if (typeof ans === 'string') {
+                if (typeof ans === "string") {
                   const num = Number(ans);
                   return isNaN(num) ? null : num;
                 }
-                return typeof ans === 'number' ? ans : null;
+                return typeof ans === "number" ? ans : null;
               })
-              .filter((ans): ans is number => ans !== null && typeof ans === 'number')
+              .filter(
+                (ans): ans is number => ans !== null && typeof ans === "number"
+              )
           : field.correctAnswers,
       }));
     }
@@ -462,18 +487,21 @@ export const submitTest = mutation({
     let isMarked: boolean | undefined;
 
     // Check if test has any text input fields (shortInput or longInput)
-    const hasTextInputFields = test.fields?.some(
-      (f) => f.type === "shortInput" || f.type === "longInput"
-    ) || false;
+    const hasTextInputFields =
+      test.fields?.some(
+        (f) => f.type === "shortInput" || f.type === "longInput"
+      ) || false;
 
     // Calculate marks if instant feedback is enabled OR if there are no text input fields (auto-mark)
     if ((test.instantFeedback || !hasTextInputFields) && test.fields) {
       let earnedMarks = 0;
       let totalMarks = 0;
       const calculatedFieldMarks: Record<string, number> = {};
-      
+
       // Only count fields that are actually markable (exclude pageBreak and infoBlock)
-      const markableFields = test.fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
+      const markableFields = test.fields.filter(
+        (f) => f.type !== "pageBreak" && f.type !== "infoBlock"
+      );
 
       for (const field of markableFields) {
         // Only process fields with marks
@@ -484,39 +512,70 @@ export const submitTest = mutation({
 
           // Only calculate score for fields with correctAnswers defined
           if (field.correctAnswers && field.correctAnswers.length > 0) {
-            if (userResponse !== undefined && userResponse !== null && userResponse !== "") {
+            if (
+              userResponse !== undefined &&
+              userResponse !== null &&
+              userResponse !== ""
+            ) {
               let isCorrect = false;
 
               // Handle different field types
-              if (field.type === "multipleChoice" || field.type === "dropdown") {
+              if (
+                field.type === "multipleChoice" ||
+                field.type === "dropdown"
+              ) {
                 // Single answer - check if response matches any correct answer
-                const responseIndex = typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse;
+                const responseIndex =
+                  typeof userResponse === "string"
+                    ? parseInt(userResponse, 10)
+                    : userResponse;
                 isCorrect = field.correctAnswers.includes(responseIndex);
-              } else if (field.type === "checkboxes" || field.type === "imageChoice") {
+              } else if (
+                field.type === "checkboxes" ||
+                field.type === "imageChoice"
+              ) {
                 // Multiple answers - check if all correct answers are selected
                 const selectedIndices = Array.isArray(userResponse)
-                  ? userResponse.map((v) => (typeof v === "string" ? parseInt(v, 10) : v))
-                  : [typeof userResponse === "string" ? parseInt(userResponse, 10) : userResponse];
+                  ? userResponse.map((v) =>
+                      typeof v === "string" ? parseInt(v, 10) : v
+                    )
+                  : [
+                      typeof userResponse === "string"
+                        ? parseInt(userResponse, 10)
+                        : userResponse,
+                    ];
 
                 // Check if all correct answers are selected and no incorrect ones
                 const correctSet = new Set(field.correctAnswers);
                 const selectedSet = new Set(selectedIndices);
 
                 // All correct answers must be selected
-                const allCorrectSelected = field.correctAnswers.every((idx) => selectedSet.has(idx));
+                const allCorrectSelected = field.correctAnswers.every((idx) =>
+                  selectedSet.has(idx)
+                );
                 // No extra incorrect answers
-                const noExtraAnswers = selectedIndices.every((idx) => correctSet.has(idx));
+                const noExtraAnswers = selectedIndices.every((idx) =>
+                  correctSet.has(idx)
+                );
 
                 isCorrect = allCorrectSelected && noExtraAnswers;
-              } else if (field.type === "shortInput" || field.type === "longInput") {
+              } else if (
+                field.type === "shortInput" ||
+                field.type === "longInput"
+              ) {
                 // Text input - compare with correct answers (assuming correctAnswers contains indices to options array)
                 // For text inputs, we might need to compare text directly
                 // For now, if correctAnswers is defined, we'll check if response matches any option at those indices
                 if (field.options && field.options.length > 0) {
-                  const responseText = String(userResponse).toLowerCase().trim();
+                  const responseText = String(userResponse)
+                    .toLowerCase()
+                    .trim();
                   isCorrect = field.correctAnswers.some((idx) => {
                     const correctOption = field.options?.[idx];
-                    return correctOption && correctOption.toLowerCase().trim() === responseText;
+                    return (
+                      correctOption &&
+                      correctOption.toLowerCase().trim() === responseText
+                    );
                   });
                 }
               }
@@ -528,7 +587,7 @@ export const submitTest = mutation({
             }
           }
           // If field has marks but no correctAnswers, mark stays at 0 (requires manual marking)
-          
+
           // Store the mark for this field
           calculatedFieldMarks[field.id] = mark;
         }
@@ -536,8 +595,9 @@ export const submitTest = mutation({
 
       score = earnedMarks;
       maxScore = totalMarks;
-      percentage = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
-      
+      percentage =
+        totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
+
       // If there are no text input fields, automatically mark the submission
       if (!hasTextInputFields) {
         fieldMarks = calculatedFieldMarks;
@@ -604,23 +664,36 @@ export const getTestSubmissions = query({
     const unmarked = total - marked;
 
     // Calculate mean percentage for marked submissions only
-    const markedSubmissions = submissions.filter((s) => s.isMarked === true && s.percentage !== undefined);
-    const meanPercentage = markedSubmissions.length > 0
-      ? Math.round(
-        markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / markedSubmissions.length
-      )
-      : 0;
+    const markedSubmissions = submissions.filter(
+      (s) => s.isMarked === true && s.percentage !== undefined
+    );
+    const meanPercentage =
+      markedSubmissions.length > 0
+        ? Math.round(
+            markedSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) /
+              markedSubmissions.length
+          )
+        : 0;
 
     // Calculate question-level stats
-    const questionStats: Record<string, {
-      totalScore: number;
-      maxScore: number;
-      count: number;
-    }> = {};
+    const questionStats: Record<
+      string,
+      {
+        totalScore: number;
+        maxScore: number;
+        count: number;
+      }
+    > = {};
 
     const fields = test.fields || [];
     // Filter for markable fields
-    const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock" && f.marks && f.marks > 0);
+    const markableFields = fields.filter(
+      (f) =>
+        f.type !== "pageBreak" &&
+        f.type !== "infoBlock" &&
+        f.marks &&
+        f.marks > 0
+    );
 
     // Initialize stats for all markable fields
     for (const field of markableFields) {
@@ -632,7 +705,9 @@ export const getTestSubmissions = query({
     }
 
     for (const submission of markedSubmissions) {
-      const fieldMarks = submission.fieldMarks as Record<string, number> | undefined;
+      const fieldMarks = submission.fieldMarks as
+        | Record<string, number>
+        | undefined;
       if (fieldMarks) {
         for (const field of markableFields) {
           const mark = fieldMarks[field.id];
@@ -647,20 +722,26 @@ export const getTestSubmissions = query({
     }
 
     // Format for return
-    const questionAnalytics = markableFields.map(field => {
-      const stats = questionStats[field.id];
-      const averageScore = stats.count > 0 ? stats.totalScore / stats.count : 0;
-      const averagePercentage = stats.maxScore > 0 ? Math.round((averageScore / stats.maxScore) * 100) : 0;
-      
-      return {
-        fieldId: field.id,
-        label: field.label,
-        averageScore,
-        maxScore: stats.maxScore,
-        averagePercentage,
-        count: stats.count
-      };
-    }).sort((a, b) => a.averagePercentage - b.averagePercentage); // Sort by most missed (lowest percentage) first
+    const questionAnalytics = markableFields
+      .map((field) => {
+        const stats = questionStats[field.id];
+        const averageScore =
+          stats.count > 0 ? stats.totalScore / stats.count : 0;
+        const averagePercentage =
+          stats.maxScore > 0
+            ? Math.round((averageScore / stats.maxScore) * 100)
+            : 0;
+
+        return {
+          fieldId: field.id,
+          label: field.label,
+          averageScore,
+          maxScore: stats.maxScore,
+          averagePercentage,
+          count: stats.count,
+        };
+      })
+      .sort((a, b) => a.averagePercentage - b.averagePercentage); // Sort by most missed (lowest percentage) first
 
     return {
       submissions: submissions.map((s) => ({
@@ -762,7 +843,9 @@ export const updateSubmissionMarks = mutation({
     // Validate and calculate marks
     const fields = test.fields || [];
     // Only count fields that are actually markable (exclude pageBreak and infoBlock)
-    const markableFields = fields.filter((f) => f.type !== "pageBreak" && f.type !== "infoBlock");
+    const markableFields = fields.filter(
+      (f) => f.type !== "pageBreak" && f.type !== "infoBlock"
+    );
     let totalScore = 0;
     let maxScore = 0;
     const fieldMarksObj = args.fieldMarks as Record<string, number>;
@@ -779,7 +862,8 @@ export const updateSubmissionMarks = mutation({
       }
     }
 
-    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const percentage =
+      maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     // Update submission
     await ctx.db.patch(args.submissionId, {
@@ -828,6 +912,170 @@ export const deleteSubmission = mutation({
 const INPUT_CREDITS_PER_TOKEN = 0.00005;
 const OUTPUT_CREDITS_PER_TOKEN = 0.00015;
 
+/**
+ * Fixes common LaTeX errors in AI-generated content.
+ * Replaces common mistakes like "imes" with "\times" and ensures proper LaTeX syntax.
+ */
+function fixLatexContent(content: string): string {
+  if (!content || typeof content !== "string") {
+    return content;
+  }
+
+  // Fix common LaTeX command mistakes (missing backslashes)
+  // These patterns match common AI mistakes where backslashes were lost
+  const fixes: Array<[RegExp, string]> = [
+    // Multiplication
+    [/\bimes\b/g, "\\times"],
+    // Division
+    [/\bdiv(?![i])\b/g, "\\div"], // Avoid matching "divide", "divisible" etc
+    // Plus/minus
+    [/\bpm(?![a-z])\b/g, "\\pm"], // Avoid matching "pm" in words like "simple"
+    [/\bmp(?![a-z])\b/g, "\\mp"],
+    // Fractions
+    [/\bfrac\{/g, "\\frac{"],
+    // Square root
+    [/\bsqrt\{/g, "\\sqrt{"],
+    [/\bsqrt\[/g, "\\sqrt["],
+    // Operators
+    [/\bsum(?![a-z])\b/g, "\\sum"], // Avoid matching "summary", etc
+    [/\bprod(?![a-z])\b/g, "\\prod"], // Avoid matching "product", etc
+    [/\bint(?![a-z])\b/g, "\\int"], // Avoid matching "integer", "integral", etc
+    // Relations
+    [/\bleq(?![a-z])\b/g, "\\leq"], // Avoid matching "lequation", etc
+    [/\bgeq(?![a-z])\b/g, "\\geq"],
+    [/\bneq(?![a-z])\b/g, "\\neq"],
+    [/\bapprox(?![a-z])\b/g, "\\approx"],
+    // Greek letters (common ones)
+    [/\balpha(?![a-z])\b/g, "\\alpha"],
+    [/\bbeta(?![a-z])\b/g, "\\beta"],
+    [/\bgamma(?![a-z])\b/g, "\\gamma"],
+    [/\bdelta(?![a-z])\b/g, "\\delta"],
+    [/\bepsilon(?![a-z])\b/g, "\\epsilon"],
+    [/\btheta(?![a-z])\b/g, "\\theta"],
+    [/\blambda(?![a-z])\b/g, "\\lambda"],
+    [/\bmu(?![a-z])\b/g, "\\mu"],
+    [/\bpi(?![a-z])\b/g, "\\pi"],
+    [/\bsigma(?![a-z])\b/g, "\\sigma"],
+    [/\bomega(?![a-z])\b/g, "\\omega"],
+    // Sets
+    [/\bin(?![a-z])\b(?=\s*\{)/g, "\\in"], // Only when followed by { (like "in {1,2}")
+    [/\bsubset(?![a-z])\b/g, "\\subset"],
+    [/\bsupset(?![a-z])\b/g, "\\supset"],
+    // Arrows
+    [/\brightarrow(?![a-z])\b/g, "\\rightarrow"],
+    [/\bleftarrow(?![a-z])\b/g, "\\leftarrow"],
+    [/\bleftrightarrow(?![a-z])\b/g, "\\leftrightarrow"],
+  ];
+
+  let fixed = content;
+  for (const [pattern, replacement] of fixes) {
+    fixed = fixed.replace(pattern, replacement);
+  }
+
+  return fixed;
+}
+
+/**
+ * Removes $$ delimiters from labels and moves display math to latexContent
+ */
+function cleanLabelAndMoveLatex(field: any): any {
+  if (!field || typeof field !== "object") {
+    return field;
+  }
+
+  const cleaned = { ...field };
+
+  // Handle label field - remove $$ delimiters and extract display math
+  if (cleaned.label && typeof cleaned.label === "string") {
+    let label = cleaned.label;
+
+    // Find all $$...$$ patterns
+    const displayMathPattern = /\$\$([^$]+?)\$\$/g;
+    const displayMathBlocks: string[] = [];
+    let match;
+
+    // Extract all $$...$$ blocks
+    while ((match = displayMathPattern.exec(label)) !== null) {
+      displayMathBlocks.push(match[1].trim());
+    }
+
+    // Remove all $$...$$ from label
+    label = label.replace(displayMathPattern, "").trim();
+
+    // If we found display math blocks and latexContent doesn't exist or is empty
+    if (displayMathBlocks.length > 0) {
+      // Combine multiple display math blocks or use the first one
+      const combinedMath = displayMathBlocks.join(" \\\\ "); // Join with line breaks
+      
+      // Only set latexContent if it's empty or doesn't exist
+      if (!cleaned.latexContent || cleaned.latexContent.trim() === "") {
+        cleaned.latexContent = combinedMath;
+      }
+    }
+
+    // Clean up the label - remove extra spaces and fix LaTeX commands
+    label = label.replace(/\s+/g, " ").trim();
+    cleaned.label = fixLatexContent(label);
+
+    // Also clean latexContent if it exists
+    if (cleaned.latexContent && typeof cleaned.latexContent === "string") {
+      // Remove $$ delimiters from latexContent if present
+      cleaned.latexContent = cleaned.latexContent.replace(/^\$\$|\$\$$/g, "").trim();
+      cleaned.latexContent = fixLatexContent(cleaned.latexContent);
+    }
+  }
+
+  return cleaned;
+}
+
+/**
+ * Recursively cleans LaTeX content in a test object (fields, labels, options, etc.)
+ */
+function cleanLatexInTestData(data: any): any {
+  if (typeof data === "string") {
+    // Remove $$ delimiters from strings (shouldn't have them in JSON values)
+    let cleaned = data.replace(/^\$\$|\$\$$/g, "").trim();
+    return fixLatexContent(cleaned);
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(cleanLatexInTestData);
+  }
+  
+  if (data && typeof data === "object") {
+    // Check if this is a test object with fields array
+    if (data.fields && Array.isArray(data.fields)) {
+      const cleaned = { ...data };
+      // Clean each field specially to handle label -> latexContent migration
+      cleaned.fields = data.fields.map((field: any) => {
+        const cleanedField = cleanLabelAndMoveLatex(field);
+        // Also clean options if they exist
+        if (cleanedField.options && Array.isArray(cleanedField.options)) {
+          cleanedField.options = cleanedField.options.map((opt: any) => {
+            if (typeof opt === "string") {
+              // Remove $$ delimiters from options (should use $...$ for inline math)
+              let cleanedOpt = opt.replace(/\$\$/g, "$");
+              return fixLatexContent(cleanedOpt);
+            }
+            return cleanLatexInTestData(opt);
+          });
+        }
+        return cleanedField;
+      });
+      return cleaned;
+    }
+
+    // For other objects, clean recursively
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      cleaned[key] = cleanLatexInTestData(value);
+    }
+    return cleaned;
+  }
+  
+  return data;
+}
+
 // Generate test using AI
 export const generateTestWithAI = action({
   args: {
@@ -874,7 +1122,14 @@ export const generateTestWithAI = action({
     const configParts: string[] = [];
     if (args.gradeLevel) {
       const gradeNum = parseInt(args.gradeLevel);
-      const gradeSuffix = gradeNum === 1 ? "st" : gradeNum === 2 ? "nd" : gradeNum === 3 ? "rd" : "th";
+      const gradeSuffix =
+        gradeNum === 1
+          ? "st"
+          : gradeNum === 2
+          ? "nd"
+          : gradeNum === 3
+          ? "rd"
+          : "th";
       configParts.push(`Grade Level: ${gradeNum}${gradeSuffix} grade`);
     }
     if (args.category) {
@@ -883,10 +1138,13 @@ export const generateTestWithAI = action({
     if (args.complexity) {
       configParts.push(`Complexity: ${args.complexity}`);
     }
-    
-    const configContext = configParts.length > 0
-      ? `\n\nIMPORTANT: The following configuration should guide the test creation:\n${configParts.join("\n")}\n\n- Adjust the difficulty and vocabulary to match the specified grade level.\n- Align all questions with the specified category.\n- Set question complexity based on the specified level (Low: basic concepts, Medium: application of concepts, High: analysis and synthesis).`
-      : "";
+
+    const configContext =
+      configParts.length > 0
+        ? `\n\nIMPORTANT: The following configuration should guide the test creation:\n${configParts.join(
+            "\n"
+          )}\n\n- Adjust the difficulty and vocabulary to match the specified grade level.\n- Align all questions with the specified category.\n- Set question complexity based on the specified level (Low: basic concepts, Medium: application of concepts, High: analysis and synthesis).`
+        : "";
 
     const systemPrompt = `You are an expert exam creator. Create a test based on the user's prompt.${configContext}
     Return a JSON object with the following structure:
@@ -916,7 +1174,7 @@ export const generateTestWithAI = action({
           "marks": number (optional, default 1),
           "helpText": "Optional hint",
           "placeholder": "Optional placeholder",
-          "latexContent": "Optional LaTeX math formula",
+          "latexContent": "Optional LaTeX math formula for questions - USE THIS FIELD for math equations/formulas (NO $$ delimiters needed, e.g., \"x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}\")",
           "minLength": number (optional, for text input),
           "maxLength": number (optional, for text input),
           "pattern": "Optional regex pattern",
@@ -928,10 +1186,42 @@ export const generateTestWithAI = action({
     For 'id', generate a unique string like 'field-{timestamp}'.
     Default to 'test' type if not specified.
     Do NOT include any fields related to Access & Security (requireAuth, password, browser restrictions).
+    
+    CRITICAL - LaTeX Support and JSON Escaping:
+    When writing LaTeX in JSON strings, you MUST escape backslashes by doubling them (\\). 
+    After JSON parsing, \\ becomes \ which is correct LaTeX syntax.
+    
+    Examples of CORRECT LaTeX in JSON:
+    - latexContent: "x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}" (NO $$ delimiters - added automatically during rendering)
+    - label: "Multiply the following:" (plain text in label, math goes in latexContent)
+    - options: ["$\\\\sqrt{16}$", "$4^2$"] (becomes ["$\\sqrt{16}$", "$4^2$"] after parsing - use single $ for inline math)
+    
+    Common LaTeX commands that need double backslashes in JSON:
+    - \\times for multiplication (×)
+    - \\div for division (÷)
+    - \\pm for plus/minus (±)
+    - \\frac{a}{b} for fractions
+    - \\sqrt{x} for square root
+    - \\leq, \\geq, \\neq for inequalities
+    - Greek letters: \\alpha, \\beta, \\pi, \\theta, etc.
+    
+    - For math formulas/equations in QUESTIONS: ALWAYS use the latexContent field (WITHOUT $$ delimiters)
+      * Example: latexContent: "x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}"
+      * Keep the label text simple (e.g., "Solve for x:") and put the formula in latexContent
+      * DO NOT put $$ delimiters in latexContent - they are added automatically during rendering
+    - For inline math within question labels: Use $...$ format in the label text itself (single $ delimiters)
+      * Example: "What is the value of $x$ when $y = 3$?"
+      * DO NOT use $$ in labels - use latexContent field for display math instead
+    - For math in answer options: Use $...$ inline format in options
+      * Example: ["$x = 5$", "$x = -5$", "$x = 0$"] 
+      * Example: ["$\\\\sqrt{16} = 4$", "$4^2 = 16$"] (double backslashes for commands)
+    - When creating math questions: Use latexContent field for formulas/equations, $...$ for small inline expressions
+    
+    REMEMBER: In JSON, every single backslash must be doubled. \\times in JSON becomes \times in LaTeX.
     `;
 
     const result = await generateText({
-      model: "xai/grok-4.1-fast-reasoning", // AI Gateway format: provider/model-name
+      model: "xai/grok-4-fast-reasoning", // AI Gateway format: provider/model-name
       system: systemPrompt,
       prompt: args.prompt,
     });
@@ -941,7 +1231,10 @@ export const generateTestWithAI = action({
 
     // Debug: Log the usage object structure to understand its format
     console.log("Usage object:", JSON.stringify(usage, null, 2));
-    console.log("Usage object keys:", usage ? Object.keys(usage) : "usage is null/undefined");
+    console.log(
+      "Usage object keys:",
+      usage ? Object.keys(usage) : "usage is null/undefined"
+    );
 
     // Calculate actual credits used
     // The Vercel AI SDK v5 usage object should have promptTokens and completionTokens
@@ -953,18 +1246,20 @@ export const generateTestWithAI = action({
       // Try standard Vercel AI SDK format
       inputTokens = usageObj.promptTokens ?? usageObj.inputTokens ?? 0;
       outputTokens = usageObj.completionTokens ?? usageObj.outputTokens ?? 0;
-      
+
       // If still 0, try nested structure
       if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
-        inputTokens = usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
-        outputTokens = usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
+        inputTokens =
+          usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
+        outputTokens =
+          usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
       }
     }
-    
+
     const creditsUsedRaw =
       inputTokens * INPUT_CREDITS_PER_TOKEN +
       outputTokens * OUTPUT_CREDITS_PER_TOKEN;
-    
+
     // Ensure at least 1 credit is charged if there was any usage, and always round up
     const creditsUsed = Math.max(1, Math.ceil(creditsUsedRaw));
 
@@ -973,18 +1268,23 @@ export const generateTestWithAI = action({
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI test generation (${inputTokens} input + ${outputTokens} output tokens)`,
-      aiModel: "xai/grok-4.1-fast-reasoning",
+      aiModel: "xai/grok-4-fast-reasoning",
     });
 
     // Parse the JSON response
     try {
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
+      // Clean LaTeX content to fix common AI-generated errors
+      data = cleanLatexInTestData(data);
       return data;
     } catch (error) {
       // If parsing fails, try to extract JSON from the text
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        let data = JSON.parse(jsonMatch[0]);
+        // Clean LaTeX content to fix common AI-generated errors
+        data = cleanLatexInTestData(data);
+        return data;
       }
       throw new Error("Failed to parse AI response as JSON");
     }
@@ -1022,10 +1322,19 @@ export const generateDummyAnswers = action({
     Return ONLY a JSON array of strings containing 3 incorrect options.
     Example: ["Incorrect Option 1", "Incorrect Option 2", "Incorrect Option 3"]
     Do not include the correct answer in the output.
-    Ensure the JSON is valid.`;
+    Ensure the JSON is valid.
+    
+    CRITICAL - If the question or answers contain LaTeX math (using $...$ or $$...$$):
+    - When writing LaTeX in JSON strings, you MUST escape backslashes by doubling them (\\)
+    - Example: If you want to output "$$23 \\times 47$$", write it as "$$23 \\\\times 47$$" in the JSON
+    - Common LaTeX commands: \\\\times (×), \\\\div (÷), \\\\pm (±), \\\\sqrt{}, \\\\frac{}{}, etc.
+    - Preserve any existing LaTeX formatting from the question/answers in your distractors
+    - REMEMBER: In JSON, every single backslash must be doubled.`;
 
     // Estimate credits needed (rough estimate)
-    const estimatedInputTokens = Math.ceil((systemPrompt.length + args.question.length) / 4);
+    const estimatedInputTokens = Math.ceil(
+      (systemPrompt.length + args.question.length) / 4
+    );
     const estimatedOutputTokens = 100; // Short response
     const estimatedCreditsRaw =
       estimatedInputTokens * INPUT_CREDITS_PER_TOKEN +
@@ -1034,11 +1343,11 @@ export const generateDummyAnswers = action({
 
     // Check if user has enough credits (with buffer)
     if (creditCheck.credits < estimatedCredits) {
-       // minimal check, usually 1 credit is enough
+      // minimal check, usually 1 credit is enough
     }
 
     const result = await generateText({
-      model: "xai/grok-4.1-fast-non-reasoning", 
+      model: "xai/grok-4-fast-non-reasoning",
       system: systemPrompt,
       prompt: "Generate distractors.",
     });
@@ -1054,16 +1363,18 @@ export const generateDummyAnswers = action({
     if (usageObj) {
       inputTokens = usageObj.promptTokens ?? usageObj.inputTokens ?? 0;
       outputTokens = usageObj.completionTokens ?? usageObj.outputTokens ?? 0;
-       if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
-        inputTokens = usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
-        outputTokens = usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
+      if (inputTokens === 0 && outputTokens === 0 && usageObj.usage) {
+        inputTokens =
+          usageObj.usage.promptTokens ?? usageObj.usage.inputTokens ?? 0;
+        outputTokens =
+          usageObj.usage.completionTokens ?? usageObj.usage.outputTokens ?? 0;
       }
     }
-    
+
     const creditsUsedRaw =
       inputTokens * INPUT_CREDITS_PER_TOKEN +
       outputTokens * OUTPUT_CREDITS_PER_TOKEN;
-    
+
     // Ensure at least 1 credit is charged if there was any usage, and always round up
     const creditsUsed = Math.max(1, Math.ceil(creditsUsedRaw));
 
@@ -1072,28 +1383,32 @@ export const generateDummyAnswers = action({
       userId: identity.subject,
       amount: creditsUsed,
       description: `AI distractor generation (${inputTokens} in + ${outputTokens} out)`,
-      aiModel: "xai/grok-4.1-fast-non-reasoning",
+      aiModel: "xai/grok-4-fast-non-reasoning",
     });
 
     // Parse the JSON response
     try {
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
       if (Array.isArray(data)) {
-          return data;
+        // Clean LaTeX content in distractors
+        return cleanLatexInTestData(data);
       }
       // Try to find array in text if not direct JSON
       const arrayMatch = text.match(/\[[\s\S]*\]/);
       if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+        let data = JSON.parse(arrayMatch[0]);
+        // Clean LaTeX content in distractors
+        return cleanLatexInTestData(data);
       }
       throw new Error("Invalid response format");
     } catch (error) {
-       const arrayMatch = text.match(/\[[\s\S]*\]/);
+      const arrayMatch = text.match(/\[[\s\S]*\]/);
       if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+        let data = JSON.parse(arrayMatch[0]);
+        // Clean LaTeX content in distractors
+        return cleanLatexInTestData(data);
       }
       throw new Error("Failed to parse AI response as JSON");
     }
   },
 });
-

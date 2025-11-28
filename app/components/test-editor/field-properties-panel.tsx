@@ -18,6 +18,7 @@ import { Button } from "~/components/ui/button";
 import { Plus, X } from "lucide-react";
 import { FileUpload } from "~/components/ui/file-upload";
 import { LatexEditor } from "./latex-editor";
+import { LatexTextRenderer } from "./latex-text-renderer";
 import type { TestField } from "./field-renderer";
 import type { FieldType } from "./field-types";
 
@@ -341,17 +342,18 @@ export function FieldPropertiesPanel({
                 {(localField.options || []).map((option, index) => {
                   const isCorrect = (localField.correctAnswers || []).includes(index);
                   return (
-                    <div key={index} className="flex items-center gap-3 p-1">
-                      <div className="flex-1">
-                        <Input
-                          value={option}
-                          onChange={(e) =>
-                            handleOptionChange(index, e.target.value)
-                          }
-                          placeholder={`Option ${index + 1}`}
-                          className="h-10"
-                        />
-                      </div>
+                    <div key={index} className="space-y-1.5">
+                      <div className="flex items-center gap-3 p-1">
+                        <div className="flex-1">
+                          <Input
+                            value={option}
+                            onChange={(e) =>
+                              handleOptionChange(index, e.target.value)
+                            }
+                            placeholder={`Option ${index + 1}`}
+                            className="h-10"
+                          />
+                        </div>
                       {isQuestionType && (
                         <div className="flex items-center justify-center w-10">
                           <Checkbox
@@ -364,14 +366,21 @@ export function FieldPropertiesPanel({
                           />
                         </div>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOptionRemove(index)}
-                        className="h-10 w-10 text-slate-400 hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOptionRemove(index)}
+                          className="h-10 w-10 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {option && (option.includes('$') || option.includes('$$')) && (
+                        <div className="ml-1 px-3 py-1.5 rounded-md bg-slate-50 border border-slate-100 text-sm">
+                          <span className="text-xs text-slate-500 mr-2">Preview:</span>
+                          <LatexTextRenderer text={option} />
+                        </div>
+                      )}
                     </div>
                   );
                 })}

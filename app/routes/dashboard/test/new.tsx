@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
 import {
   Dialog,
   DialogContent,
@@ -159,9 +160,15 @@ export default function TestEditorPage() {
     if (test && testId && !isLoaded) {
       setTestName(test.name);
       setTestDescription(test.description || "");
-      setFields(
-        (test.fields || []).sort((a, b) => a.order - b.order) as TestField[]
-      );
+      // Ensure all fields have valid IDs that start with "field-"
+      const loadedFields = (test.fields || []).sort((a, b) => a.order - b.order).map((field, index) => ({
+        ...field,
+        // Ensure ID starts with "field-" for drag and drop compatibility
+        id: field.id && field.id.startsWith("field-") 
+          ? field.id 
+          : generateFieldId(),
+      })) as TestField[];
+      setFields(loadedFields);
       setMaxAttempts(test.maxAttempts);
       setEstimatedDuration(test.estimatedDuration);
       setRequireAuth(test.requireAuth || false);
@@ -1700,7 +1707,7 @@ function TestPreview({
                     </div>
                   )}
                   <Label className="text-lg font-semibold text-slate-900 block leading-tight">
-                    {field.label}
+                    <LatexTextRenderer text={field.label} />
                     {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
                   </Label>
                 </div>
@@ -1729,7 +1736,7 @@ function TestPreview({
 
                 <div className="mb-6 hidden sm:block">
                   <Label className="text-xl font-semibold text-slate-900 block leading-normal">
-                    {field.label}
+                    <LatexTextRenderer text={field.label} />
                     {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
                   </Label>
                   {field.helpText && (
@@ -1984,7 +1991,7 @@ function TestPreview({
               />
             )}
             <h3 className="text-xl font-bold text-slate-900 mb-3">
-              {field.label}
+              <LatexTextRenderer text={field.label} />
             </h3>
           </div>
         );

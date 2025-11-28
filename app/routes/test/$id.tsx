@@ -39,6 +39,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "motion/react";
+import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
 
 type TestField = {
   id: string;
@@ -1463,7 +1464,7 @@ const AnswerKey = ({
                         </div>
                       )}
                       <h4 className="text-lg font-semibold text-slate-900 leading-tight">
-                        {field.label}
+                        <LatexTextRenderer text={field.label} />
                       </h4>
                     </div>
 
@@ -1480,7 +1481,7 @@ const AnswerKey = ({
                       />
                     )}
                     <h4 className="text-xl font-semibold text-slate-900 mb-6 hidden sm:block">
-                      {field.label}
+                      <LatexTextRenderer text={field.label} />
                     </h4>
 
                     <div className="space-y-4">
@@ -1499,7 +1500,11 @@ const AnswerKey = ({
                                 : "text-slate-900"
                             )}
                           >
-                            {userAnswer}
+                            {typeof userAnswer === 'string' ? (
+                              <LatexTextRenderer text={userAnswer} />
+                            ) : (
+                              userAnswer
+                            )}
                           </span>
                         </div>
                       </div>
@@ -1511,9 +1516,16 @@ const AnswerKey = ({
                           </span>
                           <div className="flex-1">
                             <span className="text-base text-green-700 font-semibold">
-                              {Array.isArray(correctAnswer)
-                                ? correctAnswer.join(", ")
-                                : correctAnswer}
+                              {Array.isArray(correctAnswer) ? (
+                                correctAnswer.map((ans, idx) => (
+                                  <span key={idx}>
+                                    <LatexTextRenderer text={ans} />
+                                    {idx < correctAnswer.length - 1 && ", "}
+                                  </span>
+                                ))
+                              ) : correctAnswer ? (
+                                <LatexTextRenderer text={correctAnswer} />
+                              ) : null}
                             </span>
                           </div>
                         </div>
@@ -1580,7 +1592,7 @@ const QuestionWrapper = ({
                   htmlFor={labelFor}
                   className="text-lg font-semibold text-slate-900 block leading-tight"
                 >
-                  {label}
+                  <LatexTextRenderer text={label} />
                   {required && (
                     <span className="text-red-500 ml-1" title="Required">
                       *
@@ -1606,7 +1618,7 @@ const QuestionWrapper = ({
                   htmlFor={labelFor}
                   className="text-xl font-semibold text-slate-900 block leading-normal"
                 >
-                  {label}
+                  <LatexTextRenderer text={label} />
                   {required && (
                     <span className="text-red-500 ml-1" title="Required">
                       *
@@ -2143,7 +2155,11 @@ function TestForm({
                             : "text-slate-700"
                         )}
                       >
-                        {option || `Option ${idx + 1}`}
+                        {option ? (
+                          <LatexTextRenderer text={option} />
+                        ) : (
+                          `Option ${idx + 1}`
+                        )}
                       </span>
                     </div>
                   );
@@ -2216,7 +2232,11 @@ function TestForm({
                             : "text-slate-700"
                         )}
                       >
-                        {option || `Option ${idx + 1}`}
+                        {option ? (
+                          <LatexTextRenderer text={option} />
+                        ) : (
+                          `Option ${idx + 1}`
+                        )}
                       </span>
                     </div>
                   );
@@ -2243,7 +2263,11 @@ function TestForm({
                       value={String(idx)}
                       className="text-base py-3 cursor-pointer"
                     >
-                      {field.options?.[idx] || `Option ${idx + 1}`}
+                      {field.options?.[idx] ? (
+                        <LatexTextRenderer text={field.options[idx]} />
+                      ) : (
+                        `Option ${idx + 1}`
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -2354,7 +2378,7 @@ function TestForm({
                 />
               )}
               <h3 className="text-xl font-bold text-slate-900 mb-3">
-                {field.label}
+                <LatexTextRenderer text={field.label} />
               </h3>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed">
                 {/* Additional info content could go here if we had a description field */}
