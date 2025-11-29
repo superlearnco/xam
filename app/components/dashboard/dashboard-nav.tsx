@@ -33,24 +33,58 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileOpen((prev) => !prev)}
-            aria-label="Toggle navigation"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-          <Link
-            to="/home"
-            className="flex items-center gap-2 font-semibold tracking-tight"
-            prefetch="viewport"
-          >
-            <Logo className="h-5 w-auto" />
-          </Link>
+      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              aria-label="Toggle navigation"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+            <Link
+              to="/home"
+              className="flex items-center gap-2 font-semibold tracking-tight"
+              prefetch="viewport"
+            >
+              <Logo className="h-6 w-auto" />
+            </Link>
+          </div>
+
+          <div className="hidden items-center gap-6 md:flex">
+            <NavLink
+              to="/dashboard"
+              end
+              className={({ isActive }) =>
+                cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive
+                    ? "text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+              prefetch="viewport"
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/dashboard/insights"
+              className={({ isActive }) =>
+                cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive
+                    ? "text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+              prefetch="viewport"
+            >
+              Insights
+            </NavLink>
+          </div>
         </div>
 
         {tabs?.length ? (
@@ -76,27 +110,26 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <NavLink
             to="/dashboard/settings"
             data-onboarding="nav-settings"
             className={({ isActive }) =>
               cn(
-                "hidden md:flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                "hidden md:flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               )
             }
             prefetch="viewport"
           >
             <Settings className="h-4 w-4" />
-            <span>Settings</span>
           </NavLink>
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex"
+            className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={() => setBugDialogOpen(true)}
             aria-label="Report a bug or suggest a feature"
           >
@@ -105,25 +138,39 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
           <Link
             to="/dashboard/credits"
             data-onboarding="nav-credits"
-            className="hidden md:flex items-center gap-3 rounded-2xl border bg-card px-3 py-1.5 shadow-sm transition-colors hover:bg-accent"
+            className="hidden md:flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
             prefetch="viewport"
           >
-            <Coins className="h-4 w-4 text-primary" />
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs text-muted-foreground">Credits</span>
-              <span className="text-sm font-semibold">{credits}</span>
-            </div>
+            <Coins className="h-3.5 w-3.5 text-primary" />
+            <span>{credits}</span>
           </Link>
           <Badge className="md:hidden px-2 py-1" variant="outline">
-            {credits} credits
+            {credits}
           </Badge>
-          <UserButton />
+          <div className="pl-2">
+            <UserButton />
+          </div>
         </div>
       </nav>
 
       {mobileOpen && (
         <div className="border-t bg-background md:hidden">
           <div className="space-y-2 px-4 py-3">
+            <NavLink
+              to="/home"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+              onClick={() => setMobileOpen(false)}
+              prefetch="viewport"
+            >
+              Home
+            </NavLink>
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
@@ -153,6 +200,21 @@ export function DashboardNav({ tabs }: DashboardNavProps) {
             >
               <Settings className="h-4 w-4" />
               Settings
+            </NavLink>
+            <NavLink
+              to="/dashboard/insights"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                )
+              }
+              prefetch="viewport"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span>Insights</span>
             </NavLink>
             {tabs?.length ? (
               <div className="rounded-2xl border p-2">
