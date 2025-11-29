@@ -10,7 +10,8 @@ import {
   BookOpen, 
   GraduationCap, 
   BarChart,
-  Wand2
+  Wand2,
+  Info
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
@@ -27,6 +28,11 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Label } from "~/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { api } from "convex/_generated/api";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { motion, AnimatePresence } from "framer-motion";
@@ -180,9 +186,19 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                 <div className="p-6 space-y-6">
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="grade-level" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <GraduationCap className="h-3.5 w-3.5" /> Grade
-                      </Label>
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="grade-level" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <GraduationCap className="h-3.5 w-3.5" /> Grade
+                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Select the grade level to adjust difficulty and vocabulary</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={gradeLevel} onValueChange={setGradeLevel}>
                         <SelectTrigger className="h-10 bg-muted/30 border-border/50 focus:ring-primary/20 transition-all hover:bg-muted/50">
                           <SelectValue placeholder="Select" />
@@ -195,15 +211,22 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Select the grade level to adjust difficulty and vocabulary
-                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="category" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <BookOpen className="h-3.5 w-3.5" /> Subject
-                      </Label>
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="category" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <BookOpen className="h-3.5 w-3.5" /> Subject
+                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Choose the subject area for your test content</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={category} onValueChange={setCategory}>
                         <SelectTrigger className="h-10 bg-muted/30 border-border/50 focus:ring-primary/20 transition-all hover:bg-muted/50">
                           <SelectValue placeholder="Select" />
@@ -216,15 +239,22 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Choose the subject area for your test content
-                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="complexity" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <BarChart className="h-3.5 w-3.5" /> Level
-                      </Label>
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="complexity" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <BarChart className="h-3.5 w-3.5" /> Level
+                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Set the complexity: Easy (basic), Medium (application), Hard (analysis)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={complexity} onValueChange={setComplexity}>
                         <SelectTrigger className="h-10 bg-muted/30 border-border/50 focus:ring-primary/20 transition-all hover:bg-muted/50">
                           <SelectValue placeholder="Select" />
@@ -235,16 +265,23 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                           <SelectItem value="High">Hard</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Set the complexity: Easy (basic), Medium (application), Hard (analysis)
-                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="prompt" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Wand2 className="h-3.5 w-3.5" /> Description
-                    </Label>
+                    <div className="flex items-center gap-1.5">
+                      <Label htmlFor="prompt" className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Wand2 className="h-3.5 w-3.5" /> Description
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Describe your test requirements in detail. Include the number of questions, topics to cover, question types, and any specific instructions.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <div className="relative">
                       <Textarea
                         id="prompt"
@@ -255,9 +292,6 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                         className="resize-none bg-muted/30 border-border/50 focus:ring-primary/20 focus:border-primary/50 transition-all hover:bg-muted/50 pr-4"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Describe your test requirements in detail. Include the number of questions, topics to cover, question types, and any specific instructions.
-                    </p>
                   </div>
 
                   {error && (
