@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { ClipboardList, PieChart, MessageSquare } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -21,7 +21,7 @@ interface NewTestDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type ContentType = "test" | "survey" | "essay" | null;
+type ContentType = "test" | null;
 
 export function NewTestDialog({ open, onOpenChange }: NewTestDialogProps) {
   const navigate = useNavigate();
@@ -35,7 +35,6 @@ export function NewTestDialog({ open, onOpenChange }: NewTestDialogProps) {
       onOpenChange(false);
       navigate(`/dashboard/test/new?name=${encodeURIComponent(name.trim())}&type=${selectedType}`);
     }
-    // Survey and Essay are coming soon
   };
 
   const handleClose = () => {
@@ -51,20 +50,6 @@ export function NewTestDialog({ open, onOpenChange }: NewTestDialogProps) {
       icon: ClipboardList,
       description: "Create assessments with multiple choice, true/false, and short answer questions",
       available: true,
-    },
-    {
-      type: "survey" as const,
-      label: "Survey",
-      icon: PieChart,
-      description: "Gather feedback and insights with customizable survey forms",
-      available: false,
-    },
-    {
-      type: "essay" as const,
-      label: "Essay",
-      icon: MessageSquare,
-      description: "Design essay prompts and evaluate written responses",
-      available: false,
     },
   ];
 

@@ -195,6 +195,9 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Select the grade level to adjust difficulty and vocabulary
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -213,6 +216,9 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Choose the subject area for your test content
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -229,6 +235,9 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                           <SelectItem value="High">Hard</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Set the complexity: Easy (basic), Medium (application), Hard (analysis)
+                      </p>
                     </div>
                   </div>
 
@@ -246,6 +255,9 @@ export function GenerateTestDialog({ open, onOpenChange }: GenerateTestDialogPro
                         className="resize-none bg-muted/30 border-border/50 focus:ring-primary/20 focus:border-primary/50 transition-all hover:bg-muted/50 pr-4"
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Describe your test requirements in detail. Include the number of questions, topics to cover, question types, and any specific instructions.
+                    </p>
                   </div>
 
                   {error && (

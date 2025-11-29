@@ -135,7 +135,7 @@ export default function TestEditorPage() {
       setIsCreating(true);
       createTest({
         name: testNameParam,
-        type: testTypeParam as "test" | "survey" | "essay",
+        type: testTypeParam as "test",
       })
         .then((id) => {
           setTestId(id);
