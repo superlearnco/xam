@@ -20,6 +20,8 @@ import { cn } from "~/lib/utils";
 import { Toggle } from "~/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -268,7 +270,7 @@ export default function MarkingPage() {
                     )}
                   </div>
                   <span className={isSelected ? "font-medium text-foreground" : "text-muted-foreground"}>
-                    {option || `Option ${index + 1}`}
+                    <LatexTextRenderer text={option || `Option ${index + 1}`} />
                   </span>
                   <div className="ml-auto flex items-center gap-2">
                     {isCorrect && (
@@ -325,7 +327,7 @@ export default function MarkingPage() {
                     {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
                   </div>
                   <span className={isSelected ? "font-medium text-foreground" : "text-muted-foreground"}>
-                    {option || `Option ${index + 1}`}
+                    <LatexTextRenderer text={option || `Option ${index + 1}`} />
                   </span>
                   <div className="ml-auto flex items-center gap-2">
                     {isCorrect && (
@@ -580,7 +582,9 @@ export default function MarkingPage() {
                           <Badge variant="outline">Question {selectedFieldIndex + 1}</Badge>
                           <span>{selectedField.type}</span>
                         </div>
-                        <CardTitle className="text-xl leading-tight">{selectedField.label}</CardTitle>
+                        <CardTitle className="text-xl leading-tight">
+                          <LatexTextRenderer text={selectedField.label} />
+                        </CardTitle>
                         {selectedField.helpText && (
                           <CardDescription>{selectedField.helpText}</CardDescription>
                         )}
@@ -597,6 +601,18 @@ export default function MarkingPage() {
                   </CardHeader>
                   
                   <CardContent className="p-6 space-y-8">
+                    {selectedField.latexContent && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 overflow-x-auto">
+                        <div 
+                          dangerouslySetInnerHTML={{ 
+                            __html: katex.renderToString(selectedField.latexContent, { 
+                              throwOnError: false,
+                              displayMode: true 
+                            }) 
+                          }}
+                        />
+                      </div>
+                    )}
                     <div className="space-y-3">
                       <Label className="text-base font-semibold text-foreground flex items-center gap-2">
                         Student Response
