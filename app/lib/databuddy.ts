@@ -45,7 +45,7 @@ export function identifyUser(
 }
 
 // Reset DataBuddy (useful on logout)
-export function resetMixpanel() {
+export function resetDataBuddy() {
   if (typeof window === "undefined") {
     return;
   }
