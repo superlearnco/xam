@@ -271,7 +271,7 @@ export const generateTest = httpAction(async (ctx, req) => {
     {
       "name": "Test Name",
       "description": "Test Description",
-      "type": "test" | "survey" | "essay",
+      "type": "test",
       "fields": [
         {
           "id": "unique_string_id",

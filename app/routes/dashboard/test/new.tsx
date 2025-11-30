@@ -135,7 +135,7 @@ export default function TestEditorPage() {
       setIsCreating(true);
       createTest({
         name: testNameParam,
-        type: testTypeParam as "test" | "survey" | "essay",
+        type: testTypeParam as "test",
       })
         .then((id) => {
           setTestId(id);
@@ -459,6 +459,101 @@ export default function TestEditorPage() {
       .replace(/'/g, "&#039;");
   };
 
+  /**
+   * Processes text with LaTeX support for worksheet rendering.
+   * Detects LaTeX delimiters ($...$ for inline, $$...$$ for display)
+   * and renders them using KaTeX, while escaping non-LaTeX text.
+   */
+  const processLatexInText = (text: string): string => {
+    if (!text) return "";
+    
+    // Pattern to match $...$ (inline) or $$...$$ (display)
+    // First match display math ($$...$$), then inline math ($...$)
+    const displayMathPattern = /\$\$((?:[^$]|\\\$)+?)\$\$/g;
+    const inlineMathPattern = /\$((?:[^$]|\\\$)+?)\$/g;
+    
+    const matches: Array<{ index: number; length: number; content: string; display: boolean }> = [];
+    const usedRanges: Array<{ start: number; end: number }> = [];
+    
+    // Find all display math matches ($$...$$) first
+    let match;
+    while ((match = displayMathPattern.exec(text)) !== null) {
+      const start = match.index;
+      const end = start + match[0].length;
+      matches.push({
+        index: start,
+        length: match[0].length,
+        content: match[1],
+        display: true,
+      });
+      usedRanges.push({ start, end });
+    }
+    
+    // Find all inline math matches ($...$) that don't overlap with display math
+    inlineMathPattern.lastIndex = 0; // Reset regex state
+    while ((match = inlineMathPattern.exec(text)) !== null) {
+      const start = match.index;
+      const end = start + match[0].length;
+      
+      // Check if this match overlaps with any display math match
+      const overlaps = usedRanges.some(range => 
+        (start >= range.start && start < range.end) ||
+        (end > range.start && end <= range.end) ||
+        (start <= range.start && end >= range.end)
+      );
+      
+      if (!overlaps) {
+        matches.push({
+          index: start,
+          length: match[0].length,
+          content: match[1],
+          display: false,
+        });
+      }
+    }
+    
+    // Sort matches by index
+    matches.sort((a, b) => a.index - b.index);
+    
+    // Build HTML string from matches
+    let result = "";
+    let lastIndex = 0;
+    
+    for (const mathMatch of matches) {
+      // Add escaped text before the LaTeX
+      if (mathMatch.index > lastIndex) {
+        result += escapeHtml(text.substring(lastIndex, mathMatch.index));
+      }
+      
+      // Add the rendered LaTeX content
+      try {
+        const latexHtml = katex.renderToString(mathMatch.content.trim(), {
+          throwOnError: false,
+          displayMode: mathMatch.display,
+        });
+        result += latexHtml;
+      } catch (error) {
+        // If LaTeX rendering fails, show the original with error indicator
+        console.error("Error rendering LaTeX:", error, "Content:", mathMatch.content);
+        result += `<span style="color: red; font-size: 0.9em;">[LaTeX Error: ${escapeHtml(mathMatch.content)}]</span>`;
+      }
+      
+      lastIndex = mathMatch.index + mathMatch.length;
+    }
+    
+    // Add remaining escaped text
+    if (lastIndex < text.length) {
+      result += escapeHtml(text.substring(lastIndex));
+    }
+    
+    // If no LaTeX found, return escaped text
+    if (matches.length === 0) {
+      return escapeHtml(text);
+    }
+    
+    return result;
+  };
+
   const handlePrint = () => {
     // Create a new window for printing
     const printWindow = window.open("", "_blank");
@@ -473,6 +568,7 @@ export default function TestEditorPage() {
       <html>
         <head>
           <title>${escapeHtml(testName || "Test Worksheet")}</title>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -750,7 +846,7 @@ export default function TestEditorPage() {
                 ${fields.length > 0 ? `<div class="meta-item">📝 ${fields.filter(f => f.type !== 'pageBreak' && f.type !== 'infoBlock').length} Questions</div>` : ''}
               </div>
             </div>
-            ${testDescription ? `<div class="worksheet-description">${escapeHtml(testDescription)}</div>` : ""}
+            ${testDescription ? `<div class="worksheet-description">${processLatexInText(testDescription)}</div>` : ""}
           </div>
 
           <div class="student-info-section">
@@ -800,10 +896,24 @@ export default function TestEditorPage() {
       
       html += `<div class="${breakClass}">`;
       
-      // Handle attachments
+      // Handle attachments and LaTeX content
       let attachmentHtml = '';
       if (field.fileUrl) {
         attachmentHtml = `<div style="margin-left: 40px;"><img src="${escapeHtml(field.fileUrl)}" class="attachment-image" alt="Attachment" /></div>`;
+      }
+      
+      let latexHtml = '';
+      if (field.latexContent) {
+        try {
+          const renderedLatex = katex.renderToString(field.latexContent, {
+            throwOnError: false,
+            displayMode: true,
+          });
+          latexHtml = `<div style="margin-left: 40px; margin-top: 12px; margin-bottom: 12px; overflow-x: auto;">${renderedLatex}</div>`;
+        } catch (error) {
+          console.error("Error rendering LaTeX content:", error);
+          latexHtml = `<div style="margin-left: 40px; margin-top: 12px; margin-bottom: 12px; color: red; font-size: 0.9em;">[LaTeX Error: ${escapeHtml(field.latexContent)}]</div>`;
+        }
       }
 
       if (field.type === "pageBreak") {
@@ -815,7 +925,8 @@ export default function TestEditorPage() {
         html += `
           <div class="info-block avoid-break">
             ${attachmentHtml}
-            ${field.label ? `<div style="font-weight: 500; color: #374151;">${escapeHtml(field.label)}</div>` : ""}
+            ${latexHtml}
+            ${field.label ? `<div style="font-weight: 500; color: #374151;">${processLatexInText(field.label)}</div>` : ""}
           </div>
         `;
       } else {
@@ -824,12 +935,13 @@ export default function TestEditorPage() {
           <div class="field-header">
             <div class="question-number">${questionNumber}</div>
             <div class="field-label">
-              ${escapeHtml(field.label || "Question")}
+              ${processLatexInText(field.label || "Question")}
               ${field.required ? '<span class="required">*</span>' : ""}
               ${field.marks ? `<span style="font-weight: 400; color: #6b7280; font-size: 13px; float: right;">(${field.marks} points)</span>` : ""}
             </div>
           </div>
           ${attachmentHtml}
+          ${latexHtml}
         `;
 
         // Render Answer Area based on type
@@ -850,7 +962,7 @@ export default function TestEditorPage() {
               html += `
                 <div class="option-item">
                   <div class="radio-circle"></div>
-                  <div class="option-text">${escapeHtml(option || `Option ${idx + 1}`)}</div>
+                  <div class="option-text">${processLatexInText(option || `Option ${idx + 1}`)}</div>
                 </div>
               `;
             });
@@ -863,7 +975,7 @@ export default function TestEditorPage() {
               html += `
                 <div class="option-item">
                   <div class="checkbox-square"></div>
-                  <div class="option-text">${escapeHtml(option || `Option ${idx + 1}`)}</div>
+                  <div class="option-text">${processLatexInText(option || `Option ${idx + 1}`)}</div>
                 </div>
               `;
             });
@@ -878,7 +990,7 @@ export default function TestEditorPage() {
               </div>
               <div class="option-list" style="margin-top: 16px; opacity: 0.6;">
                 <div style="font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; margin-bottom: 8px;">Options:</div>
-                ${(field.options || []).map(opt => `<span style="display: inline-block; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; margin-right: 8px; margin-bottom: 8px; font-size: 13px; border: 1px solid #e5e7eb;">${escapeHtml(opt)}</span>`).join('')}
+                ${(field.options || []).map(opt => `<span style="display: inline-block; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; margin-right: 8px; margin-bottom: 8px; font-size: 13px; border: 1px solid #e5e7eb;">${processLatexInText(opt)}</span>`).join('')}
               </div>
             `;
             break;
@@ -904,7 +1016,7 @@ export default function TestEditorPage() {
         html += `</div>`; // Close answer-area
         
         if (field.helpText) {
-          html += `<div class="help-text">${escapeHtml(field.helpText)}</div>`;
+          html += `<div class="help-text">${processLatexInText(field.helpText)}</div>`;
         }
       }
       
@@ -1818,7 +1930,7 @@ function TestPreview({
                       )}
                     </div>
                     <span className={cn("text-base transition-colors", isSelected ? "text-primary font-medium" : "text-slate-700")}>
-                      {option || `Option ${index + 1}`}
+                      <LatexTextRenderer text={option || `Option ${index + 1}`} />
                     </span>
                   </div>
                 );
@@ -1863,7 +1975,7 @@ function TestPreview({
                       {isChecked && <Check className="w-4 h-4" />}
                     </div>
                     <span className={cn("text-base transition-colors", isChecked ? "text-primary font-medium" : "text-slate-700")}>
-                      {option || `Option ${index + 1}`}
+                      <LatexTextRenderer text={option || `Option ${index + 1}`} />
                     </span>
                   </div>
                 );
@@ -1886,7 +1998,7 @@ function TestPreview({
               <SelectContent>
                 {(field.options || []).map((option, index) => (
                   <SelectItem key={index} value={String(index)} className="text-base py-3 cursor-pointer">
-                    {option || `Option ${index + 1}`}
+                    <LatexTextRenderer text={option || `Option ${index + 1}`} />
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1946,7 +2058,7 @@ function TestPreview({
                     </div>
                     {!imageUrl && (
                       <div className="p-3 text-center text-sm font-medium border-t bg-white text-slate-700">
-                        {option || `Option ${index + 1}`}
+                        <LatexTextRenderer text={option || `Option ${index + 1}`} />
                       </div>
                     )}
                   </div>
@@ -2523,7 +2635,7 @@ function MarkingPage({
                               <CardContent>
                                 <div className="text-2xl font-bold">{q.averagePercentage}%</div>
                                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2" title={q.label}>
-                                  {q.label}
+                                  <LatexTextRenderer text={q.label} />
                                 </p>
                               </CardContent>
                             </Card>
@@ -2559,7 +2671,9 @@ function MarkingPage({
                                             const data = payload[0].payload;
                                             return (
                                               <div className="bg-background border rounded-lg p-3 shadow-lg">
-                                                <p className="font-medium">{data.label}</p>
+                                                <p className="font-medium">
+                                                  <LatexTextRenderer text={data.label} />
+                                                </p>
                                                 <p className="text-sm text-muted-foreground">
                                                   Average: {data.averagePercentage}% ({data.averageScore.toFixed(1)}/{data.maxScore})
                                                 </p>

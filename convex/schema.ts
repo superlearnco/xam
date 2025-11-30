@@ -73,7 +73,7 @@ export default defineSchema({
     userId: v.string(),
     name: v.string(),
     description: v.optional(v.string()),
-    type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    type: v.literal("test"),
     fields: v.optional(
       v.array(
         v.object({

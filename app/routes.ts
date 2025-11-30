@@ -21,6 +21,7 @@ export default [
   layout("routes/dashboard/layout.tsx", [
     route("dashboard", "routes/dashboard/index.tsx"),
     route("dashboard/settings", "routes/dashboard/settings.tsx"),
+    route("dashboard/insights", "routes/dashboard/insights.tsx"),
     route("dashboard/credits", "routes/dashboard/credits.tsx"),
     route("dashboard/test/new", "routes/dashboard/test/new.tsx"),
     route("dashboard/test/mark/:submissionId", "routes/dashboard/test/mark/$submissionId.tsx"),

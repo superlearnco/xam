@@ -18,7 +18,8 @@ import { Toaster } from "sonner";
 import type { Route } from "./+types/root";
 import "./app.css";
 import { Analytics } from "@vercel/analytics/react";
-import { initMixpanel, identifyUser, trackEvent, resetMixpanel } from "~/lib/mixpanel";
+import { Databuddy } from "@databuddy/sdk/react";
+import { identifyUser, trackEvent, resetDataBuddy, trackErrorEvent } from "~/lib/databuddy";
 import { useEffect } from "react";
 import { ConsentManagerProvider, CookieBanner } from "@c15t/react";
 
@@ -70,6 +71,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body suppressHydrationWarning>
         <Analytics />
+        <Databuddy
+          clientId={import.meta.env.PUBLIC_DATABUDDY_CLIENT_ID as string}
+          trackWebVitals
+          trackErrors
+          enableBatching
+          disabled={import.meta.env.NODE_ENV === "development"}
+        />
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -79,15 +87,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ loaderData }: Route.ComponentProps) {
-  // Initialize Mixpanel on mount - ensure it happens before any tracking
-  useEffect(() => {
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      initMixpanel();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <ConsentManagerProvider
       options={{
@@ -103,44 +102,43 @@ export default function App({ loaderData }: Route.ComponentProps) {
         afterSignUpUrl="/"
         afterSignInUrl="/"
       >
-        <MixpanelUserTracker>
+        <DataBuddyUserTracker>
           <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
             <PageViewTracker>
               <Outlet />
             </PageViewTracker>
             <Toaster />
           </ConvexProviderWithClerk>
-        </MixpanelUserTracker>
+        </DataBuddyUserTracker>
       </ClerkProvider>
       <CookieBanner />
     </ConsentManagerProvider>
   );
 }
 
-// Component to track user authentication state and identify users in Mixpanel
-function MixpanelUserTracker({ children }: { children: React.ReactNode }) {
+// Component to track user authentication state and identify users in DataBuddy
+function DataBuddyUserTracker({ children }: { children: React.ReactNode }) {
   const { userId, isSignedIn } = useAuth();
   const { user } = useUser();
   const location = useLocation();
 
   useEffect(() => {
-    // Ensure Mixpanel is initialized before tracking
     if (typeof window === "undefined") return;
     
-    // Wait a bit to ensure Mixpanel is initialized
+    // Wait a bit to ensure DataBuddy is initialized
     const timer = setTimeout(() => {
       if (isSignedIn && userId && user) {
         // Check if this is a new user by checking localStorage
-        const isNewUser = !localStorage.getItem(`mixpanel_identified_${userId}`);
+        const isNewUser = !localStorage.getItem(`databuddy_identified_${userId}`);
         
-        // Identify user in Mixpanel
+        // Identify user in DataBuddy
         identifyUser(userId, {
           name: user.fullName || undefined,
           email: user.primaryEmailAddress?.emailAddress || undefined,
         });
 
         // Mark as identified to avoid tracking Sign In again on page refresh
-        localStorage.setItem(`mixpanel_identified_${userId}`, "true");
+        localStorage.setItem(`databuddy_identified_${userId}`, "true");
 
         // Track Sign Up event if this is a new user (checking sign-up path or new user flag)
         if (isNewUser || location.pathname.includes("success") || location.search.includes("newUser=true")) {
@@ -162,8 +160,8 @@ function MixpanelUserTracker({ children }: { children: React.ReactNode }) {
           });
         }
       } else if (!isSignedIn) {
-        // Reset Mixpanel on logout
-        resetMixpanel();
+        // Reset DataBuddy on logout
+        resetDataBuddy();
       }
     }, 100);
     
@@ -174,15 +172,15 @@ function MixpanelUserTracker({ children }: { children: React.ReactNode }) {
 }
 
 // Component to track page views
+// Note: DataBuddy automatically tracks screen views, but we track manually for SPA route changes
 function PageViewTracker({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { userId } = useAuth();
 
   useEffect(() => {
-    // Ensure Mixpanel is initialized before tracking
     if (typeof window === "undefined") return;
     
-    // Wait a bit to ensure Mixpanel is initialized
+    // Wait a bit to ensure DataBuddy is initialized
     const timer = setTimeout(() => {
       trackEvent("Page View", {
         page_url: window.location.href,
@@ -221,14 +219,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     }
   }
 
-  // Track error event in Mixpanel
+  // Track error event in DataBuddy
   if (typeof window !== "undefined") {
-    trackEvent("Error", {
+    trackErrorEvent(details, {
       error_type: errorType,
       error_message: details,
       error_code: errorCode,
       page_url: window.location.href,
-      user_id: undefined, // Will be set by Mixpanel if user is identified
     });
   }
 

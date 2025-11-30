@@ -54,7 +54,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "dashboard-overview",
     title: "Your Dashboard",
     description:
-      "This is your central hub. Here you can see all your tests, surveys, and essays. Use the search bar and filters to quickly find what you need.",
+      "This is your central hub. Here you can see all your tests. Use the search bar and filters to quickly find what you need.",
     targetSelector: "[data-onboarding='dashboard-filters']",
     position: "bottom",
     highlightPadding: 12,
@@ -63,7 +63,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "create-new",
     title: "Create New Assessment",
     description:
-      "Click here to create a new test, survey, or essay from scratch. You'll be taken to a powerful editor where you can add various question types.",
+      "Click here to create a new test from scratch. You'll be taken to a powerful editor where you can add various question types.",
     targetSelector: "[data-onboarding='create-new-btn']",
     position: "bottom",
     highlightPadding: 8,

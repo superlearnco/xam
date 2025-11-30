@@ -7,9 +7,7 @@ import { api } from "./_generated/api";
 export const listTests = query({
   args: {
     search: v.optional(v.string()),
-    type: v.optional(
-      v.union(v.literal("test"), v.literal("survey"), v.literal("essay"))
-    ),
+    type: v.optional(v.literal("test")),
     sortBy: v.optional(
       v.union(v.literal("name"), v.literal("recency"), v.literal("lastEdited"))
     ), // Supports name, recency, or lastEdited
@@ -109,7 +107,7 @@ export const getPublicTest = query({
 export const createTest = mutation({
   args: {
     name: v.string(),
-    type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    type: v.literal("test"),
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -137,7 +135,7 @@ export const createTest = mutation({
 export const generateAndCreateTest = mutation({
   args: {
     name: v.string(),
-    type: v.union(v.literal("test"), v.literal("survey"), v.literal("essay")),
+    type: v.literal("test"),
     description: v.optional(v.string()),
     maxAttempts: v.optional(v.number()),
     estimatedDuration: v.optional(v.number()),
@@ -1151,7 +1149,7 @@ export const generateTestWithAI = action({
     {
       "name": "Test Name",
       "description": "Test Description",
-      "type": "test" | "survey" | "essay",
+      "type": "test",
       "maxAttempts": number (optional, default unlimited),
       "estimatedDuration": number (optional, in minutes),
       "timeLimitMinutes": number (optional, in minutes, 0 for unlimited),

@@ -18,8 +18,6 @@ import {
   Search,
   FileText,
   ClipboardList,
-  MessageSquare,
-  PieChart,
   Sparkles,
   Clock,
   Filter,
@@ -87,9 +85,7 @@ export default function DashboardIndex() {
   const [editDescription, setEditDescription] = useState("");
   const [testToDelete, setTestToDelete] = useState<Id<"tests"> | null>(null);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<
-    "all" | "test" | "survey" | "essay"
-  >("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "test">("all");
   const [sortBy, setSortBy] = useState<"name" | "recency" | "lastEdited">(
     "lastEdited"
   );
@@ -169,10 +165,6 @@ export default function DashboardIndex() {
     switch (type) {
       case "test":
         return <ClipboardList className="h-4 w-4" />;
-      case "survey":
-        return <PieChart className="h-4 w-4" />;
-      case "essay":
-        return <MessageSquare className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -182,10 +174,6 @@ export default function DashboardIndex() {
     switch (type) {
       case "test":
         return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
-      case "survey":
-        return "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100";
-      case "essay":
-        return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100";
     }
@@ -251,7 +239,7 @@ export default function DashboardIndex() {
               <Select
                 value={typeFilter}
                 onValueChange={(value) =>
-                  setTypeFilter(value as "all" | "test" | "survey" | "essay")
+                  setTypeFilter(value as "all" | "test")
                 }
               >
                 <SelectTrigger className="w-[140px] h-9 bg-background">
@@ -260,8 +248,6 @@ export default function DashboardIndex() {
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="test">Tests</SelectItem>
-                  <SelectItem value="survey">Surveys</SelectItem>
-                  <SelectItem value="essay">Essays</SelectItem>
                 </SelectContent>
               </Select>
             </div>

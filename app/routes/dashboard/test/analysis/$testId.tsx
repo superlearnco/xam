@@ -11,6 +11,7 @@ import { Badge } from "~/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -69,7 +70,7 @@ export default function QuestionAnalysisPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{q.averagePercentage}%</div>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2" title={q.label}>
-                  {q.label}
+                  <LatexTextRenderer text={q.label} />
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Avg: {q.averageScore.toFixed(1)} / {q.maxScore}
@@ -111,7 +112,9 @@ export default function QuestionAnalysisPage() {
                         const data = payload[0].payload;
                         return (
                           <div className="bg-background border rounded-lg p-3 shadow-lg">
-                            <p className="font-medium">{data.label}</p>
+                            <p className="font-medium">
+                              <LatexTextRenderer text={data.label} />
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               Average: {data.averagePercentage}% ({data.averageScore.toFixed(1)}/{data.maxScore})
                             </p>
