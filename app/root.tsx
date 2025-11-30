@@ -19,7 +19,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { Analytics } from "@vercel/analytics/react";
 import { Databuddy } from "@databuddy/sdk/react";
-import { identifyUser, trackEvent, resetMixpanel, trackErrorEvent } from "~/lib/databuddy";
+import { identifyUser, trackEvent, resetDataBuddy, trackErrorEvent } from "~/lib/databuddy";
 import { useEffect } from "react";
 import { ConsentManagerProvider, CookieBanner } from "@c15t/react";
 
@@ -161,7 +161,7 @@ function DataBuddyUserTracker({ children }: { children: React.ReactNode }) {
         }
       } else if (!isSignedIn) {
         // Reset DataBuddy on logout
-        resetMixpanel();
+        resetDataBuddy();
       }
     }, 100);
     
