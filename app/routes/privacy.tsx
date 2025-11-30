@@ -120,7 +120,7 @@ export default function PrivacyRoute() {
                   tracking and debugging.
                 </li>
                 <li>
-                  <strong>Analytics Data:</strong> We use Mixpanel and Vercel
+                  <strong>Analytics Data:</strong> We use DataBuddy and Vercel
                   Analytics to understand how users interact with our platform,
                   including page views, user flows, and feature usage.
                 </li>
@@ -266,24 +266,24 @@ export default function PrivacyRoute() {
               </p>
 
               <h3 className="text-xl font-semibold mb-3">
-                4.5 Analytics (Mixpanel & Vercel Analytics)
+                4.5 Analytics (DataBuddy & Vercel Analytics)
               </h3>
               <p className="mb-4">
-                We use Mixpanel and Vercel Analytics to understand how users
+                We use DataBuddy and Vercel Analytics to understand how users
                 interact with our platform. These services collect usage data to
                 help us improve our service. Please review their privacy
                 policies:
               </p>
               <ul className="list-disc pl-6 mb-4 space-y-2">
                 <li>
-                  Mixpanel:{" "}
+                  DataBuddy:{" "}
                   <a
-                    href="https://mixpanel.com/legal/privacy-policy"
+                    href="https://www.databuddy.cc/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline"
                   >
-                    https://mixpanel.com/legal/privacy-policy
+                    https://www.databuddy.cc/privacy
                   </a>
                 </li>
                 <li>

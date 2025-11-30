@@ -14,7 +14,7 @@ import {
 import { CheckCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { useEffect, useRef, useState } from "react";
-import { trackEvent } from "~/lib/mixpanel";
+import { trackEvent } from "~/lib/databuddy";
 
 export function meta({}: Route.MetaArgs) {
   return [
