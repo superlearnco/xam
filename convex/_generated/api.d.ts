@@ -13,6 +13,7 @@ import type * as credits from "../credits.js";
 import type * as feedback from "../feedback.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
+import type * as insights from "../insights.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as tests from "../tests.js";
 import type * as users from "../users.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   feedback: typeof feedback;
   files: typeof files;
   http: typeof http;
+  insights: typeof insights;
   subscriptions: typeof subscriptions;
   tests: typeof tests;
   users: typeof users;
