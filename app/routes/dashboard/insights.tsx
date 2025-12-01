@@ -1,12 +1,49 @@
 import type { Route } from "./+types/insights";
 import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
+import { Link } from "react-router";
 import { api } from "convex/_generated/api";
 import { Input } from "~/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { Loader2, Search } from "lucide-react";
+import { Button } from "~/components/ui/button";
+import {
+  Loader2,
+  Search,
+  Users,
+  FileText,
+  TrendingUp,
+  Award,
+  ChevronRight,
+  BarChart3,
+  Target,
+  Clock,
+  Zap,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Pie,
+  PieChart,
+  Cell,
+} from "recharts";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "~/components/ui/chart";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -16,11 +53,41 @@ export function meta(_: Route.MetaArgs) {
   ];
 }
 
-function formatDate(ts: number | null | undefined) {
+function formatShortDate(ts: number | null | undefined) {
   if (!ts) return "N/A";
   const d = new Date(ts);
-  return d.toLocaleDateString() + " " + d.toLocaleTimeString();
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+function getPercentageColor(percentage: number | null) {
+  if (percentage === null) return "text-muted-foreground";
+  if (percentage >= 90) return "text-green-600";
+  if (percentage >= 70) return "text-blue-600";
+  if (percentage >= 50) return "text-yellow-600";
+  return "text-red-600";
+}
+
+const submissionChartConfig = {
+  submissions: {
+    label: "Submissions",
+    // Indigo-like primary
+    color: "#4f46e5",
+  },
+  avgPercentage: {
+    label: "Avg Score",
+    // Emerald-like accent
+    color: "#10b981",
+  },
+} satisfies ChartConfig;
+
+// Use the raw chart CSS variables (which are defined as oklch colors)
+// instead of wrapping them in hsl(), which produced invalid CSS and black slices.
+const scoreDistributionColors = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+];
 
 export default function DashboardInsights() {
   const [studentSearch, setStudentSearch] = useState("");
@@ -34,8 +101,8 @@ export default function DashboardInsights() {
     if (!q) return students.students;
     return students.students.filter((s: any) => {
       if (s.normalizedName.toLowerCase().includes(q)) return true;
-      return s.nameVariants?.some(
-        (name: string) => name.toLowerCase().includes(q)
+      return s.nameVariants?.some((name: string) =>
+        name.toLowerCase().includes(q)
       );
     });
   }, [students, studentSearch]);
@@ -43,374 +110,487 @@ export default function DashboardInsights() {
   const overallLoading = overall === undefined;
   const studentsLoading = students === undefined;
 
+  const scoreDistributionData = useMemo(() => {
+    if (!overall?.scoreDistribution) return [];
+    const data = [
+      { name: "Excellent (90-100%)", value: overall.scoreDistribution.excellent, fill: scoreDistributionColors[0] },
+      { name: "Good (70-89%)", value: overall.scoreDistribution.good, fill: scoreDistributionColors[1] },
+      { name: "Average (50-69%)", value: overall.scoreDistribution.average, fill: scoreDistributionColors[2] },
+      { name: "Needs Work (<50%)", value: overall.scoreDistribution.needsImprovement, fill: scoreDistributionColors[3] },
+    ].filter((d) => d.value > 0);
+
+    // #region agent log
+    fetch("http://127.0.0.1:7242/ingest/944aecbe-cc9b-4050-abd2-878698eeedc8", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "debug-session",
+        runId: "post-fix",
+        hypothesisId: "H5",
+        location: "dashboard/insights.tsx:111-119",
+        message: "Score distribution data and colors",
+        data: { scoreDistributionColors, data },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    return data;
+  }, [overall]);
+
+  const scoreDistributionConfig = useMemo(() => {
+    const config: ChartConfig = {};
+    scoreDistributionData.forEach((item) => {
+      config[item.name] = { label: item.name, color: item.fill };
+    });
+    return config;
+  }, [scoreDistributionData]);
+
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <section className="space-y-3">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Insights
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-            Get a high-level view of how your tests are performing, then drill
-            into individual students. Student names are merged ignoring
-            capitalization and extra spaces.
-          </p>
+    <div className="flex flex-1 flex-col bg-background min-h-screen">
+      {/* Header Section */}
+      <div className="border-b bg-background">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                Insights
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Comprehensive analytics for your tests and students.
+              </p>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <Tabs defaultValue="overall" className="flex-1">
-        <TabsList>
-          <TabsTrigger value="overall">Overall</TabsTrigger>
-          <TabsTrigger value="students">Students</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overall" className="mt-4 space-y-6">
-          {overallLoading && (
-            <div className="flex flex-1 items-center justify-center py-16">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Loading overall insights…</span>
-              </div>
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {overallLoading && (
+          <div className="flex flex-1 items-center justify-center py-32">
+            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="font-medium">Loading insights...</span>
             </div>
-          )}
+          </div>
+        )}
 
-          {!overallLoading && overall === null && (
-            <Card>
-              <CardHeader>
-                <CardTitle>No data yet</CardTitle>
-                <CardDescription>
-                  Create tests and collect submissions to see overall insights.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Once students start submitting tests, you&apos;ll see
-                  aggregate trends here, including average scores and your most
-                  attempted tests.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {!overallLoading && overall && (
-            <>
-              <section className="grid gap-4 md:grid-cols-3">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Activity</CardTitle>
-                    <CardDescription>Usage across all tests</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Tests with submissions
-                      </span>
-                      <span className="text-xl font-semibold">
-                        {overall.summary.testsWithSubmissions} /{" "}
-                        {overall.summary.totalTests}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Total submissions
-                      </span>
-                      <span className="text-xl font-semibold">
-                        {overall.summary.totalSubmissions}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1 pt-1 text-xs text-muted-foreground">
-                      <span>
-                        Submissions (last 7 days):{" "}
-                        <span className="font-medium">
-                          {overall.summary.submissionsLast7Days}
-                        </span>
-                      </span>
-                      <span>
-                        Last submission:{" "}
-                        {formatDate(overall.summary.lastSubmissionAt)}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Performance</CardTitle>
-                    <CardDescription>Marked submissions only</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Average %
-                      </span>
-                      <span className="text-2xl font-semibold">
-                        {overall.summary.averageMarkedPercentage ?? "—"}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Based on all marked submissions across your tests.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Students</CardTitle>
-                    <CardDescription>Unique respondents</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Unique students
-                      </span>
-                      <span className="text-2xl font-semibold">
-                        {overall.summary.uniqueStudents}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Names are de-duplicated by case-insensitive, whitespace
-                      normalized matching.
-                    </p>
-                  </CardContent>
-                </Card>
-              </section>
-
-              <section className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Most attempted tests</CardTitle>
-                    <CardDescription>
-                      Tests with the highest number of submissions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {overall.mostAttemptedTests.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No submissions yet.
-                      </p>
-                    ) : (
-                      <div className="space-y-2 text-sm">
-                        {overall.mostAttemptedTests.map((t: any) => (
-                          <div
-                            key={t.testId}
-                            className="flex items-center justify-between rounded-md border bg-card px-3 py-2"
-                          >
-                            <div className="space-y-1">
-                              <div className="font-medium">{t.testName}</div>
-                              <div className="text-xs text-muted-foreground">
-                                Last submission: {formatDate(t.lastSubmittedAt)}
-                              </div>
-                            </div>
-                            <div className="text-right text-xs text-muted-foreground">
-                              <div>
-                                Submissions:{" "}
-                                <span className="font-medium">
-                                  {t.submissions}
-                                </span>
-                              </div>
-                              <div>
-                                Marked:{" "}
-                                <span className="font-medium">
-                                  {t.markedSubmissions}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top tests by average %</CardTitle>
-                    <CardDescription>
-                      Based on marked submissions only
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {overall.topTestsByAverage.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No marked submissions yet.
-                      </p>
-                    ) : (
-                      <div className="space-y-2 text-sm">
-                        {overall.topTestsByAverage.map((t: any) => (
-                          <div
-                            key={t.testId}
-                            className="flex items-center justify-between rounded-md border bg-card px-3 py-2"
-                          >
-                            <div className="space-y-1">
-                              <div className="font-medium">{t.testName}</div>
-                              <div className="text-xs text-muted-foreground">
-                                Average %:{" "}
-                                <span className="font-medium">
-                                  {t.averagePercentage ?? "—"}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-right text-xs text-muted-foreground">
-                              <div>
-                                Submissions:{" "}
-                                <span className="font-medium">
-                                  {t.submissions}
-                                </span>
-                              </div>
-                              <div>
-                                Marked:{" "}
-                                <span className="font-medium">
-                                  {t.markedSubmissions}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </section>
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="students" className="mt-4 space-y-4">
-          <section className="space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold">Student insights</h2>
-                <p className="text-sm text-muted-foreground max-w-xl">
-                  Browse all students who have submitted any test. Search by
-                  name to quickly find a student. Names that differ only by
-                  capitalization or spacing are merged.
-                </p>
-              </div>
-              <div className="w-full max-w-xs">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Search students
-                </label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    className="pl-8"
-                    placeholder="Start typing a name…"
-                    value={studentSearch}
-                    onChange={(e) => setStudentSearch(e.target.value)}
-                  />
-                </div>
-              </div>
+        {!overallLoading && overall === null && (
+          <div className="flex flex-col items-center justify-center min-h-[400px] rounded-2xl border border-dashed bg-card/50 p-8 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+              <BarChart3 className="h-10 w-10 text-muted-foreground" />
             </div>
-          </section>
+            <h3 className="mt-6 text-lg font-semibold">No data yet</h3>
+            <p className="mt-2 mb-6 max-w-sm text-sm text-muted-foreground">
+              Create tests and collect submissions to see insights. Your
+              analytics will appear here once students start taking tests.
+            </p>
+            <Button asChild>
+              <Link to="/dashboard">Go to Dashboard</Link>
+            </Button>
+          </div>
+        )}
 
-          {studentsLoading && (
-            <div className="flex flex-1 items-center justify-center py-16">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Loading student insights…</span>
-              </div>
-            </div>
-          )}
+        {!overallLoading && overall && (
+          <div className="space-y-8">
+            {/* Quick Stats */}
+            <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border-blue-200/50 dark:border-blue-800/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Total Submissions
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                    {overall.summary.totalSubmissions}
+                  </div>
+                  <p className="text-xs text-blue-700/70 dark:text-blue-300/70 mt-1">
+                    Across {overall.summary.testsWithSubmissions} tests
+                  </p>
+                </CardContent>
+              </Card>
 
-          {!studentsLoading && students && students.totalStudents === 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>No students yet</CardTitle>
-                <CardDescription>
-                  When students start submitting tests, they&apos;ll appear
-                  here.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  You&apos;ll see a list of students along with attempts,
-                  average percentages, and recency of their last attempt.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+              <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 border-green-200/50 dark:border-green-800/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Average Score
+                  </CardTitle>
+                  <Target className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                    {overall.summary.averageMarkedPercentage ?? "—"}%
+                  </div>
+                  <p className="text-xs text-green-700/70 dark:text-green-300/70 mt-1">
+                    From {overall.summary.markedSubmissions ?? 0} graded submissions
+                  </p>
+                </CardContent>
+              </Card>
 
-          {!studentsLoading && students && students.totalStudents > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  Showing{" "}
-                  <span className="font-medium">{filteredStudents.length}</span>{" "}
-                  of{" "}
-                  <span className="font-medium">
-                    {students.totalStudents}
-                  </span>{" "}
-                  students
-                </span>
-                <span>
-                  Total attempts:{" "}
-                  <span className="font-medium">
-                    {students.totalAttempts}
-                  </span>
-                </span>
-              </div>
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10 border-purple-200/50 dark:border-purple-800/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                    Unique Students
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                    {overall.summary.uniqueStudents}
+                  </div>
+                  <p className="text-xs text-purple-700/70 dark:text-purple-300/70 mt-1">
+                    Have taken your tests
+                  </p>
+                </CardContent>
+              </Card>
 
-              {filteredStudents.length === 0 ? (
-                <Card>
-                  <CardContent className="py-6 text-sm text-muted-foreground">
-                    No students match your search.
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-2">
-                  {filteredStudents.map((student: any) => (
-                    <div
-                      key={student.normalizedName}
-                      className="grid gap-2 rounded-lg border bg-card px-4 py-3 text-sm sm:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]"
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10 border-orange-200/50 dark:border-orange-800/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                    Recent Activity
+                  </CardTitle>
+                  <Zap className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+                    {overall.summary.submissionsLast7Days}
+                  </div>
+                  <p className="text-xs text-orange-700/70 dark:text-orange-300/70 mt-1">
+                    Submissions in last 7 days
+                  </p>
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* Charts Section */}
+            <section className="grid gap-6 lg:grid-cols-2">
+              {/* Submission Trend Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Submission Trend
+                  </CardTitle>
+                  <CardDescription>
+                    Daily submissions and average scores over the last 30 days
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={submissionChartConfig}
+                    className="h-[300px] w-full"
+                  >
+                    <AreaChart data={overall.submissionTrend}>
+                      <defs>
+                        <linearGradient id="fillSubmissions" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--color-submissions)" stopOpacity={0.8} />
+                          <stop offset="95%" stopColor="var(--color-submissions)" stopOpacity={0.1} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tickFormatter={(value) =>
+                          new Date(value).toLocaleDateString("en-US", {
+                            day: "numeric",
+                            month: "short",
+                          })
+                        }
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                      />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            labelFormatter={(value) =>
+                              new Date(value).toLocaleDateString("en-US", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })
+                            }
+                          />
+                        }
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="submissions"
+                        stroke="var(--color-submissions)"
+                        fill="url(#fillSubmissions)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+
+              {/* Score Distribution Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Score Distribution
+                  </CardTitle>
+                  <CardDescription>
+                    Breakdown of student performance across all tests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {scoreDistributionData.length > 0 ? (
+                    <ChartContainer
+                      config={scoreDistributionConfig}
+                      className="h-[300px] w-full"
                     >
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          {student.nameVariants[0] ?? student.normalizedName}
+                      <PieChart>
+                        <Pie
+                          data={scoreDistributionData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                        >
+                          {scoreDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
+                        <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                      </PieChart>
+                    </ChartContainer>
+                  ) : (
+                    <div className="flex h-[300px] items-center justify-center text-muted-foreground">
+                      No graded submissions yet
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* Test Performance Section */}
+            <section className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Most Active Tests
+                  </CardTitle>
+                  <CardDescription>
+                    Tests with the highest number of submissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {overall.mostAttemptedTests.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      No submissions yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {overall.mostAttemptedTests.map((t: any, index: number) => (
+                        <div
+                          key={t.testId}
+                          className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{t.testName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Last: {formatShortDate(t.lastSubmittedAt)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold">{t.submissions}</div>
+                            <div className="text-xs text-muted-foreground">submissions</div>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
-                          {student.nameVariants.slice(1).map((name: string) => (
-                            <Badge key={name} variant="outline">
-                              {name}
-                            </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Top Performing Tests
+                  </CardTitle>
+                  <CardDescription>
+                    Tests with the highest average scores
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {overall.topTestsByAverage.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      No graded submissions yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {overall.topTestsByAverage.map((t: any, index: number) => (
+                        <div
+                          key={t.testId}
+                          className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-semibold text-sm">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{t.testName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {t.markedSubmissions} graded submissions
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-lg font-semibold ${getPercentageColor(t.averagePercentage)}`}>
+                              {t.averagePercentage}%
+                            </div>
+                            <div className="text-xs text-muted-foreground">average</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* Students Section */}
+            <section>
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Student Performance
+                      </CardTitle>
+                      <CardDescription>
+                        Click on a student to view detailed insights
+                      </CardDescription>
+                    </div>
+                    <div className="w-full sm:w-72">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          className="pl-9"
+                          placeholder="Search students..."
+                          value={studentSearch}
+                          onChange={(e) => setStudentSearch(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {studentsLoading && (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+
+                  {!studentsLoading && students && students.totalStudents === 0 && (
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                      <p className="text-sm text-muted-foreground">
+                        No students have taken your tests yet.
+                      </p>
+                    </div>
+                  )}
+
+                  {!studentsLoading && students && students.totalStudents > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground border-b pb-3">
+                        <span>
+                          Showing{" "}
+                          <span className="font-medium text-foreground">
+                            {filteredStudents.length}
+                          </span>{" "}
+                          of{" "}
+                          <span className="font-medium text-foreground">
+                            {students.totalStudents}
+                          </span>{" "}
+                          students
+                        </span>
+                        <span>
+                          Total attempts:{" "}
+                          <span className="font-medium text-foreground">
+                            {students.totalAttempts}
+                          </span>
+                        </span>
+                      </div>
+
+                      {filteredStudents.length === 0 ? (
+                        <div className="text-center py-8 text-sm text-muted-foreground">
+                          No students match your search.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {filteredStudents.map((student: any) => (
+                            <Link
+                              key={student.normalizedName}
+                              to={`/dashboard/insights/student/${encodeURIComponent(student.normalizedName)}`}
+                              className="group flex items-center gap-4 p-4 rounded-xl border bg-card hover:bg-muted/50 hover:border-primary/30 transition-all"
+                            >
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-semibold text-lg uppercase">
+                                {(student.nameVariants[0] ?? student.normalizedName).charAt(0)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold truncate">
+                                    {student.nameVariants[0] ?? student.normalizedName}
+                                  </span>
+                                  {student.nameVariants.length > 1 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{student.nameVariants.length - 1} alias
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <FileText className="h-3.5 w-3.5" />
+                                    {student.attempts} attempts
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    Last: {formatShortDate(student.lastAttemptAt)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className={`text-2xl font-bold ${getPercentageColor(student.averagePercentage)}`}>
+                                    {student.averagePercentage ?? "—"}%
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    avg score
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </div>
+                            </Link>
                           ))}
                         </div>
-                      </div>
-                      <div className="flex flex-col justify-center gap-1 text-xs text-muted-foreground">
-                        <span>
-                          Attempts:{" "}
-                          <span className="font-medium">
-                            {student.attempts}
-                          </span>
-                        </span>
-                        <span>
-                          Marked:{" "}
-                          <span className="font-medium">
-                            {student.markedAttempts}
-                          </span>
-                        </span>
-                        <span>
-                          Avg %:{" "}
-                          <span className="font-medium">
-                            {student.averagePercentage ?? "—"}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-start justify-center gap-1 text-xs text-muted-foreground sm:items-end">
-                        <span>
-                          First: {formatDate(student.firstAttemptAt)}
-                        </span>
-                        <span>
-                          Last: {formatDate(student.lastAttemptAt)}
-                        </span>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
+                </CardContent>
+              </Card>
             </section>
-          )}
-        </TabsContent>
-      </Tabs>
-    </main>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
