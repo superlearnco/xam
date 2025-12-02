@@ -119,22 +119,6 @@ export default function DashboardInsights() {
       { name: "Needs Work (<50%)", value: overall.scoreDistribution.needsImprovement, fill: scoreDistributionColors[3] },
     ].filter((d) => d.value > 0);
 
-    // #region agent log
-    fetch("http://127.0.0.1:7242/ingest/944aecbe-cc9b-4050-abd2-878698eeedc8", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "debug-session",
-        runId: "post-fix",
-        hypothesisId: "H5",
-        location: "dashboard/insights.tsx:111-119",
-        message: "Score distribution data and colors",
-        data: { scoreDistributionColors, data },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     return data;
   }, [overall]);
 

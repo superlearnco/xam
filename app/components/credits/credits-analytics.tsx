@@ -49,39 +49,8 @@ export function CreditsAnalytics({ dailyUsage, modelUsage }: CreditsAnalyticsPro
     return CHART_COLOR_VARS.map(varName => getComputedColor(varName));
   }, []);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7242/ingest/944aecbe-cc9b-4050-abd2-878698eeedc8", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sessionId: "debug-session",
-      runId: "pre-fix",
-      hypothesisId: "H1",
-      location: "credits-analytics.tsx:42-47",
-      message: "Resolved chart colors from CSS variables",
-      data: { resolvedColors },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   const modelChartConfig = modelUsage.reduce((acc, item, index) => {
     const color = resolvedColors[index % resolvedColors.length];
-    // #region agent log
-    fetch("http://127.0.0.1:7242/ingest/944aecbe-cc9b-4050-abd2-878698eeedc8", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "debug-session",
-        runId: "pre-fix",
-        hypothesisId: "H2",
-        location: "credits-analytics.tsx:48-55",
-        message: "Model chart config color assignment",
-        data: { model: item.model, index, color },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     acc[item.model] = {
       label: item.model,
       color: color,
