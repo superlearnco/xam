@@ -12,7 +12,7 @@ import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
-import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, AlertCircle, Zap, X, Keyboard } from "lucide-react";
+import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, AlertCircle, Zap, X, Keyboard, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { TestField } from "~/components/test-editor/test-builder";
 import { ScrollArea } from "~/components/ui/scroll-area";
@@ -20,6 +20,14 @@ import { cn } from "~/lib/utils";
 import { Toggle } from "~/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { LatexTextRenderer } from "~/components/test-editor/latex-text-renderer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
@@ -39,11 +47,14 @@ export default function MarkingPage() {
     submissionId ? { submissionId } : "skip"
   );
   const updateMarks = useMutation(api.tests.updateSubmissionMarks);
+  const deleteSubmission = useMutation(api.tests.deleteSubmission);
 
   const [fieldMarks, setFieldMarks] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [isAdvancedMarking, setIsAdvancedMarking] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Initialize field marks when data loads
   useEffect(() => {
@@ -228,6 +239,25 @@ export default function MarkingPage() {
       toast.error("Failed to save marks");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteSubmission({ submissionId });
+      toast.success("Submission deleted successfully");
+      if (submissionData?.test._id) {
+        navigate(`/dashboard/test/new?testId=${submissionData.test._id}&tab=marking`);
+      } else {
+        navigate(-1);
+      }
+    } catch (error) {
+      console.error("Failed to delete submission:", error);
+      toast.error("Failed to delete submission");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -492,6 +522,14 @@ export default function MarkingPage() {
               "Save Marks"
             )}
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </header>
 
@@ -718,6 +756,33 @@ export default function MarkingPage() {
           </div>
         </main>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Submission</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this submission from {submission.respondentName || "Anonymous"}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
