@@ -129,11 +129,13 @@ const chartConfig = {
   },
   desktop: {
     label: "Desktop",
-    color: "var(--primary)",
+    // Indigo-like hue
+    color: "#4f46e5",
   },
   mobile: {
     label: "Mobile",
-    color: "var(--primary)",
+    // Emerald-like hue
+    color: "#10b981",
   },
 } satisfies ChartConfig;
 

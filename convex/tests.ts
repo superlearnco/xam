@@ -907,6 +907,56 @@ export const deleteSubmission = mutation({
   },
 });
 
+export const deleteSubmissionsByStudent = mutation({
+  args: {
+    testId: v.id("tests"),
+    respondentEmail: v.optional(v.string()),
+    respondentName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify test ownership
+    const test = await ctx.db.get(args.testId);
+    if (!test || test.userId !== identity.subject) {
+      throw new Error("Test not found or unauthorized");
+    }
+
+    // Require at least one identifier
+    if (!args.respondentEmail && !args.respondentName) {
+      throw new Error("Must provide either respondentEmail or respondentName");
+    }
+
+    // Get all submissions for this test
+    const allSubmissions = await ctx.db
+      .query("testSubmissions")
+      .withIndex("by_test_submitted", (q) => q.eq("testId", args.testId))
+      .collect();
+
+    // Filter submissions by student identifier
+    const submissionsToDelete = allSubmissions.filter((submission) => {
+      if (args.respondentEmail) {
+        return submission.respondentEmail === args.respondentEmail;
+      }
+      if (args.respondentName) {
+        return submission.respondentName === args.respondentName;
+      }
+      return false;
+    });
+
+    // Delete all matching submissions
+    for (const submission of submissionsToDelete) {
+      await ctx.db.delete(submission._id);
+    }
+
+    return { deletedCount: submissionsToDelete.length };
+  },
+});
+
 const INPUT_CREDITS_PER_TOKEN = 0.00005;
 const OUTPUT_CREDITS_PER_TOKEN = 0.00015;
 

@@ -28,7 +28,7 @@ import { FieldPropertiesPanel } from "~/components/test-editor/field-properties-
 import { DashboardNav } from "~/components/dashboard/dashboard-nav";
 import { EditorOnboardingFlow } from "~/components/dashboard/editor-onboarding-flow";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle, Calculator } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check, Printer, Download, Trash2, QrCode, X, Share2, Settings, Lock, GraduationCap, LayoutTemplate, Users, BarChart3, LayoutDashboard, BrainCircuit, AlertCircle, Calculator, MoreHorizontal } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
@@ -54,6 +54,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { QRCodeSVG } from "qrcode.react";
 
 function generateFieldId(): string {
@@ -2164,6 +2171,7 @@ function MarkingPage({
   const navigate = useNavigate();
   const submissionsData = useQuery(api.tests.getTestSubmissions, { testId });
   const deleteSubmission = useMutation(api.tests.deleteSubmission);
+  const deleteSubmissionsByStudent = useMutation(api.tests.deleteSubmissionsByStudent);
   const autoMarkSubmission = useAction((api as any).ai.autoMarkSubmission);
   const [submissionToDelete, setSubmissionToDelete] = useState<Id<"testSubmissions"> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -2171,6 +2179,8 @@ function MarkingPage({
   const [autoMarkProgress, setAutoMarkProgress] = useState({ current: 0, total: 0 });
   const [activeMarkingCategory, setActiveMarkingCategory] = useState("overview");
   const [showAutoMarkConfirm, setShowAutoMarkConfirm] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<{ email?: string; name?: string; count: number } | null>(null);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   if (submissionsData === undefined) {
     return (
@@ -2297,6 +2307,47 @@ function MarkingPage({
       console.error(error);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleBulkDeleteStudent = (submission: typeof submissions[0]) => {
+    // Count submissions for this student
+    const identifier = submission.respondentEmail || submission.respondentName;
+    if (!identifier) {
+      toast.error("Cannot delete submissions for anonymous student");
+      return;
+    }
+
+    const count = submissions.filter((s) => 
+      submission.respondentEmail 
+        ? s.respondentEmail === submission.respondentEmail
+        : s.respondentName === submission.respondentName
+    ).length;
+
+    setStudentToDelete({
+      email: submission.respondentEmail,
+      name: submission.respondentName,
+      count,
+    });
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (!studentToDelete) return;
+
+    setIsDeletingBulk(true);
+    try {
+      const result = await deleteSubmissionsByStudent({
+        testId,
+        respondentEmail: studentToDelete.email,
+        respondentName: studentToDelete.email ? undefined : studentToDelete.name,
+      });
+      toast.success(`Deleted ${result.deletedCount} submission${result.deletedCount !== 1 ? 's' : ''}`);
+      setStudentToDelete(null);
+    } catch (error) {
+      toast.error("Failed to delete submissions");
+      console.error(error);
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -2594,14 +2645,33 @@ function MarkingPage({
                                         >
                                           {submission.isMarked ? "Review" : "Mark"}
                                         </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                          onClick={() => setSubmissionToDelete(submission._id)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                              <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                              onClick={() => setSubmissionToDelete(submission._id)}
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Delete submission
+                                            </DropdownMenuItem>
+                                            {(submission.respondentEmail || submission.respondentName) && (
+                                              <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                  variant="destructive"
+                                                  onClick={() => handleBulkDeleteStudent(submission)}
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2" />
+                                                  Delete all from {submission.respondentName || submission.respondentEmail}
+                                                </DropdownMenuItem>
+                                              </>
+                                            )}
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -2754,6 +2824,37 @@ function MarkingPage({
               disabled={isDeleting}
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Dialog */}
+      <Dialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete All Submissions</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete all {studentToDelete?.count} submission{studentToDelete?.count !== 1 ? 's' : ''} from {studentToDelete?.name || studentToDelete?.email}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStudentToDelete(null)} disabled={isDeletingBulk}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmBulkDelete}
+              disabled={isDeletingBulk}
+            >
+              {isDeletingBulk ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                `Delete ${studentToDelete?.count} submission${studentToDelete?.count !== 1 ? 's' : ''}`
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

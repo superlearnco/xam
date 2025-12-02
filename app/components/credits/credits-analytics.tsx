@@ -26,14 +26,19 @@ interface CreditsAnalyticsProps {
 const chartConfig = {
   amount: {
     label: "Credits",
-    color: "hsl(var(--primary))",
+    // Indigo-like primary
+    color: "#4f46e5",
   },
 } satisfies ChartConfig;
 
 // Helper function to get computed CSS variable value
 const getComputedColor = (varName: string): string => {
-  if (typeof window === 'undefined') return varName;
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || varName;
+  if (typeof window === "undefined") return varName;
+  return (
+    getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim() || varName
+  );
 };
 
 const CHART_COLOR_VARS = ['--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-5'];
